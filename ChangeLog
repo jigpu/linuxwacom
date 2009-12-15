@@ -1,3 +1,10 @@
+2009-12-15  Ping Cheng <pingc@wacom.com>
+	* Updated serial Tablet PCs support
+	* Added 5 new Bamboo tablets support
+		- kernel patch submitted by K Gingerich
+		- xorg by Enrico Ros <enrico.ros@gmail.com>
+	* Label 0.8.5-7
+
 2009-12-08  Ping Cheng <pingc@wacom.com>
 	* Merged src/2.6.28 into src/2.6.27 so we have less files to worry
 	* Removed src/2.6.28

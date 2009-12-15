@@ -435,6 +435,37 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 	return 0;
 }
 
+/* retrieve the specific options for the device */
+static void wcmDeviceSpecCommonOptions(LocalDevicePtr local, unsigned long* keys)
+{
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
+
+	/* a single touch device */
+	if (ISBITSET (keys, BTN_TOOL_DOUBLETAP))
+	{
+		/* TouchDefault was off for all devices
+		 * except when touch is supported */
+		common->wcmTouchDefault = 1;
+	}
+
+	/* 2FG touch device */
+	if (ISBITSET (keys, BTN_TOOL_TRIPLETAP))
+	{
+		/* GestureDefault was off for all devices
+		 * except when multi-touch is supported */
+		common->wcmGestureDefault = 1;
+	}
+
+	/* check if touch was turned off in xorg.conf */
+	common->wcmTouch = xf86SetBoolOption(local->options, "Touch",
+		common->wcmTouchDefault);
+
+	/* Touch gesture applies to the whole tablet */
+	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
+		common->wcmGestureDefault);
+}
+
 /* xf86WcmInit - called when the module subsection is found in XF86Config */
 
 static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
@@ -450,6 +481,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	char*		device;
 	WacomToolPtr tool = NULL;
 	WacomToolAreaPtr area = NULL;
+	unsigned long keys[NBITS(KEY_MAX)];
 
 	gWacomModule.wcmDrv = drv;
 
@@ -474,8 +506,6 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 #ifdef WCM_XORG_XSERVER_1_4
         if(device)
         {
-		unsigned long keys[NBITS(KEY_MAX)];
-
 		/* initialize supported keys */
 		wcmDeviceTypeKeys(fakeLocal, keys);
 
@@ -560,9 +590,14 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		}
 	}
 
-	/* Process the common options. */
+	/* Process the common options for individual tool */
 	xf86ProcessCommonOptions(local, local->options);
 
+	/* update device specific common options
+	 * it is called only once for each device   */	
+#ifdef WCM_XORG_XSERVER_1_4
+	wcmDeviceSpecCommonOptions(local, keys);
+#endif
 	/* Optional configuration */
 
 	xf86Msg(X_CONFIG, "%s device is %s\n", dev->identifier,
@@ -873,17 +908,6 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		if ( common->wcmTPCButton )
 			xf86Msg(X_CONFIG, "%s: Tablet PC buttons are on \n", common->wcmDevice);
 	}
-
-	/* Touch applies to the whole tablet */
-	common->wcmTouch = xf86SetBoolOption(local->options, "Touch", common->wcmTouchDefault);
-	if ( common->wcmTouch )
-		xf86Msg(X_CONFIG, "%s: Touch is enabled \n", common->wcmDevice);
-
-	/* Touch gesture applies to the whole tablet */
-	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture", 
-			common->wcmGestureDefault);
-	if ( common->wcmGesture )
-		xf86Msg(X_CONFIG, "%s: Touch gesture is enabled \n", common->wcmDevice);
 
 	/* Touch capacity applies to the whole tablet */
 	common->wcmCapacity = xf86SetBoolOption(local->options, "Capacity", common->wcmCapacityDefault);

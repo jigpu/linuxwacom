@@ -89,9 +89,10 @@
  * 2009-11-11 47-pc0.8.5-4 - Allow multiple tools to be defined for one type
  * 2009-11-24 47-pc0.8.5-5 - Support hotplugging for serial ISDV4
  * 2009-12-08 47-pc0.8.5-6 - Add new serial ISDV4 devices
+ * 2009-12-14 47-pc0.8.5-7 - Updated serial ISDV4 support
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-6 $";
+static const char identification[] = "$Identification: 47-0.8.5-7 $";
 
 /****************************************************************************/
 

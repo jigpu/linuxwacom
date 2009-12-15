@@ -150,6 +150,82 @@ static int wacom_ptu_irq(struct wacom_wac *wacom, void *wcombo)
 	return 1;
 }
 
+static int wacom_bamboo_pt_irq(struct wacom_wac *wacom, void *wcombo)
+{
+	unsigned char *data = wacom->data;
+	int x, y, pressure = 0;
+
+	if (data[0] != 2) {
+		dbg("wacom_bamboo_pt_irq: received unknown report #%d", data[0]);
+		return 0;
+	}
+
+	if (data[1] & 0x80) {
+		/* in prox and not a pad data */
+
+		if (data[1] & 0xf0) {
+		    if (data[1] & 0x8) {  /* rubber */
+			wacom->tool[0] = BTN_TOOL_RUBBER;
+			wacom->id[0] = ERASER_DEVICE_ID;
+		    }
+		    else {  /* pen */
+			wacom->tool[0] = BTN_TOOL_PEN;
+			wacom->id[0] = STYLUS_DEVICE_ID;
+		    }
+		}
+		x = wacom_le16_to_cpu(&data[2]);
+		y = wacom_le16_to_cpu(&data[4]);
+		wacom_report_abs(wcombo, ABS_X, x);
+		wacom_report_abs(wcombo, ABS_Y, y);
+		wacom_report_abs(wcombo, ABS_PRESSURE, pressure);
+		wacom_report_key(wcombo, BTN_TOUCH, data[1] & 0x01);
+		wacom_report_key(wcombo, BTN_STYLUS, data[1] & 0x02);
+		wacom_report_key(wcombo, BTN_STYLUS2, data[1] & 0x04);
+		wacom_report_abs(wcombo, ABS_MISC, wacom->id[0]); /* report tool id */
+		wacom_report_key(wcombo, wacom->tool[0], 1);
+	} else if (wacom->id[0]) {
+		wacom_report_abs(wcombo, ABS_X, 0);
+		wacom_report_abs(wcombo, ABS_Y, 0);
+		wacom_report_abs(wcombo, ABS_PRESSURE, 0);
+		wacom_report_key(wcombo, BTN_TOUCH, 0);
+		wacom_report_key(wcombo, BTN_STYLUS, 0);
+		wacom_report_key(wcombo, BTN_STYLUS2, 0);
+		wacom->id[0] = 0;
+		wacom_report_abs(wcombo, ABS_MISC, 0); /* reset tool id */
+		wacom_report_key(wcombo, wacom->tool[0], 0);
+	}
+
+	/* send pad data */
+	switch (wacom->features->type) {
+	    case BAMBOO_PT:
+		if (data[8] & 0xff) {
+			wacom_input_sync(wcombo);
+			wacom->id[1] = PAD_DEVICE_ID;
+			wacom_report_key(wcombo, BTN_0, (data[7] & 0x08));
+			wacom_report_key(wcombo, BTN_1, (data[7] & 0x20));
+			wacom_report_key(wcombo, BTN_4, (data[7] & 0x10));
+			wacom_report_key(wcombo, BTN_5, (data[7] & 0x40));
+			wacom_report_abs(wcombo, ABS_WHEEL, (data[8] & 0x7f));
+			wacom_report_key(wcombo, BTN_TOOL_FINGER, 0xf0);
+			wacom_report_abs(wcombo, ABS_MISC, wacom->id[1]);
+			wacom_input_event(wcombo, EV_MSC, MSC_SERIAL, 0xf0);
+		} else if (wacom->id[1]) {
+			wacom_input_sync(wcombo);
+			wacom->id[1] = 0;
+			wacom_report_key(wcombo, BTN_0, (data[7] & 0x08));
+			wacom_report_key(wcombo, BTN_1, (data[7] & 0x20));
+			wacom_report_key(wcombo, BTN_4, (data[7] & 0x10));
+			wacom_report_key(wcombo, BTN_5, (data[7] & 0x40));
+			wacom_report_abs(wcombo, ABS_WHEEL, (data[8] & 0x7f));
+			wacom_report_key(wcombo, BTN_TOOL_FINGER, 0);
+			wacom_report_abs(wcombo, ABS_MISC, 0);
+			wacom_input_event(wcombo, EV_MSC, MSC_SERIAL, 0xf0);
+		}
+		break;
+	}
+	return 1;
+}
+
 static int wacom_graphire_irq(struct wacom_wac *wacom, void *wcombo)
 {
 	unsigned char *data = wacom->data;
@@ -627,7 +703,6 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
 	return 1;
 }
 
-
 static void wacom_tpc_finger_in(struct wacom_wac *wacom, void *wcombo, char *data, int idx)
 {
 	wacom_report_abs(wcombo, ABS_X, 
@@ -827,6 +902,9 @@ int wacom_wac_irq(struct wacom_wac *wacom_wac, void *wcombo)
 		case WACOM_MO:
 			return wacom_graphire_irq(wacom_wac, wcombo);
 
+		case BAMBOO_PT:
+			return wacom_bamboo_pt_irq(wacom_wac, wcombo);
+
 		case PTU:
 			return wacom_ptu_irq(wacom_wac, wcombo);
 
@@ -855,6 +933,7 @@ void wacom_init_input_dev(struct input_dev *input_dev, struct wacom_wac *wacom_w
 {
 	switch (wacom_wac->features->type) {
 		case WACOM_MO:
+		case BAMBOO_PT:
 			input_dev_mo(input_dev, wacom_wac);
 		case WACOM_G4:
 			input_dev_g4(input_dev, wacom_wac);
@@ -966,6 +1045,10 @@ static struct wacom_features wacom_features[] = {
 	{ "Wacom ISDv4 9F",       WACOM_PKGLEN_PENABLED,  26202, 16325,  255,  0, TABLETPC },
 	{ "Wacom ISDv4 E2",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG },
 	{ "Wacom ISDv4 E3",       WACOM_PKGLEN_TPC2FG,    26202, 16325,  255,  0, TABLETPC2FG },
+	{ "Wacom Bamboo P&T 4x5", WACOM_PKGLEN_GRAPHIRE,  14760,  9225, 1023, 63, BAMBOO_PT },
+	{ "Wacom Bamboo Pen 4x5", WACOM_PKGLEN_GRAPHIRE,  14732,  9144, 1023, 63, BAMBOO_PT },
+	{ "Wacom Bamboo Craft",   WACOM_PKGLEN_GRAPHIRE,  14732,  9144, 1023, 63, BAMBOO_PT },
+	{ "Wacom Bamboo P&T 6x8", WACOM_PKGLEN_GRAPHIRE,  21648, 13530, 1023, 63, BAMBOO_PT },
 	{ "Wacom Intuos2 6x8",    WACOM_PKGLEN_INTUOS,    20320, 16240, 1023, 31, INTUOS },
 	{ }
 };

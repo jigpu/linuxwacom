@@ -303,23 +303,7 @@ static int isdv4GetRanges(LocalDevicePtr local)
 			common->wcmMaxTouchX = common->wcmMaxTouchY = (int)(1 << data[1]);
 
 		if (data[1])
-		{
 			common->wcmTouchResolX = common->wcmTouchResolY = 10;
-			common->wcmTouchDefault = 1;
-		}
-		else
-			common->wcmTouchDefault = 0;
-
-		/* updated touch info */
-		common->wcmTouch = xf86SetBoolOption(local->options, "Touch",
-			common->wcmTouchDefault);
-
-		if ((common->tablet_id == 0xE2) ||
-					(common->tablet_id == 0xE3))
-			common->wcmGestureDefault = 1;
-
-		common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
-			 common->wcmGestureDefault);
 
 		common->wcmVersion = ( data[10] | (data[9] << 7) );
 		ret = Success;
@@ -413,7 +397,13 @@ static int isdv4Parse(LocalDevicePtr local, const unsigned char* data)
 				/* Got 2FGT. Send the first one if received */
 				if (ds->proximity || (!ds->proximity &&
 						 last->proximity))
+				{
+					/* time stamp for 2GT gesture events */
+					if ((ds->proximity && !last->proximity) ||
+						    (!ds->proximity && last->proximity))
+						ds->sample = (int)GetTimeInMillis();
 					xf86WcmEvent(common, channel, ds);
+				}
 
 				channel = 1;
 				ds = &common->wcmChannel[channel].work;
@@ -423,6 +413,10 @@ static int isdv4Parse(LocalDevicePtr local, const unsigned char* data)
 				ds->device_type = TOUCH_ID;
 				ds->device_id = TOUCH_DEVICE_ID;
 				ds->proximity = data[0] & 0x02;
+				/* time stamp for 2GT gesture events */
+				if ((ds->proximity && !lastTemp->proximity) ||
+					    (!ds->proximity && lastTemp->proximity))
+					ds->sample = (int)GetTimeInMillis();
 			}
 		}
 		DBG(8, priv->debugLevel, ErrorF("isdv4Parse MultiTouch "

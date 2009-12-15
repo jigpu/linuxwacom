@@ -464,6 +464,11 @@ static struct
 
 	{ 0x65, 2540, 2540, &usbBamboo     }, /* Bamboo */
 	{ 0x69, 1012, 1012, &usbBamboo1    }, /* Bamboo1 */ 
+	{ 0xD1, 2540, 2540, &usbBamboo     }, /* CTL-460 */
+	{ 0xD4, 2540, 2540, &usbBamboo     }, /* CTH-461 */
+	{ 0xD3, 2540, 2540, &usbBamboo     }, /* CTL-660 */
+	{ 0xD2, 2540, 2540, &usbBamboo     }, /* CTL-461/S */
+	{ 0xD0, 2540, 2540, &usbBamboo     }, /* Bamboo Touch */
 
 	{ 0xB0, 5080, 5080, &usbIntuos3    }, /* Intuos3 4x5 */
 	{ 0xB1, 5080, 5080, &usbIntuos3    }, /* Intuos3 6x8 */
@@ -518,31 +523,12 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 				common->wcmResolY = WacomModelDesc [i].yRes;
 			}
 
-		if (strstr(common->wcmModel->name, "TabletPC"))
+		if (common->wcmModel && strstr(common->wcmModel->name, "TabletPC"))
 		{
-			if (common->tablet_id != 0x90) 
-			{
-				/* TouchDefault was off for all devices */
-				/* except when touch is supported */
-				common->wcmTouchDefault = 1;
 
-				if(common->tablet_id == 0xE2 || common->tablet_id == 0xE3)
-				{
-					/* GestureDefault was off for all devices */
-					/* except when multi-touch is supported */
-					common->wcmGestureDefault = 1;
-				}
-
-				/* Tablet PC button applied to the whole tablet. Not just one tool */
-				common->wcmTPCButtonDefault = 1; /* Tablet PC buttons on by default */
-			}
+			/* Tablet PC button applied to the whole tablet. Not just one tool */
+			common->wcmTPCButtonDefault = 1; /* Tablet PC buttons on by default */
 		}
-
-		/* check if touch was turned off in xorg.conf */
-		common->wcmTouch = xf86SetBoolOption(local->options, "Touch", common->wcmTouchDefault);
-
-		/* check if gesture was turned off in xorg.conf */
-		common->wcmGesture = xf86SetBoolOption(local->options, "Gesture", common->wcmGestureDefault);
 
 		if ( priv->flags & STYLUS_ID )
 		{
