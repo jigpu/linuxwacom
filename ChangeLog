@@ -1,3 +1,13 @@
+2009-12-22  Ping Cheng <pingc@wacom.com>
+	* Added max and resolution for local tool
+	* Use linuxwacom.fdi gathered from Ubuntu forum
+		- modified by Kory Prince and cyberfish
+		- submitted by Favux <favux.is@gmail.com>
+	* Merged Nicholas Hirsch's Intuos4 OLED Support
+		- Patch ID 2878608 at Tracker
+	* Fixed tablet rotate bug reported by Favux
+	* Label 0.8.5-8
+
 2009-12-15  Ping Cheng <pingc@wacom.com>
 	* Updated serial Tablet PCs support
 	* Added 5 new Bamboo tablets support

@@ -84,7 +84,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.46-pc0.7"
+#define DRIVER_VERSION "v1.46-pc0.8"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB Wacom tablet driver"
 #define DRIVER_LICENSE "GPL"
@@ -94,6 +94,11 @@ MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE(DRIVER_LICENSE);
 
 #define USB_VENDOR_ID_WACOM	0x056a
+
+/* defines to get/set USB message */
+#define USB_REQ_GET_REPORT	0x01
+#define USB_REQ_SET_REPORT	0x09
+#define WAC_HID_FEATURE_REPORT	0x03
 
 struct wacom {
 	dma_addr_t data_dma;
@@ -134,5 +139,10 @@ extern __u16 wacom_le16_to_cpu(unsigned char *data);
 extern __u16 wacom_be16_to_cpu(unsigned char *data);
 extern struct wacom_features * get_wacom_feature(const struct usb_device_id *id);
 extern const struct usb_device_id * get_device_table(void);
+extern int usb_get_report(struct usb_interface *intf, unsigned char type,
+	unsigned char id, void *buf, int size);
+extern int usb_set_report(struct usb_interface *intf, unsigned char type,
+	unsigned char id, void *buf, int size);
+extern int wacom_ioctl(struct usb_interface *intf, unsigned int code, void *buf);
 
 #endif

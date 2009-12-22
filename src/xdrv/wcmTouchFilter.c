@@ -38,7 +38,7 @@
 /* Defines for Tap Add-a-Finger to Click */
 #define WACOM_TAP_TIME_IN_MS		150
 
-extern void xf86WcmRotateCoordinates(LocalDevicePtr local, int x, int y);
+extern void xf86WcmRotateCoordinates(LocalDevicePtr local, int* x, int* y);
 extern void emitKeysym (DeviceIntPtr keydev, int keysym, int state);
 
 static void xf86WcmFingerScroll(WacomDevicePtr priv);
@@ -310,9 +310,9 @@ static void xf86WcmFingerScroll(WacomDevicePtr priv)
 	filterd.x[5] = dsLast[1].x;
 	filterd.y[5] = dsLast[1].y;
 
-	/* rotate the coordinates first */
+	/* scrolling has directions so rotation has to be considered first */
 	for (i=0; i<6; i++)
-		xf86WcmRotateCoordinates(priv->local, filterd.x[i], filterd.y[i]);
+		xf86WcmRotateCoordinates(priv->local, &filterd.x[i], &filterd.y[i]);
 
 	/* check vertical direction */
 	midPoint_old = (((double)filterd.x[4] + (double)filterd.x[5]) / 2.);

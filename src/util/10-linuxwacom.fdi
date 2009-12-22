@@ -1,18 +1,38 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- this is probably a bit imprecise -->
+
+<!-- Wacom:  tablets, tablet pc's, and touch screen laptops -->
 <deviceinfo version="0.2">
+  <!-- for all Wacom USB tablets -->
   <device>
-    <match key="info.category" contains="input">
-      <match key="info.product" contains_outof="Wacom">
+    <match key="input.originating_device" contains="if0">
+      <match key="info.product" contains="Wacom">
 	<merge key="input.x11_driver" type="string">wacom</merge>
 	<merge key="input.x11_options.Type" type="string">stylus</merge>
 	<append key="info.callouts.add" type="strlist">hal-setup-wacom</append>
 	<append key="wacom.types" type="strlist">eraser</append>
 	<append key="wacom.types" type="strlist">cursor</append>
 	<append key="wacom.types" type="strlist">pad</append>
-	<append key="wacom.types" type="strlist">touch</append>
+        <!-- for HP dv3-2250 multi-touch laptop -->
+        <match key="info.udi" contains="e2">
+          <merge key="input.x11_options.Type" type="string">touch</merge>
+        </match>
       </match>
     </match>
+  </device>
+  <!-- for most Wacom USB tablets with touch -->
+  <device>
+    <match key="input.originating_device" contains="if1">
+      <match key="info.product" contains="Wacom">
+        <merge key="input.x11_driver" type="string">wacom</merge>
+        <merge key="input.x11_options.Type" type="string">touch</merge>
+        <!-- for Bamboo Pen & Touch tablets -->
+	<append key="info.callouts.add" type="strlist">hal-setup-wacom</append>
+	<append key="wacom.types" type="strlist">pad</append>
+      </match>
+    </match>
+  </device>
+  <!-- for Wacom Serial tablets -->
+  <device>
     <match key="info.capabilities" contains="serial">
       <match key="@info.parent:pnp.id" contains_outof="WACf;FUJ02e5;FUJ02e7">
 	<append key="info.capabilities" type="strlist">input</append>
@@ -22,10 +42,15 @@
 	<merge key="input.device" type="copy_property">serial.device</merge>
 	<append key="info.callouts.add" type="strlist">hal-setup-wacom</append>
 	<append key="wacom.types" type="strlist">eraser</append>
-        <match key="@info.parent:pnp.id" contains_outof="WACf008;WACf009;WACf008A;WACf00B;WACf00C;WACf00D;WACf00E;WACf010;FUJ02e7">
-	  <!-- Serial tablets with touch capabilities -->
+	<append key="wacom.types" type="strlist">cursor</append>
+	<!-- Serial tablets with touch capabilities -->
+        <match key="@info.parent:pnp.id" contains_outof="WACf008;WACf009;WACf010;WACf008A;WACf00B;WACf00C;WACf00D;WACf00E;FUJ02e7">
 	  <append key="wacom.types" type="strlist">touch</append>
 	</match>
+        <!-- Serial tablets that operate at higher baud rate -->
+        <match key="@info.parent:pnp.id" contains_outof="WACf008">
+          <merge key="input.x11_options.BaudRate" type="string">38400</merge>
+        </match>
       </match>
     </match>
   </device>
@@ -43,6 +68,28 @@
       </match>
     </match>
   </device>
+  <!-- Wacom names "parser" -->
+  <device>
+    <match key="info.udi" contains_not="subdev_0">
+    <match key="info.udi" contains_not="subdev_1">
+    <match key="info.udi" contains_not="subdev_2">
+      <match key="input.x11_options.Type" contains="stylus">
+        <merge key="info.product" type="string">stylus</merge>
+      </match>
+      <match key="input.x11_options.Type" contains="eraser">
+        <merge key="info.product" type="string">eraser</merge>
+      </match>
+      <match key="input.x11_options.Type" contains="cursor">
+        <merge key="info.product" type="string">cursor</merge>
+      </match>
+      <match key="input.x11_options.Type" contains="pad">
+        <merge key="info.product" type="string">pad</merge>
+      </match>
+      <match key="input.x11_options.Type" contains="touch">
+        <merge key="info.product" type="string">touch</merge>
+      </match>
+    </match>
+    </match>
+    </match>
+  </device>
 </deviceinfo>
-
-

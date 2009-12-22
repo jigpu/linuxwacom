@@ -612,7 +612,7 @@ static void sendCommonEvents(LocalDevicePtr local, const WacomDeviceState* ds, i
 }
 
 /* rotate the raw coordinates */
-void xf86WcmRotateCoordinates(LocalDevicePtr local, int x, int y)	
+void xf86WcmRotateCoordinates(LocalDevicePtr local, int* x, int* y)	
 {
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;
 	WacomCommonPtr common = priv->common;
@@ -621,35 +621,20 @@ void xf86WcmRotateCoordinates(LocalDevicePtr local, int x, int y)
 	/* rotation mixes x and y up a bit */
 	if (common->wcmRotate == ROTATE_CW)
 	{
-		tmp_coord = x;
-		x = y;
-
-		if (!IsTouch(priv))
-			y = common->wcmMaxY - tmp_coord;
-		else
-			y = common->wcmMaxTouchY - tmp_coord;
+		tmp_coord = *x;
+		*x = *y;
+		*y = priv->maxY - tmp_coord;
 	}
 	else if (common->wcmRotate == ROTATE_CCW)
 	{
-		tmp_coord = y;
-		y = x;
-		if (!IsTouch(priv))
-			x = common->wcmMaxX - tmp_coord;
-		else
-			x = common->wcmMaxTouchX - tmp_coord;
+		tmp_coord = *y;
+		*y = *x;
+		*x = priv->maxX - tmp_coord;
 	}
 	else if (common->wcmRotate == ROTATE_HALF)
 	{
-		if (!IsTouch(priv))
-		{
-			x = common->wcmMaxX - x;
-			y = common->wcmMaxY - y;
-		}
-		else
-		{
-			x = common->wcmMaxTouchX - x;
-			y = common->wcmMaxTouchY - y;
-		}
+		*x = priv->maxX - *x;
+		*y = priv->maxY - *y;
 	}
 }
 
@@ -713,7 +698,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		x, y, z, is_button ? "true" : "false", buttons,
 		tx, ty, wheel, rot, throttle));
 
-	xf86WcmRotateCoordinates(local, x, y);
+	xf86WcmRotateCoordinates(local, &x, &y);
 
 	if (IsCursor(priv)) 
 	{
@@ -754,6 +739,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		priv->oldThrottle = throttle;
 		priv->oldButtons = 0;
 	}
+
 	if (!is_absolute)
 	{
 		x -= priv->oldX;

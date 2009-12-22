@@ -90,9 +90,10 @@
  * 2009-11-24 47-pc0.8.5-5 - Support hotplugging for serial ISDV4
  * 2009-12-08 47-pc0.8.5-6 - Add new serial ISDV4 devices
  * 2009-12-14 47-pc0.8.5-7 - Updated serial ISDV4 support
+ * 2009-12-21 47-pc0.8.5-8 - Added local max and resolution for tool
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-7 $";
+static const char identification[] = "$Identification: 47-0.8.5-8 $";
 
 /****************************************************************************/
 
@@ -320,11 +321,26 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 	WacomToolPtr toollist = common->wcmTool;
 	WacomToolAreaPtr arealist;
 
-	DBG(2, priv->debugLevel, ErrorF("Wacom \"%s\" "
-		"max X=%d max Y=%d resol X=%d resol Y=%d\n",
-		local->name, common->wcmMaxX, common->wcmMaxY,
-		common->wcmResolX, common->wcmResolY));
+	/* assign max and resolution here since we don't get them during
+	 * the configuration stage */
+	if (IsTouch(priv))
+	{
+		priv->maxX = common->wcmMaxTouchX;
+		priv->maxY = common->wcmMaxTouchY;
+		priv->resolX = common->wcmTouchResolX;
+		priv->resolY = common->wcmTouchResolY;
+	}
+	else
+	{
+		priv->maxX = common->wcmMaxX;
+		priv->maxY = common->wcmMaxY;
+		priv->resolX = common->wcmResolX;
+		priv->resolY = common->wcmResolY;
+	}
 
+	DBG(2, priv->debugLevel, ErrorF("xf86WcmRegisterX11Devices: "
+		"maxX=%d maxY=%d reslX=%d reslY=%d \n",
+		priv->maxX, priv->maxY, priv->resolX, priv->resolY));
 
 	for (; toollist; toollist=toollist->next)
 	{
@@ -332,19 +348,9 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		for (; arealist; arealist=arealist->next)
 		{
 			if (!arealist->bottomX)
-			{
-				if ( !IsTouch(priv) )
-					arealist->bottomX = common->wcmMaxX;
-				else
-					arealist->bottomX = common->wcmMaxTouchX;
-			}
+				arealist->bottomX = priv->maxX;
 			if (!arealist->bottomY)
-			{
-				if ( !IsTouch(priv) )
-					arealist->bottomY = common->wcmMaxY;
-				else
-					arealist->bottomY = common->wcmMaxTouchY;
-			}
+				arealist->bottomY = priv->maxY;
 		}
 	}
 

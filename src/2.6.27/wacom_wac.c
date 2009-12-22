@@ -28,7 +28,7 @@ static int wacom_penpartner_irq(struct wacom_wac *wacom, void *wcombo)
 				wacom_report_abs(wcombo, ABS_X, wacom_le16_to_cpu(&data[1]));
 				wacom_report_abs(wcombo, ABS_Y, wacom_le16_to_cpu(&data[3]));
 				wacom_report_abs(wcombo, ABS_PRESSURE, (signed char)data[6] + 127);
-				wacom_report_key(wcombo, BTN_TOUCH, ((signed char)data[6] > -127));
+				wacom_report_key(wcombo, BTN_TOUCH, ((signed char)data[6] -127));
 				wacom_report_key(wcombo, BTN_STYLUS, (data[5] & 0x40));
 			} else {
 				wacom_report_key(wcombo, wacom->tool[0], 0);
@@ -43,7 +43,7 @@ static int wacom_penpartner_irq(struct wacom_wac *wacom, void *wcombo)
 			wacom_report_abs(wcombo, ABS_X, wacom_le16_to_cpu(&data[1]));
 			wacom_report_abs(wcombo, ABS_Y, wacom_le16_to_cpu(&data[3]));
 			wacom_report_abs(wcombo, ABS_PRESSURE, (signed char)data[6] + 127);
-			wacom_report_key(wcombo, BTN_TOUCH, ((signed char)data[6] > -80) && !(data[5] & 0x20));
+			wacom_report_key(wcombo, BTN_TOUCH, ((signed char)data[6] -80) && !(data[5] & 0x20));
 			wacom_report_key(wcombo, BTN_STYLUS, (data[5] & 0x40));
 			break;
 		default:
@@ -67,9 +67,9 @@ static int wacom_pl_irq(struct wacom_wac *wacom, void *wcombo)
 
 	if (prox) {
 		wacom->id[0] = ERASER_DEVICE_ID;
-		pressure = (signed char)((data[7] << 1) | ((data[4] >> 2) & 1));
+		pressure = (signed char)((data[7] << 1) | ((data[4] >2) & 1));
 		if (wacom->features->pressure_max > 255)
-			pressure = (pressure << 1) | ((data[4] >> 6) & 1);
+			pressure = (pressure << 1) | ((data[4] >6) & 1);
 		pressure += (wacom->features->pressure_max + 1) / 2;
 
 		/*
@@ -241,7 +241,7 @@ static int wacom_graphire_irq(struct wacom_wac *wacom, void *wcombo)
 		/* in prox and not a pad data */
 		penData = 1;
 
-		switch ((data[1] >> 5) & 3) {
+		switch ((data[1] >5) & 3) {
 
 			case 0:	/* Pen */
 				wacom->tool[0] = BTN_TOOL_PEN;
@@ -317,7 +317,7 @@ static int wacom_graphire_irq(struct wacom_wac *wacom, void *wcombo)
 			wacom->id[1] = PAD_DEVICE_ID;
 			wacom_report_key(wcombo, BTN_0, (data[7] & 0x40));
 			wacom_report_key(wcombo, BTN_4, (data[7] & 0x80));
-			rw = ((data[7] & 0x18) >> 3) - ((data[7] & 0x20) >> 3);
+			rw = ((data[7] & 0x18) >3) - ((data[7] & 0x20) >3);
 			wacom_report_rel(wcombo, REL_WHEEL, rw);
 			wacom_report_key(wcombo, BTN_TOOL_FINGER, 0xf0);
 			wacom_report_abs(wcombo, ABS_MISC, wacom->id[1]);
@@ -388,9 +388,9 @@ static int wacom_intuos_inout(struct wacom_wac *wacom, void *wcombo)
 		/* serial number of the tool */
 		wacom->serial[idx] = ((data[3] & 0x0f) << 28) +
 			(data[4] << 20) + (data[5] << 12) +
-			(data[6] << 4) + (data[7] >> 4);
+			(data[6] << 4) + (data[7] >4);
 
-		wacom->id[idx] = (data[2] << 4) | (data[3] >> 4);
+		wacom->id[idx] = (data[2] << 4) | (data[3] >4);
 		switch (wacom->id[idx]) {
 			case 0x812: /* Inking pen */
 			case 0x801: /* Intuos3 Inking pen */
@@ -497,12 +497,12 @@ static void wacom_intuos_general(struct wacom_wac *wacom, void *wcombo)
 
 	/* general pen packet */
 	if ((data[1] & 0xb8) == 0xa0) {
-		t = (data[6] << 2) | ((data[7] >> 6) & 3);
+		t = (data[6] << 2) | ((data[7] >6) & 3);
 		if (wacom->features->type >= INTUOS4S && wacom->features->type <= INTUOS4L)
 			t = (t << 1) | (data[1] & 1);
 		wacom_report_abs(wcombo, ABS_PRESSURE, t);
 		wacom_report_abs(wcombo, ABS_TILT_X,
-				((data[7] << 1) & 0x7e) | (data[8] >> 7));
+				((data[7] << 1) & 0x7e) | (data[8] >7));
 		wacom_report_abs(wcombo, ABS_TILT_Y, data[8] & 0x7f);
 		wacom_report_key(wcombo, BTN_STYLUS, data[1] & 2);
 		wacom_report_key(wcombo, BTN_STYLUS2, data[1] & 4);
@@ -512,9 +512,9 @@ static void wacom_intuos_general(struct wacom_wac *wacom, void *wcombo)
 	/* airbrush second packet */
 	if ((data[1] & 0xbc) == 0xb4) {
 		wacom_report_abs(wcombo, ABS_WHEEL,
-				(data[6] << 2) | ((data[7] >> 6) & 3));
+				(data[6] << 2) | ((data[7] >6) & 3));
 		wacom_report_abs(wcombo, ABS_TILT_X,
-				((data[7] << 1) & 0x7e) | (data[8] >> 7));
+				((data[7] << 1) & 0x7e) | (data[8] >7));
 		wacom_report_abs(wcombo, ABS_TILT_Y, data[8] & 0x7f);
 	}
 	return;
@@ -616,13 +616,13 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
                  return 0;
 
 	if (wacom->features->type >= INTUOS3S) {
-		wacom_report_abs(wcombo, ABS_X, (data[2] << 9) | (data[3] << 1) | ((data[9] >> 1) & 1));
+		wacom_report_abs(wcombo, ABS_X, (data[2] << 9) | (data[3] << 1) | ((data[9] >1) & 1));
 		wacom_report_abs(wcombo, ABS_Y, (data[4] << 9) | (data[5] << 1) | (data[9] & 1));
-		wacom_report_abs(wcombo, ABS_DISTANCE, ((data[9] >> 2) & 0x3f));
+		wacom_report_abs(wcombo, ABS_DISTANCE, ((data[9] >2) & 0x3f));
 	} else {
 		wacom_report_abs(wcombo, ABS_X, wacom_be16_to_cpu(&data[2]));
 		wacom_report_abs(wcombo, ABS_Y, wacom_be16_to_cpu(&data[4]));
-		wacom_report_abs(wcombo, ABS_DISTANCE, ((data[9] >> 3) & 0x1f));
+		wacom_report_abs(wcombo, ABS_DISTANCE, ((data[9] >3) & 0x1f));
 	}
 
 	/* process general packets */
@@ -635,13 +635,13 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
 			/* Rotation packet */
 			if (wacom->features->type >= INTUOS3S) {
 				/* I3 marker pen rotation */
-				t = (data[6] << 3) | ((data[7] >> 5) & 7);
+				t = (data[6] << 3) | ((data[7] >5) & 7);
 				t = (data[7] & 0x20) ? ((t > 900) ? ((t-1) / 2 - 1350) :
 					((t-1) / 2 + 450)) : (450 - t / 2) ;
 				wacom_report_abs(wcombo, ABS_Z, t);
 			} else {
 				/* 4D mouse rotation packet */
-				t = (data[6] << 3) | ((data[7] >> 5) & 7);
+				t = (data[6] << 3) | ((data[7] >5) & 7);
 				wacom_report_abs(wcombo, ABS_RZ, (data[7] & 0x20) ?
 					((t - 1) / 2) : -t / 2);
 			}
@@ -654,7 +654,7 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
 
 			wacom_report_key(wcombo, BTN_SIDE,   data[8] & 0x20);
 			wacom_report_key(wcombo, BTN_EXTRA,  data[8] & 0x10);
-			t = (data[6] << 2) | ((data[7] >> 6) & 3);
+			t = (data[6] << 2) | ((data[7] >6) & 3);
 			wacom_report_abs(wcombo, ABS_THROTTLE, (data[8] & 0x08) ? -t : t);
 
 		} else if (wacom->tool[idx] == BTN_TOOL_MOUSE) {
@@ -663,13 +663,13 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
 				wacom_report_key(wcombo, BTN_LEFT,   data[6] & 0x01);
 				wacom_report_key(wcombo, BTN_MIDDLE, data[6] & 0x02);
 				wacom_report_key(wcombo, BTN_RIGHT,  data[6] & 0x04);
-				wacom_report_rel(wcombo, REL_WHEEL, ((data[7] & 0x80) >> 7)
-						 - ((data[7] & 0x40) >> 6));
+				wacom_report_rel(wcombo, REL_WHEEL, ((data[7] & 0x80) >7)
+						 - ((data[7] & 0x40) >6));
 				wacom_report_key(wcombo, BTN_SIDE,   data[6] & 0x08);
 				wacom_report_key(wcombo, BTN_EXTRA,  data[6] & 0x10);
 
 				wacom_report_abs(wcombo, ABS_TILT_X,
-					((data[7] << 1) & 0x7e) | (data[8] >> 7));
+					((data[7] << 1) & 0x7e) | (data[8] >7));
 				wacom_report_abs(wcombo, ABS_TILT_Y, data[8] & 0x7f);
 			} else {
 				/* 2D mouse packet */
@@ -677,7 +677,7 @@ static int wacom_intuos_irq(struct wacom_wac *wacom, void *wcombo)
 				wacom_report_key(wcombo, BTN_MIDDLE, data[8] & 0x08);
 				wacom_report_key(wcombo, BTN_RIGHT,  data[8] & 0x10);
 				wacom_report_rel(wcombo, REL_WHEEL, (data[8] & 0x01)
-						 - ((data[8] & 0x02) >> 1));
+						 - ((data[8] & 0x02) >1));
 
 				/* I3 2D mouse side buttons */
 				if (wacom->features->type >= INTUOS3S && wacom->features->type <= INTUOS3L) {
@@ -1116,6 +1116,10 @@ static struct usb_device_id wacom_ids[] = {
 	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0x9F) },
 	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xE2) },
 	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xE3) },
+	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xD1) },
+	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xD4) },
+	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xD2) },
+	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0xD3) },
 	{ USB_DEVICE(USB_VENDOR_ID_WACOM, 0x47) },
 	{ }
 };
@@ -1133,6 +1137,260 @@ struct wacom_features * get_wacom_feature(const struct usb_device_id *id)
         struct wacom_features *wf = &wacom_features[index];
 
         return wf;
+}
+
+#define WAC_LED_RETRIES 10
+#define ICON_TRANSFER_STOP 0
+#define ICON_TRANSFER_START 1
+static int icon_transfer_mode(struct usb_interface *intf, int start)
+{
+	int ret;
+	char buf[2];
+	int c = 0;
+
+	buf[0] = 0x21;
+	buf[1] = start;
+	do {
+		ret = usb_set_report(intf, WAC_HID_FEATURE_REPORT, 
+				     0x21, buf, 2);
+		c++;
+	} while ((ret == -ETIMEDOUT || ret == -EPIPE) && c < WAC_LED_RETRIES);
+
+	return 0;
+}
+
+static int set_led_mode(struct usb_interface *intf, int led_sel, int led_llv, 
+			int led_hlv, int oled_lum)
+{
+	int ret;
+	char buf[9];
+	int c;
+
+	c = 0;
+	ret = -1;
+
+	/* send LED config data */
+	buf[0] = (char)0x20;
+	buf[1] = (char)(led_sel);
+	buf[2] = (char)(led_llv);
+	buf[3] = (char)(led_hlv);
+	buf[4] = (char)(oled_lum);
+	buf[5] = (char)0;
+	buf[6] = (char)0;
+	buf[7] = (char)0;
+	buf[8] = (char)0;
+	do {
+		ret = usb_set_report(intf, WAC_HID_FEATURE_REPORT,0x20, buf, 9);
+	} while ((ret == -ETIMEDOUT || ret == -EPIPE) && c++ < WAC_LED_RETRIES);
+
+	return ret;
+}
+
+/* TODO: Call this when recognizing a button 0 button press to change the ring
+ * LED
+ */
+int set_scroll_wheel_led(struct usb_interface *intf, int num)
+{
+	return set_led_mode(intf, 0x04+num, 0x7f, 0x7f, 0x00);
+}
+
+static int wacom_set_i4_led(struct usb_interface *intf, char *img, int btn)
+{
+	char *temp_buf;
+	int ret;
+	int i;
+	int c;
+
+	if (icon_transfer_mode(intf, ICON_TRANSFER_START) < 0)
+		return -1;
+
+	/* send img in chunks */
+	temp_buf = kzalloc(259, GFP_KERNEL);
+	if (!temp_buf)
+		return -ENOMEM;
+	temp_buf[0] = 0x23;
+	temp_buf[1] = btn;
+	for (i=0; i<4; ++i) {
+		temp_buf[2] = i;
+		memcpy(&temp_buf[3], &img[256*i], 256);
+		c = 0;
+		do {
+			ret = usb_set_report(intf, WAC_HID_FEATURE_REPORT, 
+					     0x23, temp_buf, 259);
+			c++;
+		} while ((ret == -ETIMEDOUT || ret == -EPIPE) && 
+			 c < WAC_LED_RETRIES);
+		if (ret < 0) {
+			/* TODO: starting and stopping the transfer mode doesn't
+			 * seem to have an effect on the successfull transfer
+			 * of icon data. If it did, we would want to try to stop
+			 * the transfer here after failure.
+			 */
+			kfree(temp_buf);
+			return ret;
+		}
+	}
+	kfree(temp_buf);
+
+	if (icon_transfer_mode(intf, ICON_TRANSFER_STOP) < 0)
+		return -1;
+
+	return 0;
+}
+
+static void wacom_led_compress(char *buf, int rows, int cols)
+{
+	int row1, row2;
+	int i,j;
+	char compressed;
+	for (i=0; i<rows/2; ++i) {
+		row1 = i*2;
+		row2 = i*2 + 1;
+		for (j=0; j<cols; ++j) {
+			compressed = buf[row2*cols + j];
+			compressed <<= 4;
+			compressed |= buf[row1*cols + j];
+			buf[i*cols + j] = compressed;
+		}
+	}
+}
+
+static void wacom_led_flip_horizontally(char *buf, int rows, int cols)
+{
+	char temp;
+	int i,j;
+	for (i=0; i<rows; ++i) {
+		for (j=0; j<cols/2; ++j) {
+			temp = buf[i*cols + j];
+			buf[i*cols + j] = buf[((i+1)*cols - 1) - j];
+			buf[((i+1)*cols - 1) - j] = temp;
+		}
+	}
+}
+
+static void wacom_led_flip_vertically(char *buf, int rows, int cols)
+{
+	char temp;
+	int i,j;
+	for (i=0; i<cols; ++i) {
+		for (j=0; j<rows/2; ++j) {
+			temp = buf[j*cols + i];
+			buf[j*cols + i] = buf[(rows-j-1)*cols + i];
+			buf[(rows-j-1)*cols + i] = temp;
+
+			/* also flip the first 4 bits with the last 4 bits */
+			temp = buf[j*cols + i] & 0xf0;
+			buf[j*cols + i] <<= 4;
+			buf[j*cols + i] |= (temp >4) & 0x0f;
+
+			temp = buf[(rows-j-1)*cols + i] & 0xf0;
+			buf[(rows-j-1)*cols + i] <<= 4;
+			buf[(rows-j-1)*cols + i] |= (temp >4) & 0x0f;
+		}
+	}
+
+}
+
+static int wacom_ioctl_set_led(struct usb_interface *intf, char *img, int btn)
+{
+	int r;
+	struct wacom *wacom = usb_get_intfdata(intf);
+
+	/* check interface for LED support */
+	if (!(wacom->wacom_wac->features->type >= INTUOS4S &&
+	      wacom->wacom_wac->features->type <= INTUOS4L)) {
+		r = -1;
+		goto out;
+	}
+	if ((wacom->wacom_wac->features->type == INTUOS4S && btn >= 6) || 
+	     btn >= 8) {
+		r = -1;
+		goto out;
+	}
+
+	/* flip image as necessary */
+	switch (wacom->wacom_wac->features->type) {
+	case INTUOS4S:
+		printk(KERN_DEBUG "INTUOS4S: set_led not supported!\n");
+		/* TODO: to support this, I need to know the dimensions */
+		r = -1;
+		goto out;
+	case INTUOS4:
+	case INTUOS4L:
+		/* Compress buffer from 32*64 byte buffer into a 16*64
+		 * byte buffer.
+		 */
+		wacom_led_compress(img, 32, 64);
+		if (wacom->wacom_wac->config & (1<<WACOM_CONFIG_HANDEDNESS)) {
+			/* left handed */
+			wacom_led_flip_vertically(img, 16, 64);
+			btn = 7 - btn;
+		} else {
+			/* right handed */
+			wacom_led_flip_horizontally(img, 16, 64);
+		}
+		break;
+	default:
+		r = -1;
+		goto out;
+	}
+
+	/* set LED img */
+	r = wacom_set_i4_led(intf, img, btn);
+
+out:
+	return r;
+}
+
+static int wacom_ioctl_set_handedness(struct usb_interface *intf, int left_hand)
+{
+	int r;
+	struct wacom *wacom = usb_get_intfdata(intf);
+
+	/* check interface for LED support */
+	if (!(wacom->wacom_wac->features->type >= INTUOS4S &&
+	      wacom->wacom_wac->features->type <= INTUOS4L)) {
+		r = -1;
+		goto out;
+	}
+	
+	/* set handedness */
+	r = 0;
+	if (left_hand) {
+		__set_bit(WACOM_CONFIG_HANDEDNESS, 
+				(void *)&wacom->wacom_wac->config);
+	} else {
+		__clear_bit(WACOM_CONFIG_HANDEDNESS, 
+				(void *)&wacom->wacom_wac->config);
+	}
+
+out:
+	return r;
+}
+
+int wacom_ioctl(struct usb_interface *intf, unsigned int code, void *buf)
+{
+	int ret = 0;
+	struct wacom_led_mode *mode = (struct wacom_led_mode *)buf;
+	switch (code) {
+		case WACOM_SET_LED_IMG:
+			ret = wacom_ioctl_set_led(intf, 
+				((struct wacom_led_img *)buf)->buf, 
+				((struct wacom_led_img *)buf)->btn);
+			break;
+		case WACOM_SET_LEFT_HANDED:
+			ret = wacom_ioctl_set_handedness(intf,
+				((struct wacom_handedness *)buf)->left_handed);
+			break;
+		case WACOM_SET_LED_MODE:
+			ret = set_led_mode(intf, mode->led_sel, mode->led_llv,
+				mode->led_hlv, mode->oled_lum);
+			break;
+		default:
+			ret = -1;
+	}
+	
+	return ret;
 }
 
 MODULE_DEVICE_TABLE(usb, wacom_ids);

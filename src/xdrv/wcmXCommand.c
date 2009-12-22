@@ -259,7 +259,7 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		break;
 	    case XWACOM_PARAM_PRESSCURVE:
 	    {
-		if ( !IsCursor(priv) && !IsPad (priv) && !IsTouch (priv)) 
+		if (IsStylus(priv) || IsEraser(priv)) 
 		{
 			char chBuf[64];
 			int x0 = (value >> 24) & 0xFF;
@@ -324,16 +324,8 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 	    case XWACOM_PARAM_XYDEFAULT:
 		xf86WcmSetParam (local, XWACOM_PARAM_TOPX, 0);
 		xf86WcmSetParam (local, XWACOM_PARAM_TOPY, 0);
-		if ( !IsTouch(priv) )
-		{
-			xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, common->wcmMaxX);
-			xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, common->wcmMaxY);
-		}
-		else
-		{
-			xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, common->wcmMaxTouchX);
-			xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, common->wcmMaxTouchY);
-		}
+		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, priv->maxX);
+		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, priv->maxY);
 		break;
 	    case XWACOM_PARAM_MMT:
 		if ((value != 0) && (value != 1)) 
@@ -794,7 +786,7 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 	    case XWACOM_PARAM_RAWSAMPLE:
 		return common->wcmRawSample;
 	    case XWACOM_PARAM_PRESSCURVE:
-		if (!IsCursor (priv) && !IsPad (priv) && !IsTouch (priv))
+		if (IsStylus (priv) || IsEraser (priv))
 			return (priv->nPressCtrl [0] << 24) |
 			       (priv->nPressCtrl [1] << 16) |
 			       (priv->nPressCtrl [2] << 8) |
@@ -966,15 +958,9 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	case XWACOM_PARAM_TOPY:
 		return 0;
 	case XWACOM_PARAM_BOTTOMX:
-		if ( !IsTouch(priv) )
-			return common->wcmMaxX;
-		else
-			return common->wcmMaxTouchX;
+		return priv->maxX;
 	case XWACOM_PARAM_BOTTOMY:
-		if ( !IsTouch(priv) )
-			return common->wcmMaxY;		
-		else
-			return common->wcmMaxTouchY;
+		return priv->maxY;		
 	case XWACOM_PARAM_BUTTON1:
 	case XWACOM_PARAM_BUTTON2:
 	case XWACOM_PARAM_BUTTON3:
@@ -1018,7 +1004,7 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	case XWACOM_PARAM_GESTURE:
 		return common->wcmGestureDefault;
 	case XWACOM_PARAM_PRESSCURVE:
-		if (!IsCursor (priv) && !IsPad (priv) && !IsTouch (priv))
+		if (IsStylus (priv) || IsEraser (priv))
 			return (0 << 24) | (0 << 16) | (100 << 8) | 100;
 		return -1;
 	case XWACOM_PARAM_SUPPRESS:

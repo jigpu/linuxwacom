@@ -112,6 +112,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->topY = 0;             /* Y top */
 	priv->bottomX = 0;          /* X bottom */
 	priv->bottomY = 0;          /* Y bottom */
+	priv->resolX = 0;            /* X resolution */
+	priv->resolY = 0;            /* Y resolution */
 	priv->sizeX = 0;	    /* active X size */
 	priv->sizeY = 0;	    /* active Y size */
 	priv->factorX = 0.0;        /* X factor */
@@ -726,7 +728,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	 * Slightly raised curve might be 0,5,95,100
 	 */
 	s = xf86FindOptionValue(local->options, "PressCurve");
-	if (s && !IsCursor(priv) && !IsTouch(priv)) 
+	if (s && (IsStylus(priv) || IsEraser(priv))) 
 	{
 		int a,b,c,d;
 		if ((sscanf(s,"%d,%d,%d,%d",&a,&b,&c,&d) != 4) ||
