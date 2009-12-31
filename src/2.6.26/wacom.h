@@ -87,7 +87,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.49-pc-4"
+#define DRIVER_VERSION "v1.49-pc-5"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB Wacom tablet driver"
 #define DRIVER_LICENSE "GPL"
@@ -136,6 +136,7 @@ extern void input_dev_i4s(struct input_dev *input_dev, struct wacom_wac *wacom_w
 extern void input_dev_i4(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
 extern void input_dev_pl(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
 extern void input_dev_pt(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
+extern void input_dev_bpt(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
 extern void input_dev_mo(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
 extern void input_dev_bee(struct input_dev *input_dev, struct wacom_wac *wacom_wac);
 extern void input_dev_tpc(struct input_dev *input_dev, struct wacom_wac *wacom_wac);

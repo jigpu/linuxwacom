@@ -415,6 +415,8 @@ struct _WacomCommonRec
 	int wcmTPCButtonDefault;       /* Tablet PC button default */
 	int wcmTouchDefault;	       /* default touch to disable when not supported */
 	int wcmGestureMode;	       /* data is in Gesture Mode? */
+	int wcmTouchpadMode;           /* in touchpad mode? */
+	WacomDeviceState wcmTouchpadState; /* inital state when in touchpad mode */
 	WacomDeviceState wcmGestureState[MAX_FINGERS]; /* inital state when in gesture mode */
 	int wcmGesture;	     	       /* disable/enable touch gesture */
 	int wcmGestureDefault;         /* default touch gesture to disable when not supported */

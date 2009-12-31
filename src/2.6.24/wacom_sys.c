@@ -76,8 +76,14 @@ static struct input_dev * get_input_dev(struct wacom_combo *wcombo)
 static void wacom_sys_irq(struct urb *urb)
 {
 	struct wacom *wacom = urb->context;
-	struct wacom_combo wcombo;
+	struct wacom_combo *wcombo;
 	int retval;
+
+	wcombo = kzalloc(sizeof(struct wacom_combo), GFP_ATOMIC);
+	if (!wcombo) {
+		dbg("could not allocate memory in wacom_sys_irq");
+		return;
+	}
 
 	switch (urb->status) {
 	case 0:
@@ -88,23 +94,31 @@ static void wacom_sys_irq(struct urb *urb)
 	case -ESHUTDOWN:
 		/* this urb is terminated, clean up */
 		dbg("%s - urb shutting down with status: %d", __FUNCTION__, urb->status);
+		kfree(wcombo);
 		return;
+
+	case -EOVERFLOW:
+		dbg("%s - urb overflow detected with size: %d", __func__, urb->actual_length);
+		goto exit;
+
 	default:
 		dbg("%s - nonzero urb status received: %d", __FUNCTION__, urb->status);
 		goto exit;
 	}
 
-	wcombo.wacom = wacom;
-	wcombo.urb = urb;
+	wcombo->wacom = wacom;
+	wcombo->urb = urb;
 
-	if (wacom_wac_irq(wacom->wacom_wac, (void *)&wcombo))
-		input_sync(get_input_dev(&wcombo));
+	if (wacom_wac_irq(wacom->wacom_wac, (void *)wcombo))
+		input_sync(get_input_dev(wcombo));
 
  exit:
 	retval = usb_submit_urb (urb, GFP_ATOMIC);
 	if (retval)
 		err ("%s - usb_submit_urb failed with result %d",
 		     __FUNCTION__, retval);
+
+	kfree(wcombo);
 }
 
 void wacom_report_key(void *wcombo, unsigned int key_type, int key_data)
@@ -167,6 +181,20 @@ static void wacom_close(struct input_dev *dev)
 	struct wacom *wacom = input_get_drvdata(dev);
 
 	usb_kill_urb(wacom->irq);
+}
+
+void input_dev_bpt(struct input_dev *input_dev, struct wacom_wac *wacom_wac)
+{
+	if (wacom_wac->features->device_type == BTN_TOOL_DOUBLETAP) {
+		input_set_abs_params(input_dev, ABS_RX, 0, wacom_wac->features->x_phy, 0, 0);
+		input_set_abs_params(input_dev, ABS_RY, 0, wacom_wac->features->y_phy, 0, 0);
+		input_dev->keybit[BIT_WORD(BTN_DIGI)] |= BIT_MASK(BTN_TOOL_DOUBLETAP);
+		input_dev->keybit[BIT_WORD(BTN_DIGI)] |= BIT_MASK(BTN_TOOL_TRIPLETAP);
+		input_dev->keybit[BIT_WORD(BTN_MISC)] |= BIT_MASK(BTN_2) |
+							 BIT_MASK(BTN_3) |
+							 BIT_MASK(BTN_BACK) |
+							 BIT_MASK(BTN_FORWARD);
+	}
 }
 
 void input_dev_mo(struct input_dev *input_dev, struct wacom_wac *wacom_wac)
@@ -335,17 +363,28 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							features->pktlen = WACOM_PKGLEN_TPC2FG;
 							features->device_type = BTN_TOOL_TRIPLETAP;
 						}
-						features->x_max =
-							wacom_le16_to_cpu(&report[i + 3]);
-						features->x_phy =
-							wacom_le16_to_cpu(&report[i + 6]);
-						features->unit = report[i + 9];
-						features->unitExpo = report[i + 11];
-						i += 12;
+						if (features->type == BAMBOO_PT) {
+							/* need to reset back */
+							features->pktlen = WACOM_PKGLEN_BBTOUCH;
+							features->x_max =
+								wacom_le16_to_cpu(&report[i + 5]);
+							features->x_phy =
+								wacom_le16_to_cpu(&report[i + 8]);
+							i += 15;
+						} else {
+							features->x_max =
+								wacom_le16_to_cpu(&report[i + 3]);
+							features->x_phy =
+								wacom_le16_to_cpu(&report[i + 6]);
+							features->unit = report[i + 9];
+							features->unitExpo = report[i + 11];
+							i += 12;
+						}
 					} else if (pen) {
 						/* penabled only accepts exact bytes of data */
-						if (features->type == TABLETPC2FG)
-							features->pktlen = WACOM_PKGLEN_PENABLED;
+						if ((features->type == TABLETPC2FG)||
+								(features->type == BAMBOO_PT))
+							features->pktlen = WACOM_PKGLEN_GRAPHIRE;
 						features->device_type = BTN_TOOL_PEN;
 						features->x_max = 
 							(wacom_le16_to_cpu(&report[i+3]));
@@ -373,6 +412,12 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 							features->y_phy =
 								wacom_le16_to_cpu(&report[i + 6]);
 							i += 7;
+						} else if (features->type == BAMBOO_PT) {
+							features->y_max =
+								wacom_le16_to_cpu(&report[i + 3]);
+							features->y_phy =
+								wacom_le16_to_cpu(&report[i + 6]);
+							i += 12;
 						} else {
 							features->y_max =
 								features->x_max;
@@ -383,7 +428,7 @@ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hi
 					} else if (pen) {
 						/* penabled only accepts exact bytes of data */
 						if (features->type == TABLETPC2FG)
-							features->pktlen = WACOM_PKGLEN_PENABLED;
+							features->pktlen = WACOM_PKGLEN_GRAPHIRE;
 						features->device_type = BTN_TOOL_PEN;
 						features->y_max = (wacom_le16_to_cpu(&report[i+3]));
 						i += 4;
@@ -425,12 +470,14 @@ static int wacom_reset_report(struct usb_interface *intf, struct wacom_features 
 {
 	char rep_data[4], limit = 0, report_id = 2;
 	int error = -ENOMEM;
+
 	/*
-	 * Ask to report tablet data if it is 2FGT or not a Tablet PC.
+	 * Ask to report tablet data if it is a 2FGT Tablet PC 
+	 * OR not a Tablet PC.
 	 * Repeat 3 times since on some systems the first 2 may fail.
 	 */
-
-	if (features->device_type == BTN_TOOL_TRIPLETAP) {
+	if ((features->device_type == BTN_TOOL_TRIPLETAP) &&
+			(features->type == TABLETPC2FG)) {
 		do {
 			rep_data[0] = 3;
 			rep_data[1] = 4;
@@ -465,10 +512,11 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
 	struct hid_descriptor *hid_desc;
 
 	/* default device to penabled */
-	features->device_type = BTN_TOOL_PEN;	
+	features->device_type = BTN_TOOL_PEN;
 
-	/* only Tablet PCs need to retrieve the info */
-	if ((features->type != TABLETPC) && (features->type != TABLETPC2FG))
+	/* only Tablet PCs and devices with touch need to retrieve the info */
+	if ((features->type != TABLETPC) && (features->type != TABLETPC2FG)
+			&& (features->type != BAMBOO_PT))
 		goto out;
 		
 	if (usb_get_extra_descriptor(interface, HID_DEVICET_HID, &hid_desc)) {

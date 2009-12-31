@@ -91,9 +91,10 @@
  * 2009-12-08 47-pc0.8.5-6 - Add new serial ISDV4 devices
  * 2009-12-14 47-pc0.8.5-7 - Updated serial ISDV4 support
  * 2009-12-21 47-pc0.8.5-8 - Added local max and resolution for tool
+ * 2009-12-29 47-pc0.8.5-9 - Merged support for Bamboo P&T from Ayuthia
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-8 $";
+static const char identification[] = "$Identification: 47-0.8.5-9 $";
 
 /****************************************************************************/
 

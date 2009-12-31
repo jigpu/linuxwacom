@@ -826,7 +826,7 @@ static int usbChooseChannel(WacomCommonPtr common, int serial)
 static void usbParseEvent(LocalDevicePtr local, 
 		const struct input_event* event)
 {
-	int channel;
+	int channel = -1;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 
@@ -886,7 +886,7 @@ static void usbParseEvent(LocalDevicePtr local,
 	}
 
 	/* ignore events without information */
-	if (common->wcmEventCnt <= 2) 
+	if (common->wcmEventCnt <= 2 && common->wcmLastToolSerial) 
 	{
 		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty event for serial %d\n", 
 			local->name, common->wcmLastToolSerial));

@@ -1920,6 +1920,13 @@ proc updateModelInfo { } {
 	set numPadButtons($i) 4
 	set numPadRings($i) 1
    }
+
+    # Bamboo Pen and Touch
+    for { set i 208 } { $i <= 212 } { incr i 1 } {
+        set hasPad($i) 1
+        set numPadButtons($i) 4
+    }
+
     # I3
     set numPadButtons(176) 4
     set numPadStrips(176) 1
