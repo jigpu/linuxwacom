@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2007-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
  * 2009-03-16 0.4 - Added leftOF for TwinView
  * 2009-04-21 0.5 - Added set serial option
  * 2009-09-31 0.6 - Added dual touch
+ * 2010-02-09 0.7 - Added gesture options
  */
 
 
@@ -375,6 +376,33 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 				xf86ReplaceStrOption(local->options, "Gesture", "on");
 			else
 				xf86ReplaceStrOption(local->options, "Gesture", "off");
+		}
+		break;
+	    case XWACOM_PARAM_ZOOMDISTANCE:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmZoomDistance != value)
+		{
+			common->wcmZoomDistance = value;
+			xf86ReplaceIntOption(local->options, "ZoomDistance", value);
+		}
+		break;
+	    case XWACOM_PARAM_SCROLLDISTANCE:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmScrollDistance != value)
+		{
+			common->wcmScrollDistance = value;
+			xf86ReplaceIntOption(local->options, "ScrollDistance", value);
+		}
+		break;
+	    case XWACOM_PARAM_TAPTIME:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmTapTime != value)
+		{
+			common->wcmTapTime = value;
+			xf86ReplaceIntOption(local->options, "TapTime", value);
 		}
 		break;
 	    case XWACOM_PARAM_CAPACITY:
@@ -819,6 +847,12 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return common->wcmGesture;
 	    case XWACOM_PARAM_CAPACITY:
 		return common->wcmCapacity;
+	    case XWACOM_PARAM_ZOOMDISTANCE:
+		return common->wcmZoomDistance;
+	    case XWACOM_PARAM_SCROLLDISTANCE:
+		return common->wcmScrollDistance;
+	    case XWACOM_PARAM_TAPTIME:
+		return common->wcmTapTime;
 	    case XWACOM_PARAM_CURSORPROX:
 		if (IsCursor (priv))
 			return common->wcmCursorProxoutDist;
@@ -1003,6 +1037,12 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 		return common->wcmCapacityDefault;
 	case XWACOM_PARAM_GESTURE:
 		return common->wcmGestureDefault;
+	case XWACOM_PARAM_ZOOMDISTANCE:
+		return common->wcmZoomDistanceDefault;
+	case XWACOM_PARAM_SCROLLDISTANCE:
+		return common->wcmScrollDistanceDefault;
+	case XWACOM_PARAM_TAPTIME:
+		return common->wcmTapTimeDefault;
 	case XWACOM_PARAM_PRESSCURVE:
 		if (IsStylus (priv) || IsEraser (priv))
 			return (0 << 24) | (0 << 16) | (100 << 8) | 100;
@@ -1044,7 +1084,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 			AxisInfoPtr a;
 
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmQueryControl: dev %s query 0x%x at %d\n",
+				"xf86WcmDevChangeControl: dev %s query 0x%x at %d\n",
 				local->dev->name, r [0], priv->naxes));
 			/* Since X11 doesn't provide any sane protocol for querying
 			 * device parameters, we have to do a dirty trick here:
@@ -1065,7 +1105,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 		case 2:
 		{
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmChangeControl: dev %s set 0x%x to 0x%x\n",
+				"xf86WcmDevChangeControl: dev %s set 0x%x to 0x%x\n",
 				local->dev->name, r [0], r [1]));
 			if (r [0] >= XWACOM_PARAM_BUTTON1 && r[0] <= XWACOM_PARAM_STRIPRDN)
 				rc = xf86WcmSetButtonParam (local, r [0], r[1]);
@@ -1078,7 +1118,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 			AxisInfoPtr a;
 
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmQueryControl: dev %s query 0x%x at %d\n",
+				"xf86WcmDevChangeControl: dev %s query 0x%x at %d\n",
 				local->dev->name, r [0], priv->naxes));
 			/* Since X11 doesn't provide any sane protocol for querying
 			 * device parameters, we have to do a dirty trick here:

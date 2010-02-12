@@ -502,6 +502,7 @@ static int CursesRun(Display* pDisp, XDeviceInfo* pDevInfo, FORMATTYPE fmt)
 	nFocusRow = nRow++;
 	nButtonRow = nRow++;
 	nKeyRow = nRow++;
+	nRow++; /* Add extra row for up to 10 buttons */
 
 	wacscrn_output(nProxRow,  0,"Proximity:");
 	wacscrn_output(nFocusRow, 0,"    Focus:");
@@ -617,13 +618,18 @@ static int CursesRun(Display* pDisp, XDeviceInfo* pDevInfo, FORMATTYPE fmt)
 				(pAny->type == gnInputEvent[INPUTEVENT_BTN_RELEASE]))
 		{
 			XDeviceButtonEvent* pBtn = (XDeviceButtonEvent*)pAny;
+			int nButtonDisplayRow = nButtonRow;
 			bDown = (pAny->type == gnInputEvent[INPUTEVENT_BTN_PRESS]);
 			nBtn = pBtn->button;
-			if ((nBtn < 1) || (nBtn > 5)) nBtn=6;
-			snprintf(chBuf,sizeof(chBuf),"%d-%s",pBtn->button,
+			if ((nBtn < 1) || (nBtn > 10)) nBtn=11;
+			snprintf(chBuf,sizeof(chBuf),"%02d-%s",pBtn->button,
 					bDown ? "DOWN" : "UP  ");
 			if (bDown) wacscrn_standout();
-			wacscrn_output(nButtonRow,12 + (nBtn-1) * 10,chBuf);
+			if (nBtn > 7) {
+				nBtn -= 7;
+				nButtonDisplayRow++;
+			}
+			wacscrn_output(nButtonDisplayRow,12 + (nBtn-1) * 10,chBuf);
 			if (bDown) wacscrn_normal();
 		}
 		else if ((pAny->type == gnInputEvent[INPUTEVENT_KEY_PRESS]) ||
@@ -633,7 +639,7 @@ static int CursesRun(Display* pDisp, XDeviceInfo* pDevInfo, FORMATTYPE fmt)
 			bDown = (pAny->type == gnInputEvent[INPUTEVENT_KEY_PRESS]);
 			nBtn = pKey->keycode - 7; /* first key is always 8 */
 			if ((nBtn < 1) || (nBtn > 5)) nBtn=6;
-			snprintf(chBuf,sizeof(chBuf),"%d-%s",pKey->keycode - 7,
+			snprintf(chBuf,sizeof(chBuf),"02%d-%s",pKey->keycode - 7,
 					bDown ? "DOWN" : "UP  ");
 			if (bDown) wacscrn_standout();
 			wacscrn_output(nKeyRow,12 + (nBtn-1) * 10,chBuf);

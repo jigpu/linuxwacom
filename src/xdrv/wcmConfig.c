@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2009 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -200,6 +200,13 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmGestureMode = 0;        /* touch is not in Gesture mode */
 	common->wcmGesture = 0;            /* touch Gesture is disabled */
 	common->wcmGestureDefault = 0; 	   /* default to disable when touch Gesture isn't supported */
+	common->wcmZoomDistance = 50;	       /* minimum distance for a zoom touch gesture */
+	common->wcmZoomDistanceDefault = 50;   /* default minimum distance for a zoom touch gesture */
+	common->wcmScrollDirection = 0;	       /* scroll vertical or horizontal */
+	common->wcmScrollDistance = 20;	       /* minimum motion before sending a scroll gesture */
+	common->wcmScrollDistanceDefault = 20; /* default minimum motion before sending a scroll gesture */
+	common->wcmTapTime = 250;	   /* minimum time between taps for a right click */
+	common->wcmTapTimeDefault = 250;   /* default minimum time between taps for a right click */
 	common->wcmCapacity = -1;          /* Capacity is disabled */
 	common->wcmCapacityDefault = -1;   /* default to -1 when capacity isn't supported */
 					   /* 3 when capacity is supported */
@@ -413,7 +420,7 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 		!strcmp(privMatch->common->wcmDevice, common->wcmDevice))
 	{
 		DBG(2, priv->debugLevel, ErrorF(
-			"xf86WcmInit wacom port share between"
+			"xf86WcmMatchDevice: wacom port share between"
 			" %s and %s\n", pLocal->name, pMatch->name));
 		type = xf86FindOptionValue(pMatch->options, "Type");
 		if ( type && (strstr(type, "eraser")) )
@@ -426,6 +433,43 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 				privMatch->common->wcmEraserID=pLocal->name;
 			}
 		}
+
+		/* If pad was sent in first on a touch device
+		 * then it got all of the configuration data and
+		 * did not put it in the correct places.
+		 * Make sure the correct common touch variables are initialized.
+		 */
+		if ( (privMatch->common->tablet_id >= 0xd0 && privMatch->common->tablet_id <= 0xd3) ) {
+			type = xf86FindOptionValue(pLocal->options, "Type");
+			if ( type && strstr(type, "touch") ) {
+				type = xf86FindOptionValue(pMatch->options, "Type");
+				if ( type && strstr(type, "pad") ) {
+					DBG(2, priv->debugLevel, ErrorF(
+						"xf86WcmMatchDevice: wacom detected pad initialized before touch\n"));
+
+					privMatch->common->wcmCapacityDefault = 3;
+					privMatch->common->wcmMaxTouchX = privMatch->common->wcmMaxX;
+					privMatch->common->wcmMaxX = 0;
+					privMatch->common->wcmMaxTouchY = privMatch->common->wcmMaxY;
+					privMatch->common->wcmMaxY = 0;
+					privMatch->common->wcmTouchResolX = privMatch->common->wcmMaxStripX;
+					privMatch->common->wcmMaxStripX = 0;
+					privMatch->common->wcmTouchResolY = privMatch->common->wcmMaxStripY;
+					privMatch->common->wcmMaxStripY = 0;
+					if (privMatch->common->wcmMaxTouchX && privMatch->common->wcmTouchResolX) {
+						privMatch->common->wcmTouchResolX =
+							(int)(((double)privMatch->common->wcmTouchResolX)
+								/ ((double)privMatch->common->wcmMaxTouchX) + 0.5);
+					}
+					if (privMatch->common->wcmMaxTouchY && privMatch->common->wcmTouchResolY) {
+						privMatch->common->wcmTouchResolY =
+							(int)(((double)privMatch->common->wcmTouchResolY)
+								 / ((double)privMatch->common->wcmMaxTouchY) + 0.5);
+					}
+				}
+			}
+		}
+
 		xfree(common);
 		common = priv->common = privMatch->common;
 
@@ -466,10 +510,29 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local, unsigned long* keys
 	/* Touch gesture applies to the whole tablet */
 	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
 		common->wcmGestureDefault);
+
+	/* Set gesture size and timeouts for larger USB 2FGT tablets */
+	if ((common->wcmDevCls == &gWacomUSBDevice) &&
+	    (common->tablet_id == 0xE2 || common->tablet_id == 0xE3)) {
+		common->wcmZoomDistanceDefault = 30;
+		common->wcmScrollDistanceDefault = 30;
+		common->wcmTapTimeDefault = 250;
+	}
+
+	/* Set minimum distance allowed for zoom touch gesture */
+	common->wcmZoomDistance = xf86SetIntOption(local->options,
+		"ZoomDistance", common->wcmZoomDistanceDefault);
+
+	/* Set minimum motion required before sending on a scroll gesture */
+	common->wcmScrollDistance = xf86SetIntOption(local->options,
+		"ScrollDistance", common->wcmScrollDistanceDefault);
+
+	/* Set minimum time between events for right click touch gesture */
+	common->wcmTapTime = xf86SetIntOption(local->options,
+		"TapTime", common->wcmTapTimeDefault);
 }
 
 /* xf86WcmInit - called when the module subsection is found in XF86Config */
-
 static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
 	LocalDevicePtr local = NULL;
@@ -623,18 +686,23 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		priv->flags |= ABSOLUTE_FLAG;
 	else if (s && (xf86NameCmp(s, "relative") == 0))
 		priv->flags &= ~ABSOLUTE_FLAG;
-	else if (s)
+	else
 	{
-		xf86Msg(X_ERROR, "%s: invalid Mode (should be absolute or "
-			"relative). Using default.\n", dev->identifier);
+		if (s)
+			xf86Msg(X_ERROR, "%s: invalid Mode (should be absolute or "
+				"relative). Using default.\n", dev->identifier);
 
-		/* stylus/eraser defaults to absolute mode 
-		 * cursor defaults to relative mode 
-		 */
-		if (IsCursor(priv)) 
+		/* If Mode not specified or is invalid then rely on
+		 * Type specific defaults from initialization.
+		 *
+		 * If Mode default is hardware specific then handle here:
+		 *
+		 * touch Types are initialized to Absolute.
+		 * Bamboo P&T touch pads need to change default to Relative.
+ 		 */
+		if (IsTouch(priv) &&
+		    (common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3))
 			priv->flags &= ~ABSOLUTE_FLAG;
-		else 
-			priv->flags |= ABSOLUTE_FLAG;
 	}
 
 	/* Pad is always in relative mode when it's a core device.

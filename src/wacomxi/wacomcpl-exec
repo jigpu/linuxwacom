@@ -110,20 +110,20 @@ proc updateXinitrc {device option value} {
 	if { [ file exists ~/.xsession ] } {
 	    file copy -force ~/.xsession ~/.xsession.bak
 	    file copy -force ~/.xsession /tmp/xsession1
-	    exec sed -e "/xsetwacom set $device $option /d" /tmp/xsession1 > /tmp/wacom
-	    exec echo "xsetwacom set $device $option \"$value\"" > ~/.xsession
+	    exec sed -e "/xsetwacom set \"$device\" $option /d" /tmp/xsession1 > /tmp/wacom
+	    exec echo "xsetwacom set \"$device\" $option \"$value\"" > ~/.xsession
 	    exec cat /tmp/wacom >> ~/.xsession
 	    file delete -force /tmp/wacom /tmp/xsession1
 	} else {
-	    exec echo "xsetwacom set $device $option \"$value\"" > ~/.xinitrc
+	    exec echo "xsetwacom set \"$device\" $option \"$value\"" > ~/.xinitrc
 	    exec echo "# run the primary system script" >> ~/.xinitrc
 	    exec echo ". /etc/X11/xinit/xinitrc" >> ~/.xinitrc
 	}
     } else {
 	file copy -force ~/.xinitrc ~/.xinitrc.bak
 	file copy -force ~/.xinitrc /tmp/xinitrc1
-	exec sed -e "/xsetwacom set $device $option /d" /tmp/xinitrc1 > /tmp/wacom
-	exec echo "xsetwacom set $device $option \"$value\"" > ~/.xinitrc
+	exec sed -e "/xsetwacom set \"$device\" $option /d" /tmp/xinitrc1 > /tmp/wacom
+	exec echo "xsetwacom set \"$device\" $option \"$value\"" > ~/.xinitrc
 	exec cat /tmp/wacom >> ~/.xinitrc
 	file delete -force /tmp/wacom /tmp/xinitrc1
     }
@@ -134,9 +134,9 @@ proc updateXinitrc {device option value} {
 	    set index [ expr $index+1 ]
 	    set v$i [ lindex $value $index ]
 	}
-	exec xsetwacom set $device $option $v1 $v2 $v3 $v4
+	exec xsetwacom set "$device" $option $v1 $v2 $v3 $v4
     } else {
-	exec xsetwacom set $device $option $value
+	exec xsetwacom set "$device" $option $value
     }
 }
 
@@ -185,15 +185,15 @@ proc verifycalibResults { } {
 }
 
 proc calibrationSequence {which xDev yDev} {
-    global device calibResults screenY_org screenX_org
+    global device calibResults screenY_org screenX_org orig_device
     global workingTags screenTags size numScreens
     global swapThresh screenWidth screenHeight getOptionDefault
     global getDeviceModel screenXBottom screenYBottom
     global calibX_org calibY_org calibX_botm calibY_botm
     global xDevMin xDevMax yDevMin yDevMax
-    global calibration_sequence_only orig_device
+    global calibration_sequence_only
 
-    set scaling [exec xsetwacom get $device xscaling]
+    set scaling [exec xsetwacom get "$device" xscaling]
     if { $scaling == 1 } {
 	set xNewDev [expr (($xDev - $calibX_org) * $getOptionDefault($device,BottomX))]
 	set xDev [expr ($xNewDev / ($calibX_botm - $calibX_org))]
@@ -206,13 +206,13 @@ proc calibrationSequence {which xDev yDev} {
 
     if { $which == 0 } {
 	.topleft.m configure -background "#505075"
-	wacomxi::bindevent .topleft.m $orig_device <ButtonRelease> ""
+	wacomxi::bindevent .topleft.m "$orig_device" <ButtonRelease> ""
 	.bottomright.m configure -background "#df94df"
-	wacomxi::bindevent .bottomright.m $orig_device <ButtonRelease> \
+	wacomxi::bindevent .bottomright.m "$orig_device" <ButtonRelease> \
 		{calibrationSequence 1 %0 %1}
     } elseif { $which == 1 } {
 	.bottomright.m configure -background "#505075"
-	wacomxi::bindevent .bottomright.m $orig_device <ButtonRelease> ""	
+	wacomxi::bindevent .bottomright.m "$orig_device" <ButtonRelease> ""	
 	set borderOffset [expr ($size / 2 )]
 
 	# A direction verification of the click
@@ -352,9 +352,9 @@ proc startCalibration {} {
     #
     # Start calib sequence
     catch {unset calibResults}
-    exec xsetwacom set $device xydefault
+    exec xsetwacom set "$device" xydefault
     .topleft.m configure -background "#df94df"
-    wacomxi::bindevent .topleft.m $orig_device <ButtonRelease> \
+    wacomxi::bindevent .topleft.m "$orig_device" <ButtonRelease> \
 		{calibrationSequence 0 %0 %1}
     helpWindow "Help Window " \
 		"\n\nPlease click on the center of \n\
@@ -452,8 +452,8 @@ proc getDeviceOptionProc { dev i } {
     global numStrips numControls numButton spName
 
     for { set j 1 } { $j < [ expr $i+1 ] } { incr j 1 } {
-	set value [ exec xsetwacom get $dev $Option($j) ] 
-	set value1 [ exec xsetwacom getdefault $dev $Option($j) ] 
+	set value [ exec xsetwacom get "$dev" $Option($j) ] 
+	set value1 [ exec xsetwacom getdefault "$dev" $Option($j) ] 
 	if { ![ string compare -nocase -length 10 $Option($j) "PressCurve" ] } {
 	    set getOption($dev,PressCurve) 4
 	    set getOptionDefault($dev,PressCurve) 4
@@ -554,12 +554,10 @@ proc updateDevice {} {
     set device [ .workingDev.list get anchor ]
     set deviceIndex [ .workingDev.list index anchor ]
     if { $device != $olddev && $olddev != ""} {
-	#
-	# Clear old state related to preceding device
-	#
-
 	# convert underscores back to spaces for wacomxi.c
-	regsub -all {_} $olddev " " orig_device
+   	regsub -all {_} $olddev " " orig_device
+
+ 	# Clear old state related to preceding device
 	wacomxi::bindevent . $orig_device <ButtonPress> ""
 	wacomxi::bindevent . $orig_device <ButtonRelease> ""
     }
@@ -590,16 +588,16 @@ proc createDeviceList {} {
     set dev [ lindex $infoString $index ]
 
     while { $dev != "" } {
-	set index [ expr $index+1 ]
+ 	set index [ expr $index+1 ]
 	set type [ lindex $infoString $index ]
 
-	if { [catch { exec xsetwacom get $dev TabletID } model] == 0} {
+	if { [catch { exec xsetwacom get "$dev" TabletID } model] == 0 } {
 	    set getDeviceModel($dev,type) $type
 	    set getDeviceModel($dev,model) $model
-	    set devices "$devices $dev"
+	    set devices "$devices \"$dev\""
 	    set index [ expr $index+1 ]
 	}
-        set dev [ lindex $infoString $index ]
+	set dev [ lindex $infoString $index ]
     }
 
     frame .workingDev
@@ -609,8 +607,8 @@ proc createDeviceList {} {
 	    -yscrollcommand ".workingDev.sb set"
     scrollbar .workingDev.sb -width 10 \
 	    -command ".workingDev.list yview"
-    grid .workingDev.title -row 0 -column 0 -columnspan 5 -sticky we
-    grid .workingDev.label -row 1 -column 0 -columnspan 5 -sticky we
+    grid .workingDev.title -row 0 -column 0 -columnspan 8 -sticky we
+    grid .workingDev.label -row 1 -column 0 -columnspan 8 -sticky we
     grid .workingDev.list -row 2 -column 0
     grid .workingDev.sb -row 2 -sticky nse
     set flag 0
@@ -641,12 +639,12 @@ proc createScreenList { dev } {
     global numScreens currentScreen
     global desktopHeight desktopWidth getScreenInfo
 
-    set numScreens($dev) [ exec xsetwacom get $dev NumScreen ]
+    set numScreens($dev) [ exec xsetwacom get "$dev" NumScreen ]
     for { set i 0 } {$i < $numScreens($dev)} { incr i 1 } {
-	set s1 [ exec xsetwacom get $dev SBottomX$i ]
-	set s2 [ exec xsetwacom get $dev SBottomY$i ]
-	set s3 [ exec xsetwacom get $dev STopX$i ]
-	set s4 [ exec xsetwacom get $dev STopY$i ]
+	set s1 [ exec xsetwacom get "$dev" SBottomX$i ]
+	set s2 [ exec xsetwacom get "$dev" SBottomY$i ]
+	set s3 [ exec xsetwacom get "$dev" STopX$i ]
+	set s4 [ exec xsetwacom get "$dev" STopY$i ]
 	set getScreenInfo($dev,Screen$i) "$s1 $s2 $s3 $s4"
     }
 }
@@ -1393,7 +1391,7 @@ proc initialSet {} {
 proc updateSet {} {
     global device currentW tvd snd tvID
 
-    set numS [ exec xsetwacom get $device NumScreen ]
+    set numS [ exec xsetwacom get "$device" NumScreen ]
 
     if { $numS > 1 } {
 	set sn [ $currentW.f.snsmenu cget -text ]
@@ -1640,143 +1638,58 @@ proc updateKeys {} {
 proc touchState { theCButton } {
     global device touchButton getDeviceModel
 
-    set touchButton 0
-    if { $touchButton == [exec xsetwacom get $device touch]  } {
-	  set touchButton 1
-    }
     checkbutton $theCButton -text "Disable Touch" -anchor w \
-	-variable touchButton -state normal -command "switchTouch 0"
+	-variable touchButton -state normal -command switchTouch
 }
 
 proc gestureState { theCButton } {
-    global device touchButton getDeviceModel hasGesture gestureButton
+    global device touchButton getDeviceModel hasGesture
+    global gestureButton 
 
-    set gestureButton 0
     # gesture supported and touch is on 
-    if { $touchButton} {
-	if { $gestureButton == [exec xsetwacom get $device gesture]  } {
-	    set gestureButton 1
-	}
+    if { [ exec xsetwacom get "$device" touch ] } {
 	checkbutton $theCButton -text "Disable Touch Gesture" -anchor w \
-	    -variable touchButton -state normal -command switchGesture
+	    -variable gestureButton -state normal -command switchGesture
     } else {
 	checkbutton $theCButton -text "Disable Touch Gesture" -anchor w \
-	    -variable gestureButton -state disabled -command switchGesture
+	    -variable gestureButton -state disable -command switchGesture
     }
 }
 
-proc initialTouch {} {
-    global device getDeviceModel currentW 
-    global getOption getOptionDefault Option hasCapacity
+proc switchTouch { } {
+    global device touchButton gestureButton hasGesture getDeviceModel
 
     set model $getDeviceModel($device,model)
-    set Option(1) "Capacity"
-    set Option(2) "touch"
-
-    getDeviceOptionProc $device 2
-
-    touchState $currentW.f.touch
-    grid $currentW.f.touch -row 0 -column 2
-
-    frame $currentW.f.group -bd 10 -bg beige -width 150 -height 150
-    label $currentW.f.groupL -text "Sensitivity: "
-    grid $currentW.f.groupL -row 2 -column 6
-    scale $currentW.f.group.scale -orient horizontal -length 100 \
-	-from 1 -to 5
-    grid $currentW.f.group.scale -row 2 -column 8
-    $currentW.f.group.scale set $getOption($device,Capacity)
-    label $currentW.f.group.l11 -text "1"
-    grid $currentW.f.group.l11 -row 1 -column 7
-    label $currentW.f.group.l21 -text "5"
-    grid $currentW.f.group.l21 -row 1 -column 9
-    label $currentW.f.group.l1 -text "Low"
-    grid $currentW.f.group.l1 -row 3 -column 7
-    label $currentW.f.group.l2 -text "High"
-    grid $currentW.f.group.l2 -row 3 -column 9
-
-    grid $currentW.f.touch -row 0 -column 2
-    grid $currentW.f.group -row 2 -column 5 
-    grid $currentW.f.groupL -row 2 -column 2
-}
-
-proc updateTouch {} {
-    global currentW getOption device
-
-    set value [ $currentW.f.group.scale get ]
-    if { $value != $getOption($device,Capacity) } {
-	updateXinitrc $device Capacity $value
-	set getOption($device,Capacity) $value
-    }
-
-    switchTouch 1
-
-    closeSubWindow
-}
-
-proc defaultTouch {} {
-    global touchButton currentW getOptionDefault device
-
-    if { [ exec xsetwacom get $device touch ] != $getOptionDefault($device,touch) } {
-	set touchButton [ exec xsetwacom get $device touch ]
-	if { [ exec xsetwacom getdefault $device capacity ] < 0 } {
-	    if { $touchButton == 0 } {
-		.panel.calibrate configure -state normal
-	    } else {
-		.panel.calibrate configure -state disabled
-	    }
+    if { $touchButton } {
+	exec xsetwacom set "$device" touch 0
+	updateXinitrc $device touch 0
+	if { $hasGesture($model) } {
+	    .panel.button configure -state disabled
 	}
-    }
-
-    $currentW.f.group.scale set $getOptionDefault($device,Capacity)
-}
-
-proc switchTouch { window } {
-    global device touchButton gestureButton hasGesture
-
-    # don't send the command for touch with capacity
-    if { [ exec xsetwacom getdefault $device capacity ] >= 0 && $window == 0 } {
-	return
-    }
-
-    if { $touchButton == [ exec xsetwacom get $device touch ] } {
-	if { $touchButton == 0 } {
-	    .panel.calibrate configure -state normal
-	    exec xsetwacom set $device touch 1
-	    updateXinitrc $device touch 1
-	    if { $hasGesture } {
-		.panel.button configure -state normal
-	    }
-	} else {
-	    .panel.calibrate configure -state disabled
-	    exec xsetwacom set $device touch 0
-	    updateXinitrc $device touch 0
-	    if { $hasGesture } {
-		.panel.button configure -state disabled
-	    }
+    } else {
+	exec xsetwacom set "$device" touch 1
+	updateXinitrc $device touch 1
+	if { $hasGesture($model) } {
+	    .panel.button configure -state normal
 	}
    }
 }
 
 proc switchGesture { } {
-    global device touchButton gestureButton hasGesture
+    global device touchButton gestureButton
 
-    if { $touchGesture == [ exec xsetwacom get $device gesture ] } {
-	if { $touchGesture == 0 } {
-	    .panel.button configure -state normal
-	    exec xsetwacom set $device gesture 1
-	    updateXinitrc $device gesture 1
-	} else {
-	    .panel.button configure -state disabled
-	    exec xsetwacom set $device gesture 0
-	    updateXinitrc $device gesture 0
-	}
+    if { $gestureButton } {
+	exec xsetwacom set "$device" gesture 0
+	updateXinitrc $device gesture 0
+    } else {
+	exec xsetwacom set "$device" gesture 1
+	updateXinitrc $device gesture 1
    }
 }
 
 proc createPanel { pressure button mapping calibrate } {
     global bName device getOption getDeviceModel currentb 
-    global wName startS Option hasCapacity touchButton
-    global hasCapacity hasGesture
+    global wName startS Option touchButton hasGesture gestureButton
 
     frame .panel
     set bName(pressure) $pressure
@@ -1789,7 +1702,7 @@ proc createPanel { pressure button mapping calibrate } {
     # buttons and expresskeys
     getNumButton $type
     setspName
-    set SN [ exec xsetwacom get $device ToolSerial ]
+    set SN [ exec xsetwacom get "$device" ToolSerial ]
     if { $SN && [string compare type "pad"] } {
 	set hexSN [format %X $SN]
 	label .panel.sn -text "Serial Number: $hexSN"
@@ -1803,25 +1716,16 @@ proc createPanel { pressure button mapping calibrate } {
     }
     if { $pressure } {
 	if { ![string compare $getDeviceModel($device,type) "touch"] } {
-	    set model $getDeviceModel($device,model)
-	    if { $hasCapacity($model) } {
-		set wName(1) "Touch"
-		button .panel.pressure -text $wName(1) \
-			-state normal -command "displaySubWindow \
-			updateTouch defaultTouch initialTouch 1 0 0"
-		if { [ exec xsetwacom get $device touch ] == 1 } {
-		    .panel.calibrate configure -state normal
-		} else {
-		    .panel.calibrate configure -state disable
-		}
-	    } else {
-		touchState .panel.pressure 
+	    set touchButton 1
+	    if { [exec xsetwacom get "$device" touch] } {
+		set touchButton 0
 	    }
+	    touchState .panel.pressure 
 	} else {
 	    set wName(1) "Feel"
 	    button .panel.pressure -text $wName(1) \
 		-state normal -command "displaySubWindow \
-		 updateTip defaultTip initialTip 1 0 0"
+	    updateTip defaultTip initialTip 1 0 0"
 	}
 	grid .panel.pressure -row 5 -column 0 -columnspan 2 -sticky news -padx 10
     }
@@ -1829,10 +1733,13 @@ proc createPanel { pressure button mapping calibrate } {
 	if { ![string compare $getDeviceModel($device,type) "touch"] } {
 	    set model $getDeviceModel($device,model)
 	    if { $hasGesture($model) } {
+		set gestureButton 1
+		if { [ exec xsetwacom get "$device" gesture ] } {
+		    set gestureButton 0
+		}
 		gestureState .panel.button 
 	    }
-	}
-	if { ![string compare $getDeviceModel($device,type) "pad"] } {
+	} elseif { ![string compare $getDeviceModel($device,type) "pad"] } {
 	    button .panel.button -text $wName(6) \
 		-state normal -command "displaySubWindow \
 		updateButton defaultButton initialButton 6 0 $startS"
@@ -1870,7 +1777,7 @@ proc createPanel { pressure button mapping calibrate } {
 
 proc updateModelInfo { } {
     global isLCD numPadButtons numPadRings hasPad hasTouch
-    global numPadStrips numPadAbsW numPadRelW hasCapacity
+    global numPadStrips numPadAbsW numPadRelW 
     global maxNumTablets hasGesture 
 
     for { set i 0 } { $i <= $maxNumTablets } { incr i 1 } {
@@ -1882,7 +1789,6 @@ proc updateModelInfo { } {
 	set numPadRelW($i) 0
 	set hasPad($i) 0
 	set hasTouch($i) 0
-	set hasCapacity($i) 0
 	set hasGesture($i) 0
     }
     #PL
@@ -1922,9 +1828,10 @@ proc updateModelInfo { } {
    }
 
     # Bamboo Pen and Touch
-    for { set i 208 } { $i <= 212 } { incr i 1 } {
+    for { set i 208 } { $i < 212 } { incr i 1 } {
         set hasPad($i) 1
         set numPadButtons($i) 4
+	set hasGesture($i) 1
     }
 
     # I3
@@ -1963,12 +1870,13 @@ proc updateModelInfo { } {
 
     # one finger 
     for { set i 147 } { $i <= 159 } { incr i 1 } {
-	   set hasTouch($i) 1
+	set hasTouch($i) 1
     }
 
     # 2FG
     for { set i 226 } { $i <= 227 } { incr i 1 } {
-	   set hasTouch($i) 1
+	set hasTouch($i) 1
+	set hasGesture($i) 1
     }
 }
 

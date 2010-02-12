@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2009 - 2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -531,14 +531,21 @@ int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version)
 
 	/* output tablet state as probed */
 	if (xf86Verbose)
+	{
+		int tmpX = common->wcmMaxX;
+		int tmpY = common->wcmMaxY;
+		if ( IsTouch(priv) )
+		{
+			tmpX = common->wcmMaxTouchX;
+			tmpY = common->wcmMaxTouchY;
+		}
 		ErrorF("%s Wacom %s tablet speed=%d (%d) maxX=%d maxY=%d maxZ=%d "
 			"resX=%d resY=%d  tilt=%s\n",
-			XCONFIG_PROBED,
-			model->name, common->wcmLinkSpeed, common->wcmISDV4Speed, 
-			common->wcmMaxX, common->wcmMaxY, common->wcmMaxZ,
-			common->wcmResolX, common->wcmResolY,
-			HANDLE_TILT(common) ? "enabled" : "disabled");
-  
+			XCONFIG_PROBED, model->name, common->wcmLinkSpeed,
+			common->wcmISDV4Speed, tmpX, tmpY, common->wcmMaxZ, 
+			common->wcmResolX, common->wcmResolY, HANDLE_TILT(common)
+			 ? "enabled" : "disabled");
+	}
 	/* start the tablet data */
 	if (model->Start && (model->Start(local) != Success))
 		return !Success;

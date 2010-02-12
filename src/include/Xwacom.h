@@ -1,6 +1,6 @@
 /*
  * Copyright 2003 by John Joganic <john@joganic.com>
- * Copyright 2003 - 2009 by Ping Cheng <pingc@wacom.com> 
+ * Copyright 2003 - 2010 by Ping Cheng <pingc@wacom.com> 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -41,6 +41,10 @@
 #define XWACOM_PARAM_CAPACITY       	17
 #define XWACOM_PARAM_SERIAL		18
 #define XWACOM_PARAM_GESTURE       	19
+#define XWACOM_PARAM_TAPDISTANCE	20
+#define XWACOM_PARAM_ZOOMDISTANCE	21
+#define XWACOM_PARAM_SCROLLDISTANCE	22
+#define XWACOM_PARAM_TAPTIME		23
 
 /* The followings are defined together */
 #define XWACOM_PARAM_BUTTON1    	101

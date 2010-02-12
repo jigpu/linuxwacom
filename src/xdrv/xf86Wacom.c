@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org> 
- * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2002-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -92,9 +92,10 @@
  * 2009-12-14 47-pc0.8.5-7 - Updated serial ISDV4 support
  * 2009-12-21 47-pc0.8.5-8 - Added local max and resolution for tool
  * 2009-12-29 47-pc0.8.5-9 - Merged support for Bamboo P&T from Ayuthia
+ * 2010-02-09 47-pc0.8.5-10- Merged patches for Bamboo P&T from Jason Childs
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-9 $";
+static const char identification[] = "$Identification: 47-0.8.5-10 $";
 
 /****************************************************************************/
 
@@ -339,7 +340,7 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		priv->resolY = common->wcmResolY;
 	}
 
-	DBG(2, priv->debugLevel, ErrorF("xf86WcmRegisterX11Devices: "
+	DBG(2, priv->debugLevel, ErrorF("xf86WcmInitializeToolSize: "
 		"maxX=%d maxY=%d reslX=%d reslY=%d \n",
 		priv->maxX, priv->maxY, priv->resolX, priv->resolY));
 
@@ -355,7 +356,7 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		}
 	}
 
-	DBG(2, priv->debugLevel, ErrorF("Wacom device \"%s\" "
+	DBG(2, priv->debugLevel, ErrorF("xf86WcmInitializeToolSize: \"%s\" "
 		"top X=%d top Y=%d bottom X=%d bottom Y=%d \n",
 		local->name, priv->topX, priv->topY, 
 		priv->bottomX, priv->bottomY));
@@ -373,7 +374,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 	CARD8 butmap[MAX_BUTTONS+1];
-	int nbaxes, nbbuttons, nbkeys;
+	int nbaxes, nbbuttons, nbkeys, num_buttons;
 	int loop;
 
 	/* Detect tablet configuration, if possible */
@@ -395,13 +396,17 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 		"(%s) %d buttons, %d keys, %d axes\n",
 		IsStylus(priv) ? "stylus" :
 		IsCursor(priv) ? "cursor" :
-		IsPad(priv) ? "pad" : "eraser",
+		IsPad(priv) ? "pad" :
+		IsTouch(priv) ? "touch" : "eraser",
 		nbbuttons, nbkeys, nbaxes));
 
-	for(loop=1; loop<=nbbuttons; loop++)
+	/* support at least 7 buttons */
+	num_buttons = nbbuttons - 3 ? (7 + (nbbuttons - 3)) : 7;
+
+	for(loop=1; loop<=num_buttons; loop++)
 		butmap[loop] = loop;
 
-	if (InitButtonClassDeviceStruct(local->dev, nbbuttons, butmap) == FALSE)
+	if (InitButtonClassDeviceStruct(local->dev, num_buttons, butmap) == FALSE)
 	{
 		ErrorF("unable to allocate Button class device\n");
 		return FALSE;
@@ -568,6 +573,19 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	{
 		/* hard prox out */
 		priv->hardProx = 0;
+		/* Change Capacity and Mode defaults for Bamboo
+		 * NOTE: This is here because the first time X starts
+		 * tablet configuration via HAL is already completed
+		 * before tablet_id is set, so this ensures that the
+		 * Capacity is set correctly and we are in relative mode
+		 * by default regardless of the state of X configuration.
+		 */
+		if (common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3) {
+			/* set capacity default to 3 for Bamboo */
+			common->wcmCapacityDefault = 3;
+			/* default touch to relative mode */
+			priv->flags &= ~ABSOLUTE_FLAG;
+		}
 	}
 
 	return TRUE;
@@ -956,7 +974,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 	LocalDevicePtr local = (LocalDevicePtr)pWcm->public.devicePrivate;
 	WacomDevicePtr priv = (WacomDevicePtr)PRIVATE(pWcm);
 
-	DBG(2, priv->debugLevel, ErrorF("BEGIN xf86WcmProc dev=%p priv=%p "
+	DBG(2, priv->debugLevel, ErrorF("BEGIN xf86WcmDevProc dev=%p priv=%p "
 			"type=%s(%s) flags=%d fd=%d what=%s\n",
 			(void *)pWcm, (void *)priv,
 			IsStylus(priv) ? "stylus" :
@@ -978,7 +996,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 			priv->wcmInitKeyClassCount = 0;
 			if (!xf86WcmDevOpen(pWcm))
 			{
-				DBG(1, priv->debugLevel, ErrorF("xf86WcmProc INIT FAILED\n"));
+				DBG(1, priv->debugLevel, ErrorF("xf86WcmDevProc INIT FAILED\n"));
 				return !Success;
 			}
 			priv->wcmInitKeyClassCount++;
@@ -988,7 +1006,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 		case DEVICE_ON:
 			if (!xf86WcmDevOpen(pWcm))
 			{
-				DBG(1, priv->debugLevel, ErrorF("xf86WcmProc ON FAILED\n"));
+				DBG(1, priv->debugLevel, ErrorF("xf86WcmDevProc ON FAILED\n"));
 				return !Success;
 			}
 			priv->wcmDevOpenCount++;
@@ -1013,7 +1031,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 			break;
 	} /* end switch */
 
-	DBG(2, priv->debugLevel, ErrorF("END xf86WcmProc Success \n"));
+	DBG(2, priv->debugLevel, ErrorF("END xf86WcmDevProc Success \n"));
 	return Success;
 }
 

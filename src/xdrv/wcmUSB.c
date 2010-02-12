@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2002-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -210,7 +210,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		NULL,                 /* link speed unsupported */
 		NULL,                 /* start not supported */
 		usbParse,
-		NULL,                 /* input filtering */
+		xf86WcmFilterCoord,   /* input filtering */
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
@@ -226,7 +226,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		NULL,                 /* link speed unsupported */
 		NULL,                 /* start not supported */
 		usbParse,
-		NULL,                 /* input filtering */
+		xf86WcmFilterCoord,   /* input filtering */
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
@@ -354,7 +354,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		NULL,                 /* link speed unsupported */
 		NULL,                 /* start not supported */
 		usbParse,
-		NULL,                 /* input filtering */
+		xf86WcmFilterCoord,   /* input filtering */
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
@@ -751,9 +751,17 @@ static int usbChooseChannel(WacomCommonPtr common, int serial)
 	int i, channel = -1;
 	if (common->wcmProtocolLevel == 4)
 	{
-		/* Protocol 4 doesn't support tool serial numbers */
+		/* Protocol 4 doesn't support tool serial numbers.
+		 * However, we pass finger index into serial 
+		 * numbers for tablets with multi-touch capabilities 
+		 * to track individual fingers in proper channels.
+		 * serial number 0xf0 is reserved for the pad and is
+		 * always the last supported channel (i.e. MAX_CHANNELS-1).
+		 */
 		if (serial == 0xf0)
-			channel = 1;
+			channel = MAX_CHANNELS-1;
+		else if (serial)
+			channel = serial-1;
 		else
 			channel = 0;
 	}
@@ -1048,14 +1056,13 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->proximity = event->value;
 				/* time stamp for 2GT gesture events */
 				if ((ds->proximity && !dslast.proximity) ||
-					    (!ds->proximity && dslast.proximity))
-					ds->sample = (int)GetTimeInMillis();
-				/* Left button is always pressed for touch without capacity
-				 * when the first finger touch event received.
-				 * For touch with capacity enabled, left button event will be decided
-				 * in wcmCommon.c by capacity threshold.
-				 */
-				if (common->wcmCapacityDefault < 0)
+					(!ds->proximity && dslast.proximity))
+					ds->sample = GetTimeInMillis();
+
+				/* Bamboo touch tool doesn't send left button now */
+				if (!((common->tablet_id >= 0xD0) &&
+				    (common->tablet_id <= 0xD3) && 
+				    (ds->device_type == TOUCH_ID))) 
 					MOD_BUTTONS (0, event->value);
 			}
 			else if (event->code == BTN_TOOL_TRIPLETAP)

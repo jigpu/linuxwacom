@@ -354,8 +354,8 @@ struct _WacomDeviceClass
 
 #define DEVICE_ISDV4 		0x000C
 
-#define MAX_CHANNELS 2
-#define MAX_FINGERS  2
+#define MAX_FINGERS  		2
+#define MAX_CHANNELS 		MAX_FINGERS + 1
 
 struct _WacomCommonRec 
 {
@@ -416,10 +416,17 @@ struct _WacomCommonRec
 	int wcmTouchDefault;	       /* default touch to disable when not supported */
 	int wcmGestureMode;	       /* data is in Gesture Mode? */
 	int wcmTouchpadMode;           /* in touchpad mode? */
-	WacomDeviceState wcmTouchpadState; /* inital state when in touchpad mode */
 	WacomDeviceState wcmGestureState[MAX_FINGERS]; /* inital state when in gesture mode */
 	int wcmGesture;	     	       /* disable/enable touch gesture */
 	int wcmGestureDefault;         /* default touch gesture to disable when not supported */
+	int wcmZoomDistance;	       /* minimum distance for a zoom touch gesture */
+	int wcmZoomDistanceDefault;    /* default minimum distance for a zoom touch gesture */
+	int wcmScrollDistance;	       /* minimum motion before sending a scroll gesture */
+	int wcmScrollDirection;	       /* store the vertical or horizontal bit in use */
+	int wcmScrollDistanceDefault;  /* default minimum motion before sending a scroll gesture */
+	int wcmGestureUsed;	       /* retain used gesture count within one in-prox event */
+	int wcmTapTime;	   	       /* minimum time between taps for a right click */
+	int wcmTapTimeDefault;         /* default minimum time between taps for a right click */
 	int wcmCapacity;	       /* disable/enable capacity */
 	int wcmCapacityDefault;        /* default to -1 when capacity isn't supported/disabled */
 				       /* 3 when capacity is supported */

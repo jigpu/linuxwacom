@@ -2,7 +2,7 @@
 ** xsetwacom.c
 **
 ** Copyright (C) 2003 - John E. Joganic
-** Copyright (C) 2004-2009 - Ping Cheng
+** Copyright (C) 2004-2010 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU Lesser General Public License
@@ -40,10 +40,11 @@
 **   2009-08-24 0.2.1 - PC - Add SCREENTOGGLE command
 **   2009-09-31 0.2.2 - PC - Add Dual Touch
 **   2009-10-31 0.2.3 - PC - Support spaced names from hot-plugged devices
+**   2010-02-09 0.2.4 - PC - Add options for gesture
 **
 ****************************************************************************/
 
-#define XSETWACOM_VERSION "0.2.3"
+#define XSETWACOM_VERSION "0.2.4"
 
 #include "../include/util-config.h"
 
@@ -365,6 +366,21 @@ static PARAMINFO gParamInfo[] =
 		"Turns on/off Touch Gesture (default is enable/on). ",
 		XWACOM_PARAM_GESTURE, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
+
+	{ "ZoomDistance",
+		"Minimum distance required before starting a zoom gesture. ",
+		XWACOM_PARAM_ZOOMDISTANCE, VALUE_OPTIONAL, 
+		RANGE, 0, 10000, SINGLE_VALUE, 350 },
+
+	{ "ScrollDistance",
+		"Minimum finger motion distance required for starting a scroll gesture. ",
+		XWACOM_PARAM_SCROLLDISTANCE, VALUE_OPTIONAL, 
+		RANGE, 0, 10000, SINGLE_VALUE, 50 },
+
+	{ "TapTime",
+		"Maximum time between taps required for a right click gesture. ",
+		XWACOM_PARAM_TAPTIME, VALUE_OPTIONAL, 
+		RANGE, 0, 500, SINGLE_VALUE, 150 },
 
 	{ "Capacity",
 		"Touch sensitivity level (default is 3, "
@@ -716,7 +732,6 @@ static int ListDev(WACOMCONFIG *hConfig, char** argv)
 		for (j=0; j<sizeof(xTypes)/sizeof(*xTypes); ++j)
 			if (xTypes[j].type == pInfo[i].type)
 				pszType = xTypes[j].pszText;
-
 		/* tcl/tk (wacomcpl) has problem to process spaced names 
 		 * so we make them into the one string */
 		for (j=0; j<strlen(pInfo[i].pszName); j++)
@@ -727,7 +742,6 @@ static int ListDev(WACOMCONFIG *hConfig, char** argv)
 				nameOut[j] = pInfo[i].pszName[j];
 		}
 		nameOut[strlen(pInfo[i].pszName)] = '\0';
-
 		fprintf(stdout,"%s     %s\n", nameOut, pszType);
 	}
 

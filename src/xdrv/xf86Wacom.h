@@ -256,5 +256,7 @@ void xf86WcmSoftOutEvent(LocalDevicePtr local);
 /* send a soft prox-out event for device at the channel  */
 void xf86WcmSoftOut(WacomCommonPtr common, int channel);
 
+/* send a left button up event */
+void xf86WcmLeftClickOff(WacomDevicePtr priv);
 /****************************************************************************/
 #endif /* __XF86WACOM_H */

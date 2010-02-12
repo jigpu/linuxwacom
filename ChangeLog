@@ -1,3 +1,13 @@
+2010-02-12  Ping Cheng <pingc@wacom.com>
+
+	* Updated Bamboo series support in the kernel and X drivers
+		- by Jason Childs <oblivian@users.sourceforge.net>
+	* Support at least 7 buttons for each tool
+		- by Alexia Death <alexiadeath@gmail.com>
+	* Avoid lose of duplicated second finger data in wacom_wac
+		- by Chris Bagwell <chris@cnpbagwell.com>
+	* Label 0.8.5-10
+
 2009-12-30  Ping Cheng <pingc@wacom.com>
 	* Incorporated Ayuthia's Bamboo P&T patch -34
 		- submitted by Favux <favux.is@gmail.com>

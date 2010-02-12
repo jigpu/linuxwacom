@@ -80,9 +80,9 @@ struct wacom_features {
 
 struct wacom_wac {
 	unsigned char *data;
-        int tool[2];
-        int id[2];
-        __u32 serial[2];
+        int tool[3];
+        int id[3];
+        __u32 serial[3];
 	struct wacom_features *features;
 	__u32 config;
 };
