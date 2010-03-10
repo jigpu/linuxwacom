@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2009- 2010 by Ping Cheng, Wacom. <pingc@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,7 +9,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -173,16 +173,15 @@ Bool wcmIsAValidType(const char* type, unsigned long* keys)
 }
 
 /* Choose valid types according to device ID */
-int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys)
+int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys,
+			int* tablet_id)
 {
 	int ret = 1, i, fd = -1;
 	unsigned int id = 0;
 	char* device, *stopstring;
-	char* str = strstr(local->name, "WACf");
 	struct serial_struct tmp;
 
 	device = xf86SetStrOption(local->options, "Device", NULL);
-
 	SYSCALL(fd = open(device, O_RDONLY));
 	if (fd < 0)
 	{
@@ -195,10 +194,16 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys)
 	for (i=0; i<NBITS(KEY_MAX); i++)
 		keys[i] = 0;
 
+	*tablet_id = 0;
+
 	/* serial ISDV4 devices */
 	if (ioctl(fd, TIOCGSERIAL, &tmp) == 0)
 	{
-		if (str) /* id in name */
+		char* str = strstr(local->name, "WACf");
+		if (!str) /* Wacom id is not in name */
+			/* a Fujitsu device? */
+			str = strstr(local->name, "FUJ0");
+		if (str)
 		{
 			str = str + 4;
 			if (str)
@@ -218,31 +223,49 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys)
 			{
 				/* make sure we fall to default */
 				if (fscanf(file, "WACf%x\n", &id) <= 0)
-					id = 0;
+				{
+					if (fscanf(file, "FUJ0%x\n", &id) <= 0)
+						id = 0;
+				}
 				fclose(file);
 			}
 		}
+
 		/* default to penabled */
 		keys[LONG(BTN_TOOL_PEN)] |= BIT(BTN_TOOL_PEN);
 		keys[LONG(BTN_TOOL_RUBBER)] |= BIT(BTN_TOOL_RUBBER);
 
-		/* id < 0x008 are only penabled */
-		if (id > 0x007)
+		/* 0x9a and 0x9f are only detected by communicating
+		 * with device.  This means tablet_id will be updated/refined
+		 * at later stage and true knowledge of capacitive
+		 * support will be delayed until that point.
+		 */
+		if ((id >= 0x0 && id <= 0x7) || (id == 0x2e5)) /* penabled only */
+			*tablet_id = 0x90;
+		else if ((id >= 0x8 && id <= 0xa) || (id == 0x2e9)) /* penabled 1FGT */
 		{
+			*tablet_id = 0x93;
 			keys[LONG(BTN_TOOL_DOUBLETAP)] |= BIT(BTN_TOOL_DOUBLETAP);
-			if (id > 0x0a)
-				keys[LONG(BTN_TOOL_TRIPLETAP)] |= BIT(BTN_TOOL_TRIPLETAP);
 		}
-
-		/* no pen 2FGT */
-		if (id == 0x010)
+		else if ((id >= 0xb && id <= 0xe) || (id == 0x2e7)) /* penabled 2FGT */
 		{
+			*tablet_id = 0xe3;
+			keys[LONG(BTN_TOOL_DOUBLETAP)] |= BIT(BTN_TOOL_DOUBLETAP);
+			keys[LONG(BTN_TOOL_TRIPLETAP)] |= BIT(BTN_TOOL_TRIPLETAP);
+		}
+		else if (id == 0x10) /* 2FGT only */
+		{
+			*tablet_id = 0xe2;
+			keys[LONG(BTN_TOOL_DOUBLETAP)] |= BIT(BTN_TOOL_DOUBLETAP);
+			keys[LONG(BTN_TOOL_TRIPLETAP)] |= BIT(BTN_TOOL_TRIPLETAP);
 			keys[LONG(BTN_TOOL_PEN)] &= ~BIT(BTN_TOOL_PEN);
 			keys[LONG(BTN_TOOL_RUBBER)] &= ~BIT(BTN_TOOL_RUBBER);
 		}
 	}
 	else /* USB devices */
 	{
+		struct input_id wacom_id;
+
 		/* test if the tool is defined in the kernel */
 		if (ioctl(fd, EVIOCGBIT(EV_KEY, (sizeof(unsigned long)
 			 * NBITS(KEY_MAX))), keys) < 0)
@@ -251,6 +274,15 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys)
 				"ioctl USB key bits.\n", local->name);
 			ret = 0;
 		}
+
+		if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
+		{
+			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
+				"ioctl Device ID.\n", local->name);
+			ret = 0;
+		}
+		else
+			*tablet_id = wacom_id.product;
 	}
 	close(fd);
 	return ret;

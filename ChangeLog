@@ -1,3 +1,19 @@
+2010-03-10  Ping Cheng <pingc@wacom.com>
+	* Add modifiers (right) to wcmAction.c
+	* Fixed a copy/paste error in the license statement
+	* Support kernel 2.6.33
+	* Cleaned kernel drivers for 2FGT
+	* Add HAL_CFLAGS to CFLAGS 
+		- by Pedro Gimeno <pg-lwd391@personal.formauri.es>
+	* Retrieve tablet_id early on in wcmValidateDevice
+	* Call getRange for both touch and pad, whichever comes the first
+		- by Chris Bagwell <chris@cnpbagwell.com>
+	* Fixed a keystroke bug for non-core mode of older Xorgs
+		- by Stefan Schimanski
+	* Added wacom XRandR daemon to support RandR settting
+		- by Takashi Iwai <tiwai@suse.de>
+	* Label 0.8.5-11
+
 2010-02-12  Ping Cheng <pingc@wacom.com>
 
 	* Updated Bamboo series support in the kernel and X drivers

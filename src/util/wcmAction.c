@@ -1,7 +1,7 @@
 /*****************************************************************************
 ** wcmAction.c
 **
-** Copyright (C) 2007 - 2009 - Ping Cheng
+** Copyright (C) 2007 - 2010 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -11,7 +11,7 @@
 ** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
 ** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU Lesser General Public License for more details.
+** GNU General Public License for more details.
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
@@ -23,6 +23,7 @@
 **   2008-08-01 0.0.3-pc - Merge patch 1998051 (Yuri Shchedov)
 **   2008-12-10 0.0.4-pc - Updated patch 1998051 for none KP buttons
 **   2009-08-24 0.0.5-pc - Add Screen Toggle
+**   2010-02-16 0.0.6-pc - Add right modifiers
 */ 
 
 /* This pseudo-header file is included both from the X11 driver, and from
@@ -58,7 +59,14 @@ static ACTIONCODE modifier_code [] =
 	{ "META",       XK_Meta_L },
 	{ "ALT",        XK_Alt_L },
 	{ "SUPER",      XK_Super_L },
-	{ "HYPER",      XK_Hyper_L }
+	{ "HYPER_R",    XK_Hyper_R },
+	{ "SHIFT_R",    XK_Shift_R },
+	{ "CTRL_R",     XK_Control_R },
+	{ "CONTROL_R",  XK_Control_R },
+	{ "META_R",     XK_Meta_R },
+	{ "ALT_R",      XK_Alt_R },
+	{ "SUPER_R",    XK_Super_R },
+	{ "HYPER_R",    XK_Hyper_R }
 };
 
 static ACTIONCODE specific_code [] =

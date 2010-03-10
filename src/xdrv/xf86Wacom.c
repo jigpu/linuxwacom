@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -93,9 +93,10 @@
  * 2009-12-21 47-pc0.8.5-8 - Added local max and resolution for tool
  * 2009-12-29 47-pc0.8.5-9 - Merged support for Bamboo P&T from Ayuthia
  * 2010-02-09 47-pc0.8.5-10- Merged patches for Bamboo P&T from Jason Childs
+ * 2010-03-10 47-pc0.8.5-11- Support X RandR
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-10 $";
+static const char identification[] = "$Identification: 47-0.8.5-11 $";
 
 /****************************************************************************/
 
@@ -340,8 +341,8 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		priv->resolY = common->wcmResolY;
 	}
 
-	DBG(2, priv->debugLevel, ErrorF("xf86WcmInitializeToolSize: "
-		"maxX=%d maxY=%d reslX=%d reslY=%d \n",
+	DBG(2, priv->debugLevel, ErrorF("xf86WcmInitializeToolSize(%s): "
+		"maxX=%d maxY=%d reslX=%d reslY=%d \n", local->name,
 		priv->maxX, priv->maxY, priv->resolX, priv->resolY));
 
 	for (; toollist; toollist=toollist->next)
@@ -378,8 +379,8 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	int loop;
 
 	/* Detect tablet configuration, if possible */
-	if (priv->common->wcmModel->DetectConfig)
-		priv->common->wcmModel->DetectConfig (local);
+	if (common->wcmModel->DetectConfig)
+		common->wcmModel->DetectConfig (local);
 
 	nbaxes = priv->naxes;       /* X, Y, Pressure, Tilt-X, Tilt-Y, Wheel */
 	nbbuttons = priv->nbuttons; /* Use actual number of buttons, if possible */
@@ -401,7 +402,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 		nbbuttons, nbkeys, nbaxes));
 
 	/* support at least 7 buttons */
-	num_buttons = nbbuttons - 3 ? (7 + (nbbuttons - 3)) : 7;
+	num_buttons = nbbuttons > 3 ? (7 + (nbbuttons - 3)) : 7;
 
 	for(loop=1; loop<=num_buttons; loop++)
 		butmap[loop] = loop;

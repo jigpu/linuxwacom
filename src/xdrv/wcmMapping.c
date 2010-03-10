@@ -9,7 +9,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -481,6 +481,10 @@ int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version)
 	if (model->GetRanges && (model->GetRanges(local) != Success))
 		return !Success;
 	
+ErrorF("Got range %s maxX=%d maxY=%d maxZ=%d "
+			"resX=%d resY=%d\n",
+			model->name, common->wcmMaxTouchX, common->wcmMaxTouchY, common->wcmMaxZ, 
+			common->wcmResolX, common->wcmResolY);
 	/* Default threshold value if not set */
 	if (common->wcmThreshold <= 0)
 	{
@@ -529,12 +533,16 @@ int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version)
 			"speed, or not yet implemented\n"));
 	}
 
+ErrorF("display range %s maxX=%d maxY=%d maxZ=%d "
+			"resX=%d resY=%d\n",
+			model->name, common->wcmMaxTouchX, common->wcmMaxTouchY, common->wcmMaxZ, 
+			common->wcmResolX, common->wcmResolY);
 	/* output tablet state as probed */
 	if (xf86Verbose)
 	{
 		int tmpX = common->wcmMaxX;
 		int tmpY = common->wcmMaxY;
-		if ( IsTouch(priv) )
+		if ( IsTouch(priv) || IsPad(priv))
 		{
 			tmpX = common->wcmMaxTouchX;
 			tmpY = common->wcmMaxTouchY;

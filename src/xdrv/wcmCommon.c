@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -321,7 +321,7 @@ static void sendAButton(LocalDevicePtr local, int button, int mask,
 
 #if WCM_XINPUTABI_MAJOR == 0
 	/* Switch the device to core mode, if required */
-	if (!is_core && (button & AC_CORE))
+	if (!is_core && (priv->button[button] & AC_CORE))
 		xf86XInputSetSendCoreEvents (local, TRUE);
 #endif
 
@@ -429,7 +429,7 @@ static void sendAButton(LocalDevicePtr local, int button, int mask,
 
 #if WCM_XINPUTABI_MAJOR == 0
 	/* Switch the device out of the core mode, if required */
-	if (!is_core && (button & AC_CORE))
+	if (!is_core && (priv->button[button] & AC_CORE))
 		xf86XInputSetSendCoreEvents (local, FALSE);
 #endif
 }
@@ -698,7 +698,8 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		x, y, z, is_button ? "true" : "false", buttons,
 		tx, ty, wheel, rot, throttle));
 
-	xf86WcmRotateCoordinates(local, &x, &y);
+	if (ds->proximity)
+		xf86WcmRotateCoordinates(local, &x, &y);
 
 	if (IsCursor(priv)) 
 	{
@@ -1187,7 +1188,6 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 		else
 		{
 			xf86WcmGestureFilter(priv);
-
 			/* don't move the cursor if in gesture mode
 			 * or it's the second finger
 			 */
@@ -1425,48 +1425,35 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 		int button = 1;
 		priv = pDev->private;
 
-#ifdef WCM_ENABLE_LINUXINPUT
-		if (common->wcmDevCls == &gWacomUSBDevice && IsTouch(priv) && !ds->proximity)
-		{
-			priv->hardProx = 0;
-		}		
-
-		if (common->wcmDevCls == &gWacomUSBDevice && (IsStylus(priv) || IsEraser(priv)))
-		{
-			priv->hardProx = 1;
-		}
-		
-		/* send a touch out for USB Tablet PCs */
-		if (common->wcmDevCls == &gWacomUSBDevice && !IsTouch(priv) 
-			&& common->wcmTouchDefault && !priv->oldProximity)
+		/* touch is enabled and pen comes in prox the first time */
+		if (!IsTouch(priv) && common->wcmTouch && !priv->oldProximity)
 		{ 
 			LocalDevicePtr localDevices = xf86FirstLocalDevice();
 			WacomCommonPtr tempcommon = NULL;
 			WacomDevicePtr temppriv = NULL;
 
-			/* Lookup to see if associated touch was enabled */
+			/* we have to go through all enabled Wacom devices
+			 * since USB pen and touch don't share the same logical port
+			 */
 			for (; localDevices != NULL; localDevices = localDevices->next)
 			{
-				/* we need to go through all enabled Wacom devices
-				 * since USB pen and touch don't share the same logical port
-				 */
 				if (strstr(localDevices->drv->driverName, "wacom"))
 				{
 					temppriv = (WacomDevicePtr) localDevices->private;
 					tempcommon = temppriv->common;
 
-					if (((tempcommon->tablet_id == common->tablet_id) || /* same model */
-						strstr(common->wcmModel->name, "ISDV4") || /* a serial Tablet PC */
-						strstr(common->wcmModel->name, "TabletPC")) && /* an USB TabletPC */
-						IsTouch(temppriv) && temppriv->oldProximity)
+					/* send touch out for Tablets with touch */
+					if (IsTouch(temppriv) && temppriv->oldProximity && /* touch was in prox */
+						(strstr(tempcommon->wcmModel->name, "ISDV4") || /* a serial Tablet PC */
+						strstr(tempcommon->wcmModel->name, "Bamboo") || /* a bamboo with touch? */
+						strstr(tempcommon->wcmModel->name, "TabletPC"))) /* an USB TabletPC */
 					{
-						/* Send soft prox-out for touch first */
+						/* Send soft prox-out for touch */
 						xf86WcmSoftOutEvent(localDevices);
 					}
 				}
 			}
 		}
-#endif /* WCM_ENABLE_LINUXINPUT */
 
 		if (IsStylus(priv) || IsEraser(priv))
 		{

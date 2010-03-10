@@ -17,7 +17,7 @@ AM_CFLAGS = -Wall -pedantic $(WACOMCFG_INCLUDES)
 # These identify which programs, libraries, and headers could
 # potentially be built or installed depending on the results of
 # the configuration.
-EXTRA_PROGRAMS = wacdump xidump xsetwacom 
+EXTRA_PROGRAMS = wacdump xidump xsetwacom  wacomxrrd
 if WCM_HAVE_HAL
 libexec_PROGRAMS = hal-setup-wacom
 fdidir = $(prefix)/share/hal/fdi/policy/20thirdparty
@@ -51,4 +51,5 @@ hal_setup_wacom_SOURCES = hal-setup-wacom.c
 hal_setup_wacom_LDADD = $(HAL_LIBS)
 endif
 
-
+wacomxrrd_SOURCES = wacomxrrd.c wacomcfg.h wcmAction.c wcmAction.h ../include/Xwacom.h
+wacomxrrd_LDADD = libwacomcfg.la @WCM_WACOMXRRD_LIBS@

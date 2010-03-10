@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -22,7 +22,8 @@
 #ifdef WCM_XORG_XSERVER_1_4
     extern Bool wcmIsAValidType(const char *type, unsigned long* keys);
     extern int wcmIsDuplicate(char* device, LocalDevicePtr local);
-    extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys);
+    extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys,
+		int* tablet_id);
 #endif
 
 /*****************************************************************************
@@ -276,9 +277,16 @@ LocalDevicePtr xf86WcmAllocateStylus(void)
 
 /* xf86WcmAllocateTouch */
 
-LocalDevicePtr xf86WcmAllocateTouch(void)
+LocalDevicePtr xf86WcmAllocateTouch(int tablet_id)
 {
-	LocalDevicePtr local = xf86WcmAllocate(XI_TOUCH, ABSOLUTE_FLAG|TOUCH_ID);
+	LocalDevicePtr local;
+	int flags = TOUCH_ID;
+
+	/* non-Bamboo touch defaults to absolute mode */
+	if (tablet_id < 0xd0 || tablet_id > 0xd3)
+		flags |= ABSOLUTE_FLAG;
+
+	local = xf86WcmAllocate(XI_TOUCH, flags);
 
 	if (local)
 		local->type_name = "Wacom Touch";
@@ -434,42 +442,6 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 			}
 		}
 
-		/* If pad was sent in first on a touch device
-		 * then it got all of the configuration data and
-		 * did not put it in the correct places.
-		 * Make sure the correct common touch variables are initialized.
-		 */
-		if ( (privMatch->common->tablet_id >= 0xd0 && privMatch->common->tablet_id <= 0xd3) ) {
-			type = xf86FindOptionValue(pLocal->options, "Type");
-			if ( type && strstr(type, "touch") ) {
-				type = xf86FindOptionValue(pMatch->options, "Type");
-				if ( type && strstr(type, "pad") ) {
-					DBG(2, priv->debugLevel, ErrorF(
-						"xf86WcmMatchDevice: wacom detected pad initialized before touch\n"));
-
-					privMatch->common->wcmCapacityDefault = 3;
-					privMatch->common->wcmMaxTouchX = privMatch->common->wcmMaxX;
-					privMatch->common->wcmMaxX = 0;
-					privMatch->common->wcmMaxTouchY = privMatch->common->wcmMaxY;
-					privMatch->common->wcmMaxY = 0;
-					privMatch->common->wcmTouchResolX = privMatch->common->wcmMaxStripX;
-					privMatch->common->wcmMaxStripX = 0;
-					privMatch->common->wcmTouchResolY = privMatch->common->wcmMaxStripY;
-					privMatch->common->wcmMaxStripY = 0;
-					if (privMatch->common->wcmMaxTouchX && privMatch->common->wcmTouchResolX) {
-						privMatch->common->wcmTouchResolX =
-							(int)(((double)privMatch->common->wcmTouchResolX)
-								/ ((double)privMatch->common->wcmMaxTouchX) + 0.5);
-					}
-					if (privMatch->common->wcmMaxTouchY && privMatch->common->wcmTouchResolY) {
-						privMatch->common->wcmTouchResolY =
-							(int)(((double)privMatch->common->wcmTouchResolY)
-								 / ((double)privMatch->common->wcmMaxTouchY) + 0.5);
-					}
-				}
-			}
-		}
-
 		xfree(common);
 		common = priv->common = privMatch->common;
 
@@ -542,11 +514,12 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	const char*	type;
 	char		*s, b[12];
 	int		i, oldButton;
-	LocalDevicePtr localDevices;
+	LocalDevicePtr	localDevices;
 	char*		device;
 	WacomToolPtr tool = NULL;
 	WacomToolAreaPtr area = NULL;
-	unsigned long keys[NBITS(KEY_MAX)];
+	unsigned long	keys[NBITS(KEY_MAX)];
+	int		tablet_id = 0;
 
 	gWacomModule.wcmDrv = drv;
 
@@ -572,7 +545,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
         if(device)
         {
 		/* initialize supported keys */
-		wcmDeviceTypeKeys(fakeLocal, keys);
+		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
 
         	/* check if the type is valid for the device */
         	if(!wcmIsAValidType(type, keys))
@@ -587,7 +560,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	if (type && (xf86NameCmp(type, "stylus") == 0))
 		local = xf86WcmAllocateStylus();
 	else if (type && (xf86NameCmp(type, "touch") == 0))
-		local = xf86WcmAllocateTouch();
+		local = xf86WcmAllocateTouch(tablet_id);
 	else if (type && (xf86NameCmp(type, "cursor") == 0))
 		local = xf86WcmAllocateCursor();
 	else if (type && (xf86NameCmp(type, "eraser") == 0))
@@ -617,6 +590,9 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	xfree(fakeLocal);
     
 	common->wcmDevice = xf86FindOptionValue(local->options, "Device");
+
+	/* Hardware specific initialization relies on tablet_id */
+	common->tablet_id = tablet_id;
 
 #ifdef LINUX_INPUT
 	/* Autoprobe if not given */
@@ -694,15 +670,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 
 		/* If Mode not specified or is invalid then rely on
 		 * Type specific defaults from initialization.
-		 *
-		 * If Mode default is hardware specific then handle here:
-		 *
-		 * touch Types are initialized to Absolute.
-		 * Bamboo P&T touch pads need to change default to Relative.
- 		 */
-		if (IsTouch(priv) &&
-		    (common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3))
-			priv->flags &= ~ABSOLUTE_FLAG;
+		 */
 	}
 
 	/* Pad is always in relative mode when it's a core device.

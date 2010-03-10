@@ -4,8 +4,8 @@ exec wish -f "$0" ${1+"$@"}
 #
 # wacomcpl-exec -- Wacom Control Panel Utility to Change Configuration Setting.
 #
-# Author	: Ping Cheng
-# Creation date	: 04/05/2003
+# Author	: Ping Cheng <pinglinux@gmail.com>
+# Creation date	: 04/05/2003 - 2010
 #
 # Based on calibrate 1998-99 Patrick Lecoanet --
 #
@@ -50,7 +50,7 @@ set line_size 30
 
 set origin_x [ expr ($desktopWidth/2) - ($desktopWidth/4) ]
 set origin_y [ expr ($desktopHeight/2) - ($desktopHeight/4) ]
-set windowSize "600x300"
+set windowSize "700x300"
 
 set device ""
 set deviceIndex 0
@@ -603,7 +603,7 @@ proc createDeviceList {} {
     frame .workingDev
     label .workingDev.title -text "Select the Device:"
     label .workingDev.label -background gray
-    listbox .workingDev.list -width 28 -height 12 \
+    listbox .workingDev.list -width 40 -height 12 \
 	    -yscrollcommand ".workingDev.sb set"
     scrollbar .workingDev.sb -width 10 \
 	    -command ".workingDev.list yview"
@@ -1705,8 +1705,10 @@ proc createPanel { pressure button mapping calibrate } {
     set SN [ exec xsetwacom get "$device" ToolSerial ]
     if { $SN && [string compare type "pad"] } {
 	set hexSN [format %X $SN]
-	label .panel.sn -text "Serial Number: $hexSN"
-	grid .panel.sn -row 0 -column 0 -columnspan 2 -padx 3 -pady 3
+	label .panel.snt -text "Serial Number: "
+	label .panel.sn -text "$hexSN"
+	grid .panel.snt -row 0 -column 0 -columnspan 2 -padx 3 -pady 3
+	grid .panel.sn -row 0 -column 3 -columnspan 2 -padx 3 -pady 3
     }
 
     if { $calibrate } {

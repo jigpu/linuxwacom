@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -498,7 +498,6 @@ static struct
 Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 {
 	int i;
-	struct input_id sID;
 	unsigned long keys[NBITS(KEY_MAX)];
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
@@ -506,40 +505,28 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	DBG(1, priv->debugLevel, ErrorF("initializing USB tablet\n"));
 	*version = 0.0;
 
-	/* fetch vendor, product, and model name */
-	ioctl(local->fd, EVIOCGID, &sID);
+	/* fetch model name */
 	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
 
-	/* vendor is wacom */
-	if (sID.vendor == 0x056A)
+	/* search for the proper device id */
+	for (i = 0; i < sizeof (WacomModelDesc) / sizeof (WacomModelDesc [0]); i++)
+		if (common->tablet_id == WacomModelDesc [i].model_id)
+		{
+			common->wcmModel = WacomModelDesc [i].model;
+			common->wcmResolX = WacomModelDesc [i].xRes;
+			common->wcmResolY = WacomModelDesc [i].yRes;
+		}
+
+	if (common->wcmModel && strstr(common->wcmModel->name, "TabletPC"))
 	{
-		common->tablet_id = sID.product;
-
-		for (i = 0; i < sizeof (WacomModelDesc) / sizeof (WacomModelDesc [0]); i++)
-			if (common->tablet_id == WacomModelDesc [i].model_id)
-			{
-				common->wcmModel = WacomModelDesc [i].model;
-				common->wcmResolX = WacomModelDesc [i].xRes;
-				common->wcmResolY = WacomModelDesc [i].yRes;
-			}
-
-		if (common->wcmModel && strstr(common->wcmModel->name, "TabletPC"))
-		{
-
-			/* Tablet PC button applied to the whole tablet. Not just one tool */
-			common->wcmTPCButtonDefault = 1; /* Tablet PC buttons on by default */
-		}
-
-		if ( priv->flags & STYLUS_ID )
-		{
-			common->wcmTPCButton = xf86SetBoolOption(local->options, 
-				"TPCButton", common->wcmTPCButtonDefault);
-		}
+		/* Tablet PC button applied to the whole tablet. Not just one tool */
+		common->wcmTPCButtonDefault = 1; /* Tablet PC buttons on by default */
 	}
-	else
+
+	if ( priv->flags & STYLUS_ID )
 	{
-		ErrorF("%x is not supported by linuxwacom.\n", sID.vendor);
-		return FALSE;
+		common->wcmTPCButton = xf86SetBoolOption(local->options, 
+			"TPCButton", common->wcmTPCButtonDefault);
 	}
 
 	if (!common->wcmModel)
@@ -613,6 +600,17 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	unsigned long abs[NBITS(ABS_MAX)];
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common =	priv->common;
+	int is_touch;
+
+	is_touch = IsTouch(priv);
+	/* Bamboo P&T have both Touch and Pad types on same
+	 * device.  Its normal for this to be called for pad
+	 * case and logic requires it to act same as Touch
+	 * case.
+	 */
+	if (IsPad(priv) &&
+	    common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3)
+		is_touch = 1;
 
 	if (ioctl(local->fd, EVIOCGBIT(0 /*EV*/, sizeof(ev)), ev) < 0)
 	{
@@ -641,7 +639,7 @@ int usbWcmGetRanges(LocalDevicePtr local)
 		ErrorF("WACOM: unable to ioctl xmax value.\n");
 		return !Success;
 	}
-	if ( !IsTouch(priv) )
+	if (!is_touch)
 		common->wcmMaxX = absinfo.maximum;
 	else
 		common->wcmMaxTouchX = absinfo.maximum;
@@ -652,7 +650,7 @@ int usbWcmGetRanges(LocalDevicePtr local)
 		ErrorF("WACOM: unable to ioctl ymax value.\n");
 		return !Success;
 	}
-	if ( !IsTouch(priv) )
+	if (!is_touch)
 		common->wcmMaxY = absinfo.maximum;
 	else
 		common->wcmMaxTouchY = absinfo.maximum;
@@ -661,7 +659,7 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	 * or touch physical X for TabletPCs with touch */
 	if (ioctl(local->fd, EVIOCGABS(ABS_RX), &absinfo) == 0)
 	{
-		if ( IsTouch(priv) )
+		if (is_touch)
 			common->wcmTouchResolX = absinfo.maximum;
 		else
 			common->wcmMaxStripX = absinfo.maximum;
@@ -674,13 +672,13 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	 * or touch physical Y for TabletPCs with touch */
 	if (ioctl(local->fd, EVIOCGABS(ABS_RY), &absinfo) == 0)
 	{
-		if ( IsTouch(priv) )
+		if (is_touch)
 			common->wcmTouchResolY = absinfo.maximum;
 		else
 			common->wcmMaxStripY = absinfo.maximum;
 	}
 
-	if (IsTouch(priv) && common->wcmMaxTouchX && common->wcmTouchResolX)
+	if (is_touch && common->wcmMaxTouchX && common->wcmTouchResolX)
 	{
 		common->wcmTouchResolX = (int)(((double)common->wcmTouchResolX)
 			 / ((double)common->wcmMaxTouchX) + 0.5);
@@ -928,6 +926,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	struct input_event* event;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
+	static WacomDeviceState* syslast;
 
 	DBG(6, common->debugLevel, ErrorF("usbParseChannel %d events received\n", common->wcmEventCnt));
 	#define MOD_BUTTONS(bit, value) do { \
@@ -1113,6 +1112,15 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	/* don't send touch event when touch isn't enabled */
 	if ((ds->device_type == TOUCH_ID) && !common->wcmTouch)
 		return;
+
+	/* don't send touch event when pen is in prox */
+	if (syslast && ((ds->device_type == TOUCH_ID) &&
+		    ((syslast->device_type == STYLUS_ID) ||
+		    (syslast->device_type == ERASER_ID)) &&
+		    syslast->proximity))
+		return;
+
+	syslast = &common->wcmChannel[channel].work;
 
 	/* DTF720 and DTF720a don't support eraser */
 	if (((common->tablet_id == 0xC0) || (common->tablet_id == 0xC2)) && 
