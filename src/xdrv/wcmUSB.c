@@ -498,7 +498,6 @@ static struct
 Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 {
 	int i;
-	unsigned long keys[NBITS(KEY_MAX)];
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 
@@ -535,29 +534,22 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 		common->wcmResolX = common->wcmResolY = 1016;
 	}
 
-	/* Determine max number of buttons */
-	if (ioctl(local->fd, EVIOCGBIT(EV_KEY,sizeof(keys)),keys) < 0)
-	{
-		ErrorF("WACOM: unable to ioctl key bits.\n");
-		return FALSE;
-	}
-
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
 	common->npadkeys = 0;
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
-		if (ISBITSET (keys, padkey_codes [i]))
+		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
 
-	if (ISBITSET (keys, BTN_TASK))
+	if (ISBITSET (common->wcmKeys, BTN_TASK))
 		common->nbuttons = 10;
-	else if (ISBITSET (keys, BTN_BACK))
+	else if (ISBITSET (common->wcmKeys, BTN_BACK))
 		common->nbuttons = 9;
-	else if (ISBITSET (keys, BTN_FORWARD))
+	else if (ISBITSET (common->wcmKeys, BTN_FORWARD))
 		common->nbuttons = 8;
-	else if (ISBITSET (keys, BTN_EXTRA))
+	else if (ISBITSET (common->wcmKeys, BTN_EXTRA))
 		common->nbuttons = 7;
-	else if (ISBITSET (keys, BTN_SIDE))
+	else if (ISBITSET (common->wcmKeys, BTN_SIDE))
 		common->nbuttons = 6;
 	else
 		common->nbuttons = 5;
@@ -603,16 +595,16 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	int is_touch;
 
 	is_touch = IsTouch(priv);
-	/* Bamboo P&T have both Touch and Pad types on same
-	 * device.  Its normal for this to be called for pad
-	 * case and logic requires it to act same as Touch
-	 * case.
+
+	/* Devices, such as Bamboo P&T, may have Pad data reported in the same
+	 * packet as Touch.  Its normal for Pad to be called first but logic
+	 * requires it to act the same as Touch.
 	 */
-	if (IsPad(priv) &&
-	    common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3)
+	if (ISBITSET(common->wcmKeys, BTN_TOOL_DOUBLETAP) &&
+	    ISBITSET(common->wcmKeys, BTN_TOOL_FINGER))
 		is_touch = 1;
 
-	if (ioctl(local->fd, EVIOCGBIT(0 /*EV*/, sizeof(ev)), ev) < 0)
+	if (ioctl(local->fd, EVIOCGBIT(EV_SYN, sizeof(ev)), ev) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl event bits.\n");
 		return !Success;
@@ -620,14 +612,14 @@ int usbWcmGetRanges(LocalDevicePtr local)
 
 	common->wcmFlags |= USE_SYN_REPORTS_FLAG;
 
-	if (ioctl(local->fd, EVIOCGBIT(EV_ABS,sizeof(abs)),abs) < 0)
+	if (ioctl(local->fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl abs bits.\n");
 		return !Success;
 	}
 
 	/* absolute values */
-	if (!ISBITSET(ev,EV_ABS))
+	if (!ISBITSET(ev, EV_ABS))
 	{
 		ErrorF("WACOM: unable to ioctl max values.\n");
 		return !Success;

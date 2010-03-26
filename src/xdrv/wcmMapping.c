@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 - 2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2009 - 2010 by Ping Cheng, Wacom. <pingc@wacom.com>		
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -489,10 +489,8 @@ ErrorF("Got range %s maxX=%d maxY=%d maxZ=%d "
 	if (common->wcmThreshold <= 0)
 	{
 		/* Threshold for counting pressure as a button */
-		if (strstr(common->wcmModel->name, "Intuos4"))
-			common->wcmThreshold = common->wcmMaxZ * 3 / 25;
-		else
-			common->wcmThreshold = common->wcmMaxZ * 3 / 50;
+		common->wcmThreshold = FILTER_PRESSURE_RES * 3 / 25;
+
 		ErrorF("%s Wacom using pressure threshold of %d for button 1\n",
 			XCONFIG_PROBED, common->wcmThreshold);
 	}

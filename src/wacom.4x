@@ -45,7 +45,7 @@ ExpressKeys/menu strips, and Graphire 4 or Bamboo tablet buttons, wheel,
 and/or ring.  It is required  for Intuos3,  CintiqV5, Graphire 4, and 
 Bamboo if you want to use keystroke features.  "pad" is reported as a 
 second tool in the driver. "touch" is for the tablet with touch support. 
-Right now only a few Tablet PCs have this feature. 
+Right now only a few Tablet PCs and Bamboo touch have this feature. 
 .TP 4
 .B Option \fI"Device"\fP \fI"path"\fP
 sets the path to the special file which represents serial line where
@@ -130,14 +130,23 @@ button event only when its tip is pressed.  Default to "on" for Tablet PCs;
 "off" for all other models.
 .TP 4
 .B Option \fI"Touch"\fP \fI"on"|"off"\fP
-enables the touch event for Tablet PC that supports touch feature,  i.e., 
+enables the touch event for tablets that support touch feature,  i.e., 
 system cursor moves when user touches the tablet.  Default to "on" for 
-Tablet PCs with touch feature; "off" for all other models.
+tablets with touch feature; "off" for all other models.
 .TP 4
-.B Option \fI"Capacity"\fP \fI"number"\fP
-sets touch sensitivity level for capacitive touch device, where number 
-can be an integer from -1 to 5.  Default is 3 for capacitive tools and 
--1 for none capacitive tools.
+.B Option \fI"Gesture"\fP \fI"on"|"off"\fP
+enables the touch gestures for tablets that support two finger touch. Three
+gesture modes are supported: Add-a-Finger, Scroll, and Zoom. Once the driver
+is in gesture mode, it stays in the same mode until both fingers leave the tablet. 
+When second finger taps on the tablet, Add-a-Finger mode is in and a right-click
+event will be issued upon the leaving of the second finger;
+When two fingers moving in the same direction and parallel horizontally or vertically,
+Scroll mode is in and a horizontal or vertical scroll event will be issued;
+When both fingers stay on the tablet and at least one finger moves away from its 
+initial position or both fingers move in different directions, Zoom mode is in.
+Default to "on" for Tablet PCs that support two finger touch; "off" for all other
+models. However, this option can be turned on for those tablets that support two
+finger touch. 
 .TP 4
 .B Option \fI"Speed"\fP \fI"Rspeed"\fP
 sets the cursor's relative movement speed to Rspeed.  The default value is 1.0.  
@@ -161,14 +170,16 @@ the option will be set to:
             Option "TVResolution" "1024x768,1280x1024" 
 
 This option is used only when TwinView option is not none.  It is unnecessary to add 
-this option if your screens are displaying in the same resolutions.
+this option if both screens are in the same resolutions.
 .TP 4
 .B Option \fI"ScreenNo"\fP \fI"n"\fP
 In a multi-monitor environment, specifies the screen number in which the cursor can move.
+Here n starts from  0, which indicates the first screen.
 .TP 4
 .B Option \fI"MMonitor"\fP \fI"n"\fP
-turns on/off across monitor movement on a non-TwinView multi-monitor desktop. 
-The default is "on". Here n starts from  0, which indicates the first screen.
+turns on/off across monitor movement on a non-TwinView multi-monitor desktop. A system 
+mouse or utility program is needed to change screens when MMonitor is set to off. 
+The default is "on". 
 .TP 4
 .B Option \fI"Rotate"\fP \fI"CW"|"CCW"|"HALF"|"NONE"\fP
 rotates the tablet orientation counterclockwise (CCW) or clockwise (CW) or 180 degrees (HALF). 

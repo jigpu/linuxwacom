@@ -20,10 +20,9 @@
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
 #ifdef WCM_XORG_XSERVER_1_4
-    extern Bool wcmIsAValidType(const char *type, unsigned long* keys);
+    extern Bool wcmIsAValidType(LocalDevicePtr local, const char *type, unsigned long* keys);
     extern int wcmIsDuplicate(char* device, LocalDevicePtr local);
-    extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys,
-		int* tablet_id);
+    extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
 #endif
 
 /*****************************************************************************
@@ -138,6 +137,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->nPressCtrl [1] = 0;    /* pressure curve y0 */
 	priv->nPressCtrl [2] = 100;  /* pressure curve x1 */
 	priv->nPressCtrl [3] = 100;  /* pressure curve y1 */
+	priv->minPressure = 0;       /* initial pressure should be 0 for normal tools */
 
 	/* Default button and expresskey values */
 	for (i=0; i<MAX_BUTTONS; i++)
@@ -454,13 +454,13 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 }
 
 /* retrieve the specific options for the device */
-static void wcmDeviceSpecCommonOptions(LocalDevicePtr local, unsigned long* keys)
+static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 
 	/* a single touch device */
-	if (ISBITSET (keys, BTN_TOOL_DOUBLETAP))
+	if (ISBITSET (common->wcmKeys, BTN_TOOL_DOUBLETAP))
 	{
 		/* TouchDefault was off for all devices
 		 * except when touch is supported */
@@ -468,10 +468,10 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local, unsigned long* keys
 	}
 
 	/* 2FG touch device */
-	if (ISBITSET (keys, BTN_TOOL_TRIPLETAP))
+	if (ISBITSET (common->wcmKeys, BTN_TOOL_TRIPLETAP))
 	{
 		/* GestureDefault was off for all devices
-		 * except when multi-touch is supported */
+		 * except when multi-touch is supported. */
 		common->wcmGestureDefault = 1;
 	}
 
@@ -482,6 +482,10 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local, unsigned long* keys
 	/* Touch gesture applies to the whole tablet */
 	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
 		common->wcmGestureDefault);
+
+	/* User requested to default gesture to off for Bamboo touch */
+	if (common->tablet_id >= 0xD0 && common->tablet_id <= 0xD4)
+		common->wcmGesture = 0;
 
 	/* Set gesture size and timeouts for larger USB 2FGT tablets */
 	if ((common->wcmDevCls == &gWacomUSBDevice) &&
@@ -518,8 +522,8 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	char*		device;
 	WacomToolPtr tool = NULL;
 	WacomToolAreaPtr area = NULL;
-	unsigned long	keys[NBITS(KEY_MAX)];
 	int		tablet_id = 0;
+	unsigned long	keys[NBITS(KEY_MAX)];
 
 	gWacomModule.wcmDrv = drv;
 
@@ -547,8 +551,10 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		/* initialize supported keys */
 		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
 
-        	/* check if the type is valid for the device */
-        	if(!wcmIsAValidType(type, keys))
+        	/* check if the type is valid for the device
+ 		 * that is not defined in xorg.conf	
+ 		 */
+        	if(!wcmIsAValidType(fakeLocal, type, keys))
         	        goto SetupProc_fail;
 
                 /* check if the device has been added */
@@ -631,13 +637,17 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		}
 	}
 
+	/* reassign the keys back */
+	for (i=0; i<NBITS(KEY_MAX); i++)
+		common->wcmKeys[i] |= keys[i];
+
 	/* Process the common options for individual tool */
 	xf86ProcessCommonOptions(local, local->options);
 
 	/* update device specific common options
 	 * it is called only once for each device   */	
 #ifdef WCM_XORG_XSERVER_1_4
-	wcmDeviceSpecCommonOptions(local, keys);
+	wcmDeviceSpecCommonOptions(local);
 #endif
 	/* Optional configuration */
 

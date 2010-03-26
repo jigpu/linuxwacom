@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2007-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -304,7 +304,7 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 	    case XWACOM_PARAM_CLICKFORCE:
 		if ((value < 1) || (value > 21)) return BadValue;
 		common->wcmThreshold = (int)((double)
-				(value*common->wcmMaxZ)/100.00+0.5);
+				(value * FILTER_PRESSURE_RES ) / 100.00 + 0.5);
 		xf86ReplaceIntOption(local->options, "Threshold", 
 				common->wcmThreshold);
 		break;
@@ -831,8 +831,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 	    case XWACOM_PARAM_ACCEL:
 		return priv->accel + 1;
 	    case XWACOM_PARAM_CLICKFORCE:
-		return !common->wcmMaxZ ? 0 :
-			(int) (((common->wcmThreshold + 0.5) * 100) / common->wcmMaxZ);
+		return (int) ((double)((common->wcmThreshold + 0.5) * 100)
+			 / (double)FILTER_PRESSURE_RES);
 	    case XWACOM_PARAM_THRESHOLD:
 		return !common->wcmMaxZ ? 0 : common->wcmThreshold;
 	    case XWACOM_PARAM_XYDEFAULT:
@@ -1023,10 +1023,7 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	case XWACOM_PARAM_CLICKFORCE:
 		return 6;
 	case XWACOM_PARAM_THRESHOLD:
-		if (strstr(common->wcmModel->name, "Intuos4"))
-			return (common->wcmMaxZ * 3 / 25);
-		else
-			return (common->wcmMaxZ * 3 / 50);
+		return (FILTER_PRESSURE_RES * 3 / 25);
 	case XWACOM_PARAM_MMT:
 		return 1;
 	case XWACOM_PARAM_TPCBUTTON:

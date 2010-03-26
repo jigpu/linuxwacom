@@ -1,3 +1,10 @@
+2010-03-26  Ping Cheng <pingc@wacom.com>
+	* Updated kernel driver for 2FGT and Bamboo touch
+	* Added 2.6.30 path for kernels 2.6.30 and later
+	* Normalized pressure sensitivity to 2048
+	* Updated 2FGT gesture with Chris Bagwell's suggestion
+	* Label 0.8.5-12
+
 2010-03-10  Ping Cheng <pingc@wacom.com>
 	* Add modifiers (right) to wcmAction.c
 	* Fixed a copy/paste error in the license statement

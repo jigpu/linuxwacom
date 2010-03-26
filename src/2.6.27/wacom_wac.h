@@ -64,7 +64,7 @@ enum {
 };
 
 struct wacom_features {
-	char *name;
+	const char *name;
 	int pktlen;
 	int x_max;
 	int y_max;
@@ -80,14 +80,17 @@ struct wacom_features {
 
 struct wacom_shared {
 	bool stylus_in_proximity;
+	int last_x;
+	int last_y;
+	int last_finger;
 };
 
 struct wacom_wac {
 	char name[64];
 	unsigned char *data;
-        int tool[3];
+	int tool[3];
         int id[3];
-        __u32 serial[3];
+	__u32 serial[2];
 	struct wacom_features features;
 	struct wacom_shared *shared;
 	__u32 config;

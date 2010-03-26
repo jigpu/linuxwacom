@@ -81,11 +81,7 @@ int wcmIsDuplicate(char* device, LocalDevicePtr local)
 	struct stat st;
 #endif
 	int isInUse = 0;
-	char* lSource = xf86CheckStrOption(local->options, "_source", "");
 	local->fd = -1;
-
-	/* always allow xorg.conf defined tools to be added */
-	if (!strlen(lSource)) goto ret;
 
 	/* open the port */
 	do {
@@ -153,9 +149,11 @@ static struct
 };
 
 /* validate tool type for device/product */
-Bool wcmIsAValidType(const char* type, unsigned long* keys)
+Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys)
 {
 	int j, ret = FALSE;
+	char*	dsource = xf86CheckStrOption(local->options, "_source", "");
+
 	if (!type)
 		return ret;
 
@@ -163,18 +161,27 @@ Bool wcmIsAValidType(const char* type, unsigned long* keys)
 	for (j = 0; j < sizeof (wcmType) / sizeof (wcmType [0]); j++)
 	{
 		if (!strcmp(wcmType[j].type, type))
-			if (ISBITSET (keys, wcmType[j].tool))
+		{
+			/* tool comes from xorg.conf? */
+			if (!strlen(dsource))
+			{
+				/* make the type valid */
+				keys[LONG(wcmType[j].tool)] |= BIT(wcmType[j].tool);
+				ret = TRUE;
+				break;
+			}
+			else if (ISBITSET (keys, wcmType[j].tool))
 			{
 				ret = TRUE;
 				break;
 			}
+		}
 	}
 	return ret;
 }
 
 /* Choose valid types according to device ID */
-int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys,
-			int* tablet_id)
+int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 {
 	int ret = 1, i, fd = -1;
 	unsigned int id = 0;
@@ -200,6 +207,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys,
 	if (ioctl(fd, TIOCGSERIAL, &tmp) == 0)
 	{
 		char* str = strstr(local->name, "WACf");
+
 		if (!str) /* Wacom id is not in name */
 			/* a Fujitsu device? */
 			str = strstr(local->name, "FUJ0");

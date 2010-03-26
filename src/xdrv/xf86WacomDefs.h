@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -237,6 +237,7 @@ struct _WacomDeviceRec
 	/* JEJ - filters */
 	int* pPressCurve;       /* pressure curve */
 	int nPressCtrl[4];      /* control points for curve */
+	int minPressure;	/* the least pressure a tool may have */
 
 	WacomToolPtr tool;         /* The common tool-structure for this device */
 	WacomToolAreaPtr toolarea; /* The area defined for this device */
@@ -366,6 +367,7 @@ struct _WacomCommonRec
 	int fd;                      /* file descriptor to tablet */
 	int fd_refs;                 /* number of references to fd; if =0, fd is invalid */
 	dev_t min_maj;               /* minor/major number */
+	unsigned long wcmKeys[NBITS(KEY_MAX)]; /* supported tool types for the device */
 
 	int wcmMaxX;                 /* max tool logical X value */
 	int wcmMaxY;                 /* max tool logical Y value */
@@ -402,7 +404,7 @@ struct _WacomCommonRec
 	float wcmVersion;            /* ROM version */
 	int wcmForceDevice;          /* force device type (used by ISD V4) */
 	int wcmRotate;               /* rotate screen (for TabletPC) */
-	int wcmThreshold;            /* Threshold for button pressure */
+	int wcmThreshold;            /* Threshold for left button press */
 	WacomChannel wcmChannel[MAX_CHANNELS]; /* channel device state */
 	unsigned int wcmLinkSpeed;   /* serial link speed */
 	unsigned int wcmISDV4Speed;  /* serial ISDV4 link speed */
@@ -435,7 +437,6 @@ struct _WacomCommonRec
 	int wcmCursorProxoutDistDefault; /* Default max mouse distance for proxy-out */
 	int wcmSuppress;        	 /* transmit position on delta > supress */
 	int wcmRawSample;	       /* Number of raw data used to filter an event */
-
 	int bufpos;                        /* position with buffer */
 	unsigned char buffer[BUFFER_SIZE]; /* data read from device */
 

@@ -502,8 +502,8 @@ static int wacom_query_tablet_data(struct usb_interface *intf, struct wacom_feat
 	if (!rep_data)
 		return error;
 
-	/* ask to report tablet data if it is 2FGT and not a 2FGT Tablet PC
-	 * OR not a regular Tablet PC */
+	/* ask to report tablet data if it is a 2FGT Tablet PC
+	 * OR not a Tablet PC at all */
 	if ((features->device_type == BTN_TOOL_TRIPLETAP) &&
 			(features->type == TABLETPC2FG)) {
 		do {
@@ -731,7 +731,8 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 
 	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
 	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
-	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
+	if (features->device_type == BTN_TOOL_PEN)
+		input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
 	input_dev->absbit[BIT_WORD(ABS_MISC)] |= BIT_MASK(ABS_MISC);
 
 	wacom_init_input_dev(input_dev, wacom_wac);

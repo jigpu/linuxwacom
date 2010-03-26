@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>		
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@
 extern int xf86WcmDevSwitchModeCall(LocalDevicePtr local, int mode);
 extern void xf86WcmChangeScreen(LocalDevicePtr local, int value);
 extern void xf86WcmTilt2R(WacomDeviceStatePtr ds);
-extern void xf86WcmGestureFilter(WacomDevicePtr priv);
+extern void xf86WcmGestureFilter(WacomDevicePtr priv, int channel);
 extern void xf86WcmSetScreen(LocalDevicePtr local, int v0, int v1);
 
 /*****************************************************************************
@@ -854,8 +854,6 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		/* not in proximity */
 		else
 		{
-			buttons = 0;
-
 #ifdef WCM_XORG_TABLET_SCALING
 			/* Ugly hack for Xorg 7.3, which doesn't call xf86WcmDevConvert
 			 * for coordinate conversion at the moment */
@@ -865,8 +863,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 
 			/* reports button up when the device has been
 			 * down and becomes out of proximity */
-			if (priv->oldButtons)
-				xf86WcmSendButtons(local,0,x,y,z,v3,v4,v5);
+			xf86WcmSendButtons(local,0,x,y,z,v3,v4,v5);
 
 			if (priv->oldProximity && local->dev->proximity)
 				xf86PostProximityEvent(local->dev,0,0,naxes,x,y,z,v3,v4,v5);
@@ -899,9 +896,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		}
 		else
 		{
-			if (priv->oldButtons)
-				xf86WcmSendButtons(local, buttons, 
-					x, y, z, v3, v4, v5);
+			xf86WcmSendButtons(local, 0, x, y, z, v3, v4, v5);
 			if (priv->oldProximity && local->dev->proximity)
  				xf86PostProximityEvent(local->dev, 0, 0, naxes, 
 				x, y, z, v3, v4, v5);
@@ -1082,6 +1077,7 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 			goto ret;
 		}
 	}
+
 	if (strstr(common->wcmModel->name, "Intuos4"))
 	{
 		/* convert Intuos4 mouse tilt to rotation */
@@ -1159,85 +1155,12 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 	common->wcmGesture = 0;
 #endif
 	/* process gestures */
-	if ((ds.device_type == TOUCH_ID) && common->wcmTouch && common->wcmGesture)
-	{
-		WacomChannelPtr pOtherChannel;
-		WacomDeviceState dsOther;
+	if ((ds.device_type == TOUCH_ID) && common->wcmTouch)
+		xf86WcmGestureFilter(priv, channel);
 
-		/* reset the initial count for a new getsure */
-		if (!ds.proximity)
-			common->wcmGestureUsed  = 0;
-
-		/* Get the other channel state */
-		if (channel)
-			pOtherChannel = common->wcmChannel;
-		else
-			pOtherChannel = common->wcmChannel + 1;
-		dsOther = pOtherChannel->valid.state;
-
-		/* exit gesture mode when both fingers are out */
-		if (!ds.proximity && !dsOther.proximity)
-		{
-			common->wcmGestureMode = 0;
-			common->wcmScrollDirection = 0;
-
-			/* send a touch out-prox event here
-			 * in case the FF was out before the SF */
-			channel = 0;
-		}
-		else
-		{
-			xf86WcmGestureFilter(priv);
-			/* don't move the cursor if in gesture mode
-			 * or it's the second finger
-			 */
-			if (common->wcmGestureMode || channel)
-			{
-				/* we are changing to Gesture mode
-				 * reset the touchpad mode
-				 */
-				if (common->wcmTouchpadMode && !channel)
-				{
-					/* left button up */
-					xf86WcmLeftClickOff(priv);
-					common->wcmTouchpadMode = 0;
-				}
-				goto ret;
-			}
-		}
-	}
-
-	/* process single finger Relative mode events 
-	 * if touch is not in an active gesture mode.
-	 */
-	if (ds.device_type == TOUCH_ID && common->wcmTouch && !channel &&
-	    !(priv->flags & ABSOLUTE_FLAG) && !common->wcmGestureMode)
-	{
-		static int tmpStamp = 0;
-
-		/* only first finger moves the cursor */
-		WacomChannelPtr aChannel = common->wcmChannel;
-		WacomDeviceState dsLast = aChannel->valid.states[1];
-		if (ds.proximity)
-		{
-			if (common->wcmTouchpadMode)
-				/* continuing left button down */
-				aChannel->valid.states[0].buttons |= 1;
-			else if (!dsLast.proximity && (abs(tmpStamp - ds.sample)
-				<= common->wcmTapTime))
-			{
-				/* initial left button down */
-				aChannel->valid.states[0].buttons |= 1;
-				common->wcmTouchpadMode = 1;
-			}
-		} else {
-			tmpStamp = GetTimeInMillis();
-			if (common->wcmTouchpadMode)
-				/* left button up */
-				aChannel->valid.states[0].buttons &= ~1;
-			common->wcmTouchpadMode = 0;				
-		}
-	}
+	/* don't move the cursor if in gesture mode */
+	if (common->wcmGestureMode)
+		goto ret;
 
 	/* For touch, only first finger moves the cursor */
 	if ((ds.device_type == TOUCH_ID && common->wcmTouch && !channel) ||
@@ -1443,32 +1366,46 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 					tempcommon = temppriv->common;
 
 					/* send touch out for Tablets with touch */
-					if (IsTouch(temppriv) && temppriv->oldProximity && /* touch was in prox */
-						(strstr(tempcommon->wcmModel->name, "ISDV4") || /* a serial Tablet PC */
-						strstr(tempcommon->wcmModel->name, "Bamboo") || /* a bamboo with touch? */
-						strstr(tempcommon->wcmModel->name, "TabletPC"))) /* an USB TabletPC */
-					{
+					if (IsTouch(temppriv) && temppriv->oldProximity) /* touch was in prox */
 						/* Send soft prox-out for touch */
 						xf86WcmSoftOutEvent(localDevices);
-					}
 				}
 			}
 		}
 
 		if (IsStylus(priv) || IsEraser(priv))
 		{
-			/* set button1 (left click) on/off */
-			if (filtered.pressure >= common->wcmThreshold)
-				filtered.buttons |= button;
-			else
+			double tmpP;
+
+			/* set the minimum pressure when in prox */
+			if (!priv->oldProximity)
+				priv->minPressure = filtered.pressure;
+			else if (priv->minPressure > filtered.pressure)
+				priv->minPressure = filtered.pressure;
+
+			/* normalize pressure to FILTER_PRESSURE_RES */
+			tmpP = (filtered.pressure - priv->minPressure)
+				 * FILTER_PRESSURE_RES;
+			tmpP /= common->wcmMaxZ - priv->minPressure;
+			filtered.pressure = (int)tmpP;
+
+			/* set button1 (left click) off */
+			if (filtered.pressure < common->wcmThreshold)
 			{
-				/* threshold tolerance */
-				int tol = common->wcmMaxZ / 250;
-				if (strstr(common->wcmModel->name, "Intuos4"))
-					tol = common->wcmMaxZ / 125;
-				if (filtered.pressure < common->wcmThreshold - tol)
-					filtered.buttons &= ~button;
+				filtered.buttons &= ~button;
+				if (priv->oldButtons & button) /* left click was on */
+				{
+					/* threshold tolerance */
+					int tol = common->wcmMaxZ / 250;
+					if (strstr(common->wcmModel->name, "Intuos4"))
+						tol = common->wcmMaxZ / 125;
+					if (filtered.pressure > common->wcmThreshold - tol)
+						filtered.buttons |= button;
+				}
 			}
+			else
+				filtered.buttons |= button;
+
 			/* transform pressure */
 			transPressureCurve(priv,&filtered);
 		}
@@ -1582,17 +1519,17 @@ void xf86WcmSoftOutEvent(LocalDevicePtr local)
 	WacomDeviceState out = { 0 };
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;
 	WacomCommonPtr common = priv->common;
-	WacomChannelPtr pChannel = common->wcmChannel;
-	WacomDeviceState ds = pChannel->valid.state;
 
 	out.device_type = DEVICE_ID(priv->flags);
+	out.device_id = IsStylus(priv) ? STYLUS_DEVICE_ID :
+		(IsEraser(priv) ? ERASER_DEVICE_ID : 
+		(IsCursor(priv) ? CURSOR_DEVICE_ID : 
+		(IsTouch(priv) ? TOUCH_DEVICE_ID :
+		PAD_DEVICE_ID)));
+
 	DBG(2, common->debugLevel, ErrorF("Send soft prox-out for"
 		" %s first\n", local->name));
 	xf86WcmSendEvents(local, &out);
-
-	/* reset wcmTouchpadMode */
-	if (ds.device_type == TOUCH_ID)
-		common->wcmTouchpadMode = 0;
 }
 
 void xf86WcmSoftOut(WacomCommonPtr common, int channel)

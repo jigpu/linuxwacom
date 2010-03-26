@@ -716,7 +716,8 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	input_dev->keybit[BIT_WORD(BTN_DIGI)] |= BIT_MASK(BTN_TOUCH);
 	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
 	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
-	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
+	if (features->device_type == BTN_TOOL_PEN)
+		input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
 	input_dev->absbit[BIT_WORD(ABS_MISC)] |= BIT_MASK(ABS_MISC);
 
 	wacom_init_input_dev(input_dev, wacom_wac);

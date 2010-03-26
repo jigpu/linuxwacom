@@ -1833,6 +1833,7 @@ proc updateModelInfo { } {
     for { set i 208 } { $i < 212 } { incr i 1 } {
         set hasPad($i) 1
         set numPadButtons($i) 4
+	set hasTouch($i) 1
 	set hasGesture($i) 1
     }
 

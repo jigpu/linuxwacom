@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org> 
- * Copyright 2002-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -94,9 +94,10 @@
  * 2009-12-29 47-pc0.8.5-9 - Merged support for Bamboo P&T from Ayuthia
  * 2010-02-09 47-pc0.8.5-10- Merged patches for Bamboo P&T from Jason Childs
  * 2010-03-10 47-pc0.8.5-11- Support X RandR
+ * 2010-03-24 47-pc0.8.5-12- Normalize pressure sensitivity to FILTER_PRESSURE_RES
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-11 $";
+static const char identification[] = "$Identification: 47-0.8.5-12 $";
 
 /****************************************************************************/
 
@@ -404,6 +405,10 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	/* support at least 7 buttons */
 	num_buttons = nbbuttons > 3 ? (7 + (nbbuttons - 3)) : 7;
 
+	/* make sure we stay in range */
+	if (num_buttons > MAX_BUTTONS)
+		num_buttons = MAX_BUTTONS;
+
 	for(loop=1; loop<=num_buttons; loop++)
 		butmap[loop] = loop;
 
@@ -526,9 +531,9 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	/* Rotation rotates the Max X and Y */
 	xf86WcmRotateTablet(local, common->wcmRotate);
 
-	/* pressure */
+	/* pressure. normalized to FILTER_PRESSURE_RES */
 	InitValuatorAxisStruct(local->dev, 2, 0, 
-		common->wcmMaxZ, 1, 1, 1);
+		FILTER_PRESSURE_RES, 1, 1, 1);
 
 	if (IsCursor(priv))
 	{

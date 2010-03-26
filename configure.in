@@ -182,7 +182,8 @@ else
 						22|23) WCM_KERNEL_VER="2.6.22";;
 						24|25) WCM_KERNEL_VER="2.6.24";;
 						26) WCM_KERNEL_VER="2.6.26";;
-						*) WCM_KERNEL_VER="2.6.27";;
+						27|28|29) WCM_KERNEL_VER="2.6.27";;
+						*) WCM_KERNEL_VER="2.6.30";;
 					esac
 				else
 					AC_MSG_WARN([support for kernels older than 2.6.9 has been dropped after 0.8.2])
@@ -870,12 +871,14 @@ if test "$enable_wacomxrrd" != "no"; then
 	if test "$WCM_OPTION_LIBWACOMCFG" != yes; then
 		AC_MSG_WARN([requires libwacomcfg, xsetwacom not built])
 	else
-		AC_MSG_RESULT(yes)
-		WCM_OPTION_WACOMXRRD=yes
+		AC_CHECK_HEADER(X11/extensions/Xrandr.h, [WCM_OPTION_WACOMXRRD=yes])
+	fi
+	if test "$WCM_OPTION_WACOMXRRD" = yes; then
 		WCM_WACOMXRRD_LIBS="-L$WCM_XLIB_DIR -lXrandr -lX11 -lXi"
 		WCM_PROGS="$WCM_PROGS wacomxrrd"
 	fi
 fi
+AM_CONDITIONAL(WCM_HAVE_RNR, test "$WCM_OPTION_WACOMXRRD" = "yes")
 
 dnl =======================================================
 dnl Check for xmoduledir
@@ -1018,6 +1021,7 @@ AC_OUTPUT(Makefile
 	src/2.6.24/Makefile
 	src/2.6.26/Makefile
 	src/2.6.27/Makefile
+	src/2.6.30/Makefile
 	src/wacomxi/Makefile
 	src/wacomxi/wacomcpl)
 
