@@ -146,7 +146,18 @@ When both fingers stay on the tablet and at least one finger moves away from its
 initial position or both fingers move in different directions, Zoom mode is in.
 Default to "on" for Tablet PCs that support two finger touch; "off" for all other
 models. However, this option can be turned on for those tablets that support two
-finger touch. 
+finger touch.
+.TP 4
+.B Option \fI"ZoomDistance"\fP \fI"number"\fP
+sets the minimum distance required before starting a zoom gesture (default is 50).
+.TP 4
+.B Option \fI"ScrollDistance"\fP \fI"number"\fP
+sets the minimum finger motion distance required for starting ascroll gesture 
+(default is 20).
+.TP 4
+.B Option \fI"TapTime"\fP \fI"number"\fP
+sets the minimum time between taps required for a right mouse click 
+(default is 250 ms).
 .TP 4
 .B Option \fI"Speed"\fP \fI"Rspeed"\fP
 sets the cursor's relative movement speed to Rspeed.  The default value is 1.0.  

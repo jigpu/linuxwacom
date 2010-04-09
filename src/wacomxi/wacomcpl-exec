@@ -53,7 +53,6 @@ set origin_y [ expr ($desktopHeight/2) - ($desktopHeight/4) ]
 set windowSize "700x300"
 
 set device ""
-set deviceIndex 0
 set showHelp 0
 set modeToggleB 33
 set ignoreButton 34
@@ -62,7 +61,8 @@ set displayToggleB 36
 set screenToggleB 37
 set keystrokeB 38
 set maxNumTablets 227
-set calibration_sequence_only	0
+set numControls 0
+set calibration_sequence_only 0
 
 proc updateCurrentScreenInfo {} {
     global device numScreens currentScreen 
@@ -105,7 +105,6 @@ proc pad {name geometry} {
 }
 
 proc updateXinitrc {device option value} {
-
     if { ![ file exists ~/.xinitrc ] } {
 	if { [ file exists ~/.xsession ] } {
 	    file copy -force ~/.xsession ~/.xsession.bak
@@ -142,45 +141,75 @@ proc updateXinitrc {device option value} {
 
 proc verifycalibResults { } {
     global device getOptionDefault xDevMin xDevMax yDevMin yDevMax
+    global screenWidth screenHeight size clickCheck tvID
 
-    set tol_offset [expr ($getOptionDefault($device,BottomY) / 4)]
-    set tol_left [expr ($getOptionDefault($device,BottomY) - $tol_offset) / 2]
-    set tol_right [expr ($getOptionDefault($device,BottomY) + $tol_offset) / 2]
-    set tol_bottom [expr ($getOptionDefault($device,BottomY) - $tol_offset)]
+    # Verifying the end results
+    if { $tvID == 1 } { # a Nvidia Xinerama setup
+	set tol_offset [expr ($getOptionDefault($device,BottomY) / 4)]
+	set tol_left [expr ($getOptionDefault($device,BottomY) - $tol_offset) / 2]
+	set tol_right [expr ($getOptionDefault($device,BottomY) + $tol_offset) / 2]
+	set tol_bottom [expr ($getOptionDefault($device,BottomY) - $tol_offset)]
 
-    # set tablet Y values to normal when offset is by whole of the tablet size.
-    # Whole has to be first and we do it two times to make sure.
-    if { $yDevMin > $tol_bottom } {
-	set yDevMin [expr ($yDevMin - $getOptionDefault($device,BottomY))]
-	set yDevMax [expr ($yDevMax - $getOptionDefault($device,BottomY))]
-    } 
-    if { $yDevMin > $tol_bottom } {
-	set yDevMin [expr ($yDevMin - $getOptionDefault($device,BottomY))]
-	set yDevMax [expr ($yDevMax - $getOptionDefault($device,BottomY))]
-    } elseif { ($yDevMin > $tol_left) && ($yDevMin < $tol_right) } {
-	# set tablet Y values to normal when offset is by half tablet size
-	set yDevMin [expr ($yDevMin - ($getOptionDefault($device,BottomY) / 2))]
-	set yDevMax [expr ($yDevMax - ($getOptionDefault($device,BottomY) / 2))]
-    }
+	# set tablet Y values to normal when offset is by whole of the tablet size.
+	# Whole has to be first and we do it two times to make sure.
+	if { $yDevMin > $tol_bottom } {
+	    set yDevMin [expr ($yDevMin - $getOptionDefault($device,BottomY))]
+	    set yDevMax [expr ($yDevMax - $getOptionDefault($device,BottomY))]
+	} 
+	if { $yDevMin > $tol_bottom } {
+	    set yDevMin [expr ($yDevMin - $getOptionDefault($device,BottomY))]
+	    set yDevMax [expr ($yDevMax - $getOptionDefault($device,BottomY))]
+	} elseif { ($yDevMin > $tol_left) && ($yDevMin < $tol_right) } {
+	    # set tablet Y values to normal when offset is by half tablet size
+	    set yDevMin [expr ($yDevMin - ($getOptionDefault($device,BottomY) / 2))]
+	    set yDevMax [expr ($yDevMax - ($getOptionDefault($device,BottomY) / 2))]
+	}
 
-    set tol_offset [expr ($getOptionDefault($device,BottomX) / 4)]
-    set tol_left [expr ($getOptionDefault($device,BottomX) - $tol_offset) / 2]
-    set tol_right [expr ($getOptionDefault($device,BottomX) + $tol_offset) / 2]
-    set tol_bottom [expr ($getOptionDefault($device,BottomX) - $tol_offset)]
+	set tol_offset [expr ($getOptionDefault($device,BottomX) / 4)]
+	set tol_left [expr ($getOptionDefault($device,BottomX) - $tol_offset) / 2]
+	set tol_right [expr ($getOptionDefault($device,BottomX) + $tol_offset) / 2]
+	set tol_bottom [expr ($getOptionDefault($device,BottomX) - $tol_offset)]
 
-    # set tablet X values to normal when offset is by whole of the tablet size. 
-    # Whole has to be first and we do it two times to make sure.
-    if { $xDevMin > $tol_bottom } {
-	set xDevMin [expr ($xDevMin - $getOptionDefault($device,BottomX))]
-	set xDevMax [expr ($xDevMax - $getOptionDefault($device,BottomX))]
-    } 
-    if { $xDevMin > $tol_bottom } {
-	set xDevMin [expr ($xDevMin - $getOptionDefault($device,BottomX))]
-	set xDevMax [expr ($xDevMax - $getOptionDefault($device,BottomX))]
-    } elseif { ($xDevMin > $tol_left) && ($xDevMin < $tol_right) } {
-	# set tablet X values to normal when offset is by half tablet size
-	set xDevMin [expr ($xDevMin - ($getOptionDefault($device,BottomX) / 2))]
-	set xDevMax [expr ($xDevMax - ($getOptionDefault($device,BottomX) / 2))]
+	# set tablet X values to normal when offset is by whole of the tablet size. 
+	# Whole has to be first and we do it two times to make sure.
+	if { $xDevMin > $tol_bottom } {
+	    set xDevMin [expr ($xDevMin - $getOptionDefault($device,BottomX))]
+	    set xDevMax [expr ($xDevMax - $getOptionDefault($device,BottomX))]
+	} 
+	if { $xDevMin > $tol_bottom } {
+	    set xDevMin [expr ($xDevMin - $getOptionDefault($device,BottomX))]
+	    set xDevMax [expr ($xDevMax - $getOptionDefault($device,BottomX))]
+	} elseif { ($xDevMin > $tol_left) && ($xDevMin < $tol_right) } {
+	    # set tablet X values to normal when offset is by half tablet size
+	    set xDevMin [expr ($xDevMin - ($getOptionDefault($device,BottomX) / 2))]
+	   set xDevMax [expr ($xDevMax - ($getOptionDefault($device,BottomX) / 2))]
+	}
+    } else {
+	set tol_w [expr ($getOptionDefault($device,BottomY) - $getOptionDefault($device,TopY)) * $size / $screenHeight]
+	set tol_h [expr ($getOptionDefault($device,BottomX) - $getOptionDefault($device,TopX)) * $size / $screenWidth]
+
+	set tol_top [expr $getOptionDefault($device,TopY)]
+	set tol_bottom [expr $tol_top + $tol_h]
+	set tol_left [expr $getOptionDefault($device,TopX)]
+	set tol_right [expr $tol_left + $tol_w]
+
+	if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) ||
+		($yDevMin < $tol_top) || ($yDevMin > $tol_bottom) } {
+	    set clickCheck 1
+	}
+
+	set tol_w [expr ($getOptionDefault($device,BottomY) - $getOptionDefault($device,TopY)) * $size / $screenHeight]
+	set tol_h [expr ($getOptionDefault($device,BottomX) - $getOptionDefault($device,TopX)) * $size / $screenWidth]
+
+	set tol_bottom [expr $getOptionDefault($device,BottomY)]
+	set tol_top [expr $tol_bottom - $tol_h]
+	set tol_right [expr $getOptionDefault($device,BottomX)]
+	set tol_left [expr $tol_right - $tol_w]
+
+	if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) ||
+		($yDevMax < $tol_top) || ($yDevMax > $tol_bottom) } {
+	    set clickCheck 1
+	}
     }
 }
 
@@ -191,7 +220,7 @@ proc calibrationSequence {which xDev yDev} {
     global getDeviceModel screenXBottom screenYBottom
     global calibX_org calibY_org calibX_botm calibY_botm
     global xDevMin xDevMax yDevMin yDevMax
-    global calibration_sequence_only
+    global calibration_sequence_only clickCheck
 
     set scaling [exec xsetwacom get "$device" xscaling]
     if { $scaling == 1 } {
@@ -205,22 +234,29 @@ proc calibrationSequence {which xDev yDev} {
     set calibResults(yDev,$which) $yDev
 
     if { $which == 0 } {
-	.topleft.m configure -background "#505075"
 	wacomxi::bindevent .topleft.m "$orig_device" <ButtonRelease> ""
+
+	set xDevMin $calibResults(xDev,0)
+	set yDevMin $calibResults(yDev,0)
+
+	.topleft.m configure -background "#505075"
+	.topleft.m configure -cursor "watch #505075 #505075"
 	.bottomright.m configure -background "#df94df"
+	#hide the cursor
+	.bottomright.m configure -cursor "center_ptr #df94df #df94df"
 	wacomxi::bindevent .bottomright.m "$orig_device" <ButtonRelease> \
 		{calibrationSequence 1 %0 %1}
     } elseif { $which == 1 } {
-	.bottomright.m configure -background "#505075"
 	wacomxi::bindevent .bottomright.m "$orig_device" <ButtonRelease> ""	
 	set borderOffset [expr ($size / 2 )]
 
+	set xDevMax $calibResults(xDev,1)
+	set yDevMax $calibResults(yDev,1)
+	.bottomright.m configure -background "#505075"
+	.bottomright.m configure -cursor "watch #505075 #505075"
+
 	# A direction verification of the click
 	set clickCheck 0
-	set xDevMin $calibResults(xDev,0)
-	set xDevMax $calibResults(xDev,1)
-	set yDevMin $calibResults(yDev,0)
-	set yDevMax $calibResults(yDev,1)
 	if { $calibResults(xDev,1) < $calibResults(xDev,0) } {
 	    set clickCheck 1
 	    set xDevMin $calibResults(xDev,1)
@@ -232,14 +268,6 @@ proc calibrationSequence {which xDev yDev} {
 	    set yDevMax $calibResults(yDev,0)
 	}
 
-	if { $clickCheck == 1 } {
-	    messageWindow "Warning !!!" \
-		"\n\nThere was something unusual in your calibration step.\n\
-		If you are pretty sure that you have clicked on the center\n\
-		of the pink crosshair, you are fine. Otherwise, try it again."
-	}
-
-	# Verifying the end results 
 	verifycalibResults
 
 	set widthDev [expr $xDevMax - $xDevMin]
@@ -256,6 +284,7 @@ proc calibrationSequence {which xDev yDev} {
 	updateXinitrc $device topy $yDevMin
 	updateXinitrc $device bottomx $xDevMax
 	updateXinitrc $device bottomy $yDevMax
+
 	# send the same data to the associated eraser if it is a stylus
 	set type $getDeviceModel($device,type)
 	if { ![ string compare $type "stylus" ] } {
@@ -268,10 +297,24 @@ proc calibrationSequence {which xDev yDev} {
 	    }
 	}
 
+	if { $clickCheck == 1 } {
+	    messageWindow "Warning !!!" \
+		"\n\nIf the cursor follows the tip of your\n\
+		tool better than before, you are fine.\n\
+		Otherwise, please rerun the calibration\n\
+		steps and make sure you are clicking\n\
+		on the center of the pink crosshairs."
+	}
+
 	destroy .topleft .bottomright
 	if { $numScreens($device) > 1 } {
-	    .screen.list.label configure -text ""
- 	    bindtags .screen.list.list $screenTags
+            if { $calibration_sequence_only == 0 } {
+		.screen.list.label configure -text ""
+ 		bindtags .screen.list.list $screenTags
+	    } else {
+		.list.label configure -text ""
+ 		bindtags .list.list $screenTags
+	    }
 	} else {
             if { $calibration_sequence_only == 1 } {
                 exit 0
@@ -284,7 +327,7 @@ proc calibrationSequence {which xDev yDev} {
 
 proc Calibration {} {
     global numScreens device screenTags getOption Option 
-    global calibX_org calibY_org calibX_botm calibY_botm tvID
+    global tvID calibration_sequence_only
 
     # mainly to get the defaults
     set Option(1) "TopX"
@@ -298,36 +341,51 @@ proc Calibration {} {
     set mode $getOption($device,Mode)
     set tvID $getOption($device,TwinView)
 
-    if { $mode != 1 } {
-	disableButtons
-	messageWindow "Warning " "\n\nDevice $device is in relative mode. \n\
+    if { $calibration_sequence_only == 0 } {
+	if { $mode != 1 } {
+	    disableButtons
+	    messageWindow "Warning " "\n\nDevice $device is in relative mode. \n\
 		You can calibrate $device only when it is in absolute mode. \n\
 		Please swith $device's mode and try again. "
-	closeTabWindow
-	return
+	    closeTabWindow
+	    return
+	}
     }
 
-    bindtags .workingDev.list .
+#    bindtags .workingDev.list .
     if { $numScreens($device) > 1 } {
 	displayScreenList $device
-	set screenTags [ bindtags .screen.list.list]
-	.screen.list.title configure -text "Select $device associated Screen:"
-	wm state .screen normal
+	if { $calibration_sequence_only == 0 } {
+		set screenTags [ bindtags .screen.list.list]
+		.screen.list.title configure -text "Select $device associated Screen:"
+		wm state .screen normal
+	} else {
+		set screenTags [ bindtags .list.list]
+		.list.title configure -text "Select $device associated Screen:"
+		wm state . normal
+	}
     } else {
 	updateCurrentScreenInfo
 	startCalibration
     }
-    disableButtons
+
+    if { $calibration_sequence_only == 0 } {
+	disableButtons
+    }
 }
 
 proc startCalibration {} {
     global device size numScreens tvID orig_device
     global calibResults calibX_org calibY_org calibX_botm calibY_botm
     global screenX_org screenY_org screenXBottom screenYBottom
-    global screenWidth screenHeight 
+    global screenWidth screenHeight calibration_sequence_only
     
     if { $numScreens($device) > 1 } {
-	bindtags .screen.list.list .
+	if { $calibration_sequence_only == 0 } {
+	     bindtags .screen.list.list .
+	} else {
+	     bindtags .list.list .
+	}
     }
 
     # convert underscores back to spaces for wacomxi.c
@@ -354,8 +412,13 @@ proc startCalibration {} {
     catch {unset calibResults}
     exec xsetwacom set "$device" xydefault
     .topleft.m configure -background "#df94df"
+    # hide the cursor
+    .topleft.m configure -cursor "center_ptr #df94df #df94df"
     wacomxi::bindevent .topleft.m "$orig_device" <ButtonRelease> \
 		{calibrationSequence 0 %0 %1}
+    .bottomright.m configure -background "#505075"
+    #hide the cursor
+    .bottomright.m configure -cursor "watch #505075 #505075"
     helpWindow "Help Window " \
 		"\n\nPlease click on the center of \n\
 		the pink crosshair using $device \n\
@@ -396,9 +459,15 @@ proc messageWindow { tString mString } {
 proc updateScreenList {} {
     global currentScreen numScreens screenWidth screenHeight
     global device screenX_org screenY_org origin_x origin_y
+    global calibration_sequence_only
 
     if { $numScreens($device) > 1 } {
-	set cScreen [ .screen.list.list get anchor ]
+	if { $calibration_sequence_only == 0 } {
+	    set cScreen [ .screen.list.list get anchor ]
+	} else {
+	    set cScreen [ .list.list get anchor ]
+	}
+
 	for { set i 0 } { $i < $numScreens($device) } { incr i 1 } {
 	    if { $cScreen == "Screen$i" } {
 		set currentScreen $i
@@ -410,10 +479,16 @@ proc updateScreenList {} {
     set origin_x [ expr $screenX_org+$screenWidth/2-$screenWidth/4 ]
     set origin_y [ expr $screenY_org+$screenHeight/2-$screenHeight/4 ]
     wm geometry . =+$origin_x+$origin_y
-    .screen.list.label configure -text $cScreen
-    set o_x [ expr $origin_x+100 ]
-    set o_y [ expr $origin_y+20 ]
-    wm geometry .screen =+$o_x+$o_y
+
+    if { $calibration_sequence_only == 0 } {
+	.screen.list.label configure -text $cScreen
+	set o_x [ expr $origin_x+100 ]
+	set o_y [ expr $origin_y+20 ]
+	wm geometry .screen =+$o_x+$o_y
+    } else {
+	.list.label configure -text $cScreen
+    }
+
     startCalibration
 }
 
@@ -547,12 +622,10 @@ proc CreateDevicePanel { type model } {
 }
 
 proc updateDevice {} {
-    global device deviceIndex hasPad isLCD orig_device
-    global numScreens getDeviceModel hasTouch
+    global device orig_device getDeviceModel
 
     set olddev $device
     set device [ .workingDev.list get anchor ]
-    set deviceIndex [ .workingDev.list index anchor ]
     if { $device != $olddev && $olddev != ""} {
 	# convert underscores back to spaces for wacomxi.c
    	regsub -all {_} $olddev " " orig_device
@@ -580,11 +653,11 @@ proc updateDevice {} {
 }
 
 proc createDeviceList {} {
-    global getDeviceModel
+    global getDeviceModel deviceList
 
     set infoString [exec xsetwacom list]
     set index 0
-    set devices ""
+    set deviceList ""
     set dev [ lindex $infoString $index ]
 
     while { $dev != "" } {
@@ -594,11 +667,35 @@ proc createDeviceList {} {
 	if { [catch { exec xsetwacom get "$dev" TabletID } model] == 0 } {
 	    set getDeviceModel($dev,type) $type
 	    set getDeviceModel($dev,model) $model
-	    set devices "$devices \"$dev\""
+	    set deviceList "$deviceList \"$dev\""
 	    set index [ expr $index+1 ]
 	}
 	set dev [ lindex $infoString $index ]
     }
+
+    foreach dev $deviceList {
+	# initial related erasers for styli
+	set getDeviceModel($dev,eraser) ""
+    }
+
+    foreach dev $deviceList {
+	set type $getDeviceModel($dev,type)
+	if { ![string compare $type "eraser"] } {
+	    set model $getDeviceModel($dev,model)
+	    foreach dev1 $deviceList {
+		set type1 $getDeviceModel($dev1,type)
+		set model1 $getDeviceModel($dev1,model)
+		if { ( $model == $model1 ) &&
+			 ![string compare $type1 "stylus"] } {
+		    set getDeviceModel($dev1,eraser) $dev
+		}
+	    }
+	}
+    }
+}
+
+proc createDeviceListPanel {} {
+    global deviceList
 
     frame .workingDev
     label .workingDev.title -text "Select the Device:"
@@ -611,33 +708,17 @@ proc createDeviceList {} {
     grid .workingDev.label -row 1 -column 0 -columnspan 8 -sticky we
     grid .workingDev.list -row 2 -column 0
     grid .workingDev.sb -row 2 -sticky nse
-    set flag 0
-    foreach dev $devices {
-	# initial related erasers for styli
-	set getDeviceModel($dev,eraser) ""
-    }
-    foreach dev $devices {
+
+    createDeviceList
+    foreach dev $deviceList {
 	.workingDev.list insert end $dev
 	createScreenList $dev
-	set type $getDeviceModel($dev,type)
-	if { ![string compare $type "eraser"] } {
-	    set model $getDeviceModel($dev,model)
-	    foreach dev1 $devices {
-		set type1 $getDeviceModel($dev1,type)
-		set model1 $getDeviceModel($dev1,model)
-		if { ( $model == $model1 ) 
-			&& ![string compare $type1 "stylus"] } {
-		    set getDeviceModel($dev1,eraser) $dev
-		}
-	    }
-	}
     }
     bind .workingDev.list <ButtonRelease-1> updateDevice
 }
 
 proc createScreenList { dev } {
-    global numScreens currentScreen
-    global desktopHeight desktopWidth getScreenInfo
+    global numScreens currentScreen getScreenInfo
 
     set numScreens($dev) [ exec xsetwacom get "$dev" NumScreen ]
     for { set i 0 } {$i < $numScreens($dev)} { incr i 1 } {
@@ -650,40 +731,64 @@ proc createScreenList { dev } {
 }
 
 proc screenCancel {} {
-    global screenTags
+    global calibration_sequence_only
 
-    closeTabWindow
-    destroy .topleft .bottomright .screen
+    destroy .topleft .bottomright
+    if { $calibration_sequence_only == 0 } {
+	closeTabWindow
+	destroy .screen
+    } else {
+	exit 0
+    }
 }
 
 proc displayScreenList { dev } {
-    global numScreens currentScreen 
+    global numScreens currentScreen calibration_sequence_only
 
     if {  $numScreens($dev) <= 1  } {
 	return
     }
-    toplevel .screen
-    wm title .screen "Screen List Window"
-    wm transient .screen .
-    wm geometry .screen =250x200
-    wm state .screen withdraw
-    button .screen.cancel -text "Close" -command screenCancel
 
-    frame .screen.list
-    label .screen.list.title -text "Select the Screen:"
-    label .screen.list.label -background gray
-    listbox .screen.list.list -width 12 -height 5 -yscrollcommand ".screen.list.sb set"
-    scrollbar .screen.list.sb -width 10 -command ".screen.list yview"
-    grid .screen.list.title -row 2 -column 0 -columnspan 3 -sticky we
-    grid .screen.list.label -row 3 -column 0 -columnspan 3 -sticky we
-    grid .screen.list.list -row 4 -column 0
-    grid .screen.list.sb -row 4 -column 1 -sticky nse
-    for { set i 0 } { $i < $numScreens($dev) } { incr i } {
-	.screen.list.list insert end "Screen$i"
+    if { $calibration_sequence_only == 0} {
+	toplevel .screen
+	wm title .screen "Screen List Window"
+	wm transient .screen .
+	wm geometry .screen =250x200
+	wm state .screen withdraw
+	button .screen.cancel -text "Close" -command screenCancel
+	grid .screen.cancel -row 10
+	frame .screen.list
+	label .screen.list.title -text "Select the Screen:"
+	label .screen.list.label -background gray
+	listbox .screen.list.list -width 12 -height 5 -yscrollcommand ".screen.list.sb set"
+	scrollbar .screen.list.sb -width 10 -command ".screen.list yview"
+	grid .screen.list.title -row 2 -column 0 -columnspan 3 -sticky we
+	grid .screen.list.label -row 3 -column 0 -columnspan 3 -sticky we
+	grid .screen.list.list -row 4 -column 0
+	grid .screen.list.sb -row 4 -column 1 -sticky nse
+	for { set i 0 } { $i < $numScreens($dev) } { incr i } {
+	    .screen.list.list insert end "Screen$i"
+        }
+	bind .screen.list.list <ButtonRelease-1> updateScreenList
+	pack .screen.list .screen.cancel
+    } else {
+	button .cancel -text "Close" -command screenCancel
+	grid .cancel -row 10
+	frame .list
+	label .list.title -text "Select the Screen:"
+	label .list.label -background gray
+	listbox .list.list -width 12 -height 5 -yscrollcommand ".list.sb set"
+	scrollbar .list.sb -width 10 -command ".list yview"
+	grid .list.title -row 2 -column 0 -columnspan 3 -sticky we
+	grid .list.label -row 3 -column 0 -columnspan 3 -sticky we
+	grid .list.list -row 4 -column 0
+	grid .list.sb -row 4 -column 1 -sticky nse
+	for { set i 0 } { $i < $numScreens($dev) } { incr i } {
+	    .list.list insert end "Screen$i"
+	}
+	bind .list.list <ButtonRelease-1> updateScreenList
+	pack .list .cancel
     }
-    bind .screen.list.list <ButtonRelease-1> updateScreenList
-    grid .screen.cancel -row 10
-    pack .screen.list .screen.cancel
 }
 
 proc updateButton {} {
@@ -1885,12 +1990,12 @@ proc updateModelInfo { } {
 
 proc createControls { } {
     global numScreens currentScreen cKeys spName
-    global desktopHeight desktopWidth oldKeys numStrips
+    global oldKeys numStrips
     global workingTags db dm sm wName bName numButton
     global doubleClickB ignoreButton displayToggleB 
     global modeToggleB keystrokeB screenToggleB 
 
-    createDeviceList 
+    createDeviceListPanel 
     updateModelInfo
 
     set db(1) "Left"
@@ -1944,20 +2049,22 @@ proc createControls { } {
 }
 
 proc CalibrateOnly { dev } {
-    global device calibration_sequence_only getDeviceModel
+    global device calibration_sequence_only
+
     set calibration_sequence_only 1
+    createDeviceList
     set device $dev
-    CreateDevicePanel $getDeviceModel($device,type) $getDeviceModel($device,model)
+    createScreenList $dev
     Calibration
 }
 
-createControls
-
-wm title . "Wacom Control Panel"
 if { $argc > 1 && [lindex $argv 0] == "calibrate" } {
-    wm geometry . =0x0+0+0
+    wm title . "Wacom Control Panel -Calibration"
     CalibrateOnly [lindex $argv 1]
+    wm geometry . =350x200+$origin_x+$origin_y
 } else {
+    wm title . "Wacom Control Panel"
+    createControls
     wm geometry . =$windowSize+$origin_x+$origin_y
 }
 

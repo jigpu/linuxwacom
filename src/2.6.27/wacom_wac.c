@@ -159,11 +159,11 @@ static void wacom_bpt_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 	x = wacom_be16_to_cpu ((unsigned char *)&data[3 + (idx * 9)]) & 0x7ff;
 	y = wacom_be16_to_cpu ((unsigned char *)&data[5 + (idx * 9)]) & 0x7ff;
 
-	if (wacom->shared->last_finger != finger) {
-		if (x == wacom->shared->last_x)
+	if (wacom->last_finger != finger) {
+		if (x == input->abs[ABS_X])
 			x += finger;
 
-		if (y == wacom->shared->last_y)
+		if (y == input->abs[ABS_Y])
 			y += finger;
 	}
 
@@ -177,9 +177,7 @@ static void wacom_bpt_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 	wacom_input_event(wcombo, EV_MSC, MSC_SERIAL, finger);
 	wacom_input_sync(wcombo);
 
-	wacom->shared->last_x = x;
-	wacom->shared->last_y = y;
-	wacom->shared->last_finger = finger;
+	wacom->last_finger = finger;
 }
 
 static void wacom_bpt_touch_out(struct wacom_wac *wacom, void *wcombo, int idx)
@@ -265,12 +263,9 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, void *wcombo)
 
 		prox = (data[17] & 0x30 >> 4);
 		if (prox) {
-			/* initialize shared (x,y) */
-			if (!wacom->id[1]) {
-				wacom->shared->last_x = 0;
-				wacom->shared->last_y = 0;
-				wacom->shared->last_finger = 1;
-			}
+			/* initialize last touched finger */
+			if (!wacom->id[1])
+				wacom->last_finger = 1;
 
 			wacom_bpt_touch_in(wacom, wcombo);
 		} else {
@@ -286,27 +281,10 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, void *wcombo)
 	    		(((data[12] & 0x80) >> 6) & 0x2);
 
 	} else if (urb->actual_length == WACOM_PKGLEN_BBFUN) { /* Penabled */
-		int x, y, pressure, distance;
-		int tip, button_1, button_2;
-		int in_box, has_data, moving;
-		int eraser;
-
-  		tip = data[1] & 0x01;
-		button_1 = (data[1] & 0x02) >> 1;
-		button_2 = (data[1] & 0x04) >> 2;
-		eraser = (data[1] & 0x08) >> 3;
-		in_box = (data[1] & 0x10) >> 4;
-		has_data = (data[1] & 0x20) >> 5;
-		moving = (data[1] & 0x40) >> 6;
-		prox = (data[1] & 0x80) >> 7;
-
-		x = wacom_le16_to_cpu(&data[2]);
-		y = wacom_le16_to_cpu(&data[4]);
-		pressure = wacom_le16_to_cpu(&data[6]);
-		distance = data[8];
+		prox = (data[1] & 0x10) && (data[1] & 0x20);
 
 		if (!wacom->shared->stylus_in_proximity) { /* in-prox */
-			if (eraser) {
+			if (data[1] & 0x08) {
 				wacom->tool[0] = BTN_TOOL_RUBBER;
 				wacom->id[0] = ERASER_DEVICE_ID;
 			} else {
@@ -315,18 +293,18 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, void *wcombo)
 			}
 			wacom->shared->stylus_in_proximity = true;
 		}
-		wacom_report_abs(wcombo, ABS_X, x);
-		wacom_report_abs(wcombo, ABS_Y, y);
-		wacom_report_abs(wcombo, ABS_PRESSURE, pressure);
-		wacom_report_abs(wcombo, ABS_DISTANCE, distance);
-		wacom_report_key(wcombo, BTN_TOUCH, tip);
-		wacom_report_key(wcombo, BTN_STYLUS, button_1);
-		wacom_report_key(wcombo, BTN_STYLUS2, button_2);
-		if (!(has_data && in_box)) {
+		wacom_report_abs(wcombo, ABS_X, wacom_le16_to_cpu(&data[2]));
+		wacom_report_abs(wcombo, ABS_Y, wacom_le16_to_cpu(&data[4]));
+		wacom_report_abs(wcombo, ABS_PRESSURE, wacom_le16_to_cpu(&data[6]));
+		wacom_report_abs(wcombo, ABS_DISTANCE, data[8]);
+		wacom_report_key(wcombo, BTN_TOUCH, data[1] & 0x01);
+		wacom_report_key(wcombo, BTN_STYLUS, data[1] & 0x02);
+		wacom_report_key(wcombo, BTN_STYLUS2, data[1] & 0x04);
+		if (!prox) {
 			wacom->id[0] = 0;
 			wacom->shared->stylus_in_proximity = false;
 		}
-		wacom_report_key(wcombo, wacom->tool[0], has_data && in_box);
+		wacom_report_key(wcombo, wacom->tool[0], prox);
 		wacom_report_abs(wcombo, ABS_MISC, wacom->id[0]);
 		retval = 1;
 	}
@@ -780,11 +758,11 @@ static void wacom_tpc_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 	int x = wacom_le16_to_cpu (&data[finger * 2]) & 0x7fff;
 	int y = wacom_le16_to_cpu (&data[4 + (finger * 2)]) & 0x7fff;
 
-	if (finger != wacom->shared->last_finger) {
-		if (x == wacom->shared->last_x)
+	if (finger != wacom->last_finger) {
+		if (x == input->abs[ABS_X])
 			x += finger;
 
-		if (y == wacom->shared->last_y)
+		if (y == input->abs[ABS_Y])
 			y += finger;
 	}
 
@@ -797,9 +775,7 @@ static void wacom_tpc_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 	wacom_input_event(wcombo, EV_MSC, MSC_SERIAL, finger);
 	wacom_input_sync(wcombo);
 
-	wacom->shared->last_x = x;
-	wacom->shared->last_y = y;
-	wacom->shared->last_finger = finger;
+	wacom->last_finger = finger;
 }
 
 static void wacom_tpc_touch_out(struct wacom_wac *wacom, void *wcombo, int idx)
@@ -894,12 +870,9 @@ static int wacom_tpc_irq(struct wacom_wac *wacom, void *wcombo)
 		}
 
 		if (prox) {
-			/* initialize shared (x,y) */
-			if (!wacom->id[1]) {
-				wacom->shared->last_x = 0;
-				wacom->shared->last_y = 0;
-				wacom->shared->last_finger = 1;
-			}
+			/* initialize last touched finger */
+			if (!wacom->id[1])
+				wacom->last_finger = 1;
 
 			wacom_tpc_touch_in(wacom, wcombo);
 		} else {

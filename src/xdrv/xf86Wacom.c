@@ -39,24 +39,6 @@
 /*
  * REVISION HISTORY
  *
- * 2005-10-17 47-pc0.7.1 - Added DTU710, DTF720, G4
- * 2005-11-17 47-pc0.7.1-1 - Report tool serial number and ID to Xinput
- * 2005-12-02 47-pc0.7.1-2 - Grap the USB port so /dev/input/mice won't get it
- * 2005-12-21 47-pc0.7.2 - new release
- * 2006-03-21 47-pc0.7.3 - new release
- * 2006-03-31 47-pc0.7.3-1 - new release
- * 2006-05-03 47-pc0.7.4 - new release
- * 2006-07-17 47-pc0.7.5 - Support button/key combined events
- * 2006-11-13 47-pc0.7.7 - Updated Xinerama setup support
- * 2007-01-31 47-pc0.7.7-3 - multiarea support
- * 2007-02-09 47-pc0.7.7-5 - Support keystrokes
- * 2007-03-28 47-pc0.7.7-7 - multiarea support
- * 2007-03-29 47-pc0.7.7-8 - clean up code
- * 2007-05-01 47-pc0.7.7-9 - fixed 2 bugs
- * 2007-05-18 47-pc0.7.7-10 - support new xsetwacom commands
- * 2007-06-05 47-pc0.7.7-11 - Test Ron's patches
- * 2007-06-15 47-pc0.7.7-12 - enable changing number of raw data 
- * 2007-06-25 47-pc0.7.8 - new release
  * 2007-10-25 47-pc0.7.9-1 - Support multimonitors in both horizonal and vertical settings
  * 2007-11-21 47-pc0.7.9-3 - Updated TwinView screen switch offset
  * 2007-12-07 47-pc0.7.9-4 - Support Cintiq 12WX and Bamboo
@@ -95,9 +77,10 @@
  * 2010-02-09 47-pc0.8.5-10- Merged patches for Bamboo P&T from Jason Childs
  * 2010-03-10 47-pc0.8.5-11- Support X RandR
  * 2010-03-24 47-pc0.8.5-12- Normalize pressure sensitivity to FILTER_PRESSURE_RES
+ * 2010-04-09 47-pc0.8.6   - initial stable release
  */
 
-static const char identification[] = "$Identification: 47-0.8.5-12 $";
+static const char identification[] = "$Identification: 47-0.8.6 $";
 
 /****************************************************************************/
 
@@ -579,16 +562,14 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	{
 		/* hard prox out */
 		priv->hardProx = 0;
-		/* Change Capacity and Mode defaults for Bamboo
+		/* Change Mode defaults for Bamboo
 		 * NOTE: This is here because the first time X starts
 		 * tablet configuration via HAL is already completed
 		 * before tablet_id is set, so this ensures that the
-		 * Capacity is set correctly and we are in relative mode
-		 * by default regardless of the state of X configuration.
+		 * tablet is in relative mode by default regardless 
+		 * of the state of X configuration.
 		 */
 		if (common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3) {
-			/* set capacity default to 3 for Bamboo */
-			common->wcmCapacityDefault = 3;
 			/* default touch to relative mode */
 			priv->flags &= ~ABSOLUTE_FLAG;
 		}
@@ -826,7 +807,6 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 	int len, pos, cnt, remaining;
-	unsigned char * data;
 
  	DBG(10, common->debugLevel, ErrorF("xf86WcmReadPacket: device=%s"
 		" fd=%d \n", common->wcmDevice, local->fd));
@@ -863,29 +843,6 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 
 	pos = 0;
 
-	/* while there are whole packets present, check the packet length
-	 * for serial ISDv4 packet since it's different for pen and touch
-	 */
-	if (common->wcmForceDevice == DEVICE_ISDV4 && common->wcmDevCls != &gWacomUSBDevice) 
-	{
-		data = common->buffer;
-		if (data[0])
-			common->wcmPktLength = WACOM_PKGLEN_TPC;
-		else if ((common->tablet_id != 0x9f) &&
-			(common->tablet_id != 0xe2)) /* penabled as default */
-			common->wcmPktLength = WACOM_PKGLEN_TPC;
-
-		if ( data[0] & 0x10 )
-		{
-			/* set touch PktLength */
-			common->wcmPktLength = WACOM_PKGLEN_TOUCH0;
-			if ((common->tablet_id == 0x9a) || (common->tablet_id == 0x9f))
-				common->wcmPktLength = WACOM_PKGLEN_TOUCH;
-			if ((common->tablet_id == 0xe2) || (common->tablet_id == 0xe3))
-				common->wcmPktLength = WACOM_PKGLEN_TOUCH2FG;
-		}
-	}
-
 	while ((common->bufpos - pos) >=  common->wcmPktLength)
 	{
 		/* parse packet */
@@ -896,29 +853,6 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 			break;
 		}
 		pos += cnt;
-
-		if (common->wcmDevCls != &gWacomUSBDevice) 
-		{
-			data = common->buffer + pos;
-			if ( data[0] & 0x18 )
-			{
-				if (common->wcmPktLength == WACOM_PKGLEN_TPC)
-				{
-					DBG(1, common->debugLevel, 
-						ErrorF("xf86WcmReadPacket: not a pen data any more \n"));
-					break;	
-				}
-			}
-			else
-			{
-				if (common->wcmPktLength != WACOM_PKGLEN_TPC)
-				{
-					DBG(1, common->debugLevel, 
-						ErrorF("xf86WcmReadPacket: not a touch data any more \n"));
-					break;	
-				}
-			}
-		}
 	}
  
 	if (pos)

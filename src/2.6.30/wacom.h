@@ -93,7 +93,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.52"
+#define DRIVER_VERSION "v1.52-pc-0.1"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB Wacom tablet driver"
 #define DRIVER_LICENSE "GPL"

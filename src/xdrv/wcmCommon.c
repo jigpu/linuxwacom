@@ -733,7 +733,6 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		priv->oldZ = z;
 		priv->oldTiltX = tx;
 		priv->oldTiltY = ty;
-		priv->oldCapacity = ds->capacity;
 		priv->oldStripX = ds->stripx;
 		priv->oldStripY = ds->stripy;
 		priv->oldRot = rot;
@@ -913,7 +912,6 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		priv->oldX = priv->currentX;
 		priv->oldY = priv->currentY;
 		priv->oldZ = z;
-		priv->oldCapacity = ds->capacity;
 		priv->oldTiltX = tx;
 		priv->oldTiltY = ty;
 		priv->oldStripX = ds->stripx;
@@ -928,7 +926,6 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 		priv->oldX = 0;
 		priv->oldY = 0;
 		priv->oldZ = 0;
-		priv->oldCapacity = ds->capacity;
 		priv->oldTiltX = 0;
 		priv->oldTiltY = 0;
 		priv->oldStripX = 0;
@@ -959,7 +956,6 @@ static int xf86WcmSuppress(WacomCommonPtr common, WacomDeviceState* dsOrig,
 	if (ABS(dsOrig->tiltx - dsNew->tiltx) > suppress) returnV = 1;
 	if (ABS(dsOrig->tilty - dsNew->tilty) > suppress) returnV = 1;
 	if (ABS(dsOrig->pressure - dsNew->pressure) > suppress) returnV = 1;
-	if (ABS(dsOrig->capacity - dsNew->capacity) > suppress) returnV = 1;
 	if (ABS(dsOrig->throttle - dsNew->throttle) > suppress) returnV = 1;
 	if (ABS(dsOrig->rotation - dsNew->rotation) > suppress &&
 		(1800 - ABS(dsOrig->rotation - dsNew->rotation)) >  suppress) returnV = 1;
@@ -1396,10 +1392,12 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 				if (priv->oldButtons & button) /* left click was on */
 				{
 					/* threshold tolerance */
-					int tol = common->wcmMaxZ / 250;
-					if (strstr(common->wcmModel->name, "Intuos4"))
-						tol = common->wcmMaxZ / 125;
-					if (filtered.pressure > common->wcmThreshold - tol)
+					int tol = FILTER_PRESSURE_RES / 125;
+
+					/* don't set it off if it is within the tolerance 
+					   and the tolerance is larger than threshold */
+					if ((common->wcmThreshold > tol) &&
+					    (filtered.pressure > common->wcmThreshold - tol))
 						filtered.buttons |= button;
 				}
 			}
@@ -1560,18 +1558,11 @@ static void transPressureCurve(WacomDevicePtr pDev, WacomDeviceStatePtr pState)
 		int p = pState->pressure;
 
 		/* clip */
-		p = (p < 0) ? 0 : (p > pDev->common->wcmMaxZ) ?
-			pDev->common->wcmMaxZ : p;
-
-		/* rescale pressure to FILTER_PRESSURE_RES */
-		p = (p * FILTER_PRESSURE_RES) / pDev->common->wcmMaxZ;
+		p = (p < 0) ? 0 : (p > FILTER_PRESSURE_RES) ?
+			FILTER_PRESSURE_RES : p;
 
 		/* apply pressure curve function */
 		p = pDev->pPressCurve[p];
-
-		/* scale back to wcmMaxZ */
-		pState->pressure = (p * pDev->common->wcmMaxZ) /
-			FILTER_PRESSURE_RES;
 	}
 }
 

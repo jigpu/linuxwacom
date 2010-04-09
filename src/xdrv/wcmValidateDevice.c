@@ -162,16 +162,15 @@ Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys
 	{
 		if (!strcmp(wcmType[j].type, type))
 		{
-			/* tool comes from xorg.conf? */
-			if (!strlen(dsource))
+			if (ISBITSET (keys, wcmType[j].tool))
 			{
-				/* make the type valid */
-				keys[LONG(wcmType[j].tool)] |= BIT(wcmType[j].tool);
 				ret = TRUE;
 				break;
 			}
-			else if (ISBITSET (keys, wcmType[j].tool))
+			else if (!strlen(dsource)) /* tool comes from xorg.conf? */
 			{
+				/* make the type valid */
+				keys[LONG(wcmType[j].tool)] |= BIT(wcmType[j].tool);
 				ret = TRUE;
 				break;
 			}

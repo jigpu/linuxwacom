@@ -339,9 +339,10 @@ static PARAMINFO gParamInfo[] =
 		0, 100, PACKED_CURVE, 0x00006464},
 
 	{ "TwinView",
-		"Sets the mapping to TwinView xinerama/horizontal/vertical/leftof/aboveof/none. \n"
-		"\t\t   Values = none, vertical, horizontal, leftof, aboveof, xinerama "
-		"(default is none).",
+		"Sets the mapping to TwinView xinerama/horizontal"
+		"/vertical/leftof/aboveof/none. "
+		"\n\t\t   Values = none, vertical, horizontal, leftof, "
+		"aboveof, xinerama (default is none).",
 		XWACOM_PARAM_TWINVIEW, VALUE_OPTIONAL, RANGE, 
 		TV_NONE, TV_MAX, SINGLE_VALUE, TV_NONE },
 
@@ -358,48 +359,48 @@ static PARAMINFO gParamInfo[] =
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "Touch",
-		"Turns on/off Touch events (default is enable/on). ",
+		"Turns on/off Touch events (default is "
+		"enable/on for tablets with touch). ",
 		XWACOM_PARAM_TOUCH, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "Gesture",
-		"Turns on/off Touch Gesture (default is enable/on). ",
+		"Turns on/off Touch Gesture "
+		"\n\t\t   (default is enable/on for tablets"
+		" with two finger support). ",
 		XWACOM_PARAM_GESTURE, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "ZoomDistance",
-		"Minimum distance required before starting a zoom gesture. ",
+		"Minimum distance required before starting a zoom gesture "
+		"(default is 50). ",
 		XWACOM_PARAM_ZOOMDISTANCE, VALUE_OPTIONAL, 
-		RANGE, 0, 10000, SINGLE_VALUE, 350 },
-
-	{ "ScrollDistance",
-		"Minimum finger motion distance required for starting a scroll gesture. ",
-		XWACOM_PARAM_SCROLLDISTANCE, VALUE_OPTIONAL, 
 		RANGE, 0, 10000, SINGLE_VALUE, 50 },
 
-	{ "TapTime",
-		"Maximum time between taps required for a right click gesture. ",
-		XWACOM_PARAM_TAPTIME, VALUE_OPTIONAL, 
-		RANGE, 0, 500, SINGLE_VALUE, 150 },
+	{ "ScrollDistance",
+		"Minimum finger motion distance required"
+		" for starting a scroll gesture (default is 20). ",
+		XWACOM_PARAM_SCROLLDISTANCE, VALUE_OPTIONAL, 
+		RANGE, 0, 10000, SINGLE_VALUE, 20 },
 
-	{ "Capacity",
-		"Touch sensitivity level (default is 3, "
-		"-1 for none capacitive tools). ",
-		XWACOM_PARAM_CAPACITY, VALUE_OPTIONAL, 
-		RANGE, -1, 5, SINGLE_VALUE, 3 },
+	{ "TapTime",
+		"Maximum time between taps required for a right"
+		" click gesture (default is 250 ms). ",
+		XWACOM_PARAM_TAPTIME, VALUE_OPTIONAL, 
+		RANGE, 0, 500, SINGLE_VALUE, 250 },
 
 	{ "CursorProx", 
 		"Sets cursor distance for proximity-out "
-		"in distance from the tablet.  \n"
-		"\t\t   (default is 10 for Intuos series, "
+		"in distance from the tablet. "
+		"\n\t\t   (default is 10 for Intuos series, "
 		"42 for Graphire series). ",
 		XWACOM_PARAM_CURSORPROX, VALUE_OPTIONAL, RANGE, 
 		0, 255, SINGLE_VALUE, 47 },
 		
 	{ "Rotate",
 		"Sets the rotation of the tablet. "
-		"Values = NONE, CW, CCW, HALF (default is NONE). \n"
-		"\t\t   Tablet mappings applied after this command will "
+		"Values = NONE, CW, CCW, HALF (default is NONE). "
+		"\n\t\t   Tablet mappings applied after this command will "
 		"be based on the new tablet orientation. ",
 		XWACOM_PARAM_ROTATE, VALUE_OPTIONAL, RANGE, 
 		ROTATE_NONE, ROTATE_HALF, SINGLE_VALUE, ROTATE_NONE },
@@ -456,7 +457,7 @@ static PARAMINFO gParamInfo[] =
 
 	{ "RawFilter",
 		"Enables and disables filtering of raw data, "
-		"default is true/on.",
+		"default is true/on. ",
 		XWACOM_PARAM_RAWFILTER, VALUE_OPTIONAL, RANGE, 
 		0, 1, BOOLEAN_VALUE, 1 },	
 
@@ -466,19 +467,20 @@ static PARAMINFO gParamInfo[] =
 		1, 11, SINGLE_VALUE, 6 },	
 
 	{ "ClickForce",
-		"Sets tip/eraser pressure threshold = ClickForce*MaxZ/100 "
-		"(default is 6)",
+		"Sets tip/eraser pressure threshold = "
+		"ClickForce*FILTER_PRESSURE_RES/100 "
+		"\n\t\t   (default is 6). ",
 		XWACOM_PARAM_CLICKFORCE, VALUE_OPTIONAL, RANGE, 
 		1, 21, SINGLE_VALUE, 6 },	
 
 	{ "Threshold",
 		"Sets tip/eraser pressure threshold directly to the pressure "
-		"(default is 6*MaxZ/100)",
+		"\n\t\t   (default is FILTER_PRESSURE_RES / 75). ",
 		XWACOM_PARAM_THRESHOLD, VALUE_REQUIRED },	
 
 	{ "Accel",
 		"Sets relative cursor movement acceleration "
-		"(default is 1)",
+		"(default is 1). ",
 		XWACOM_PARAM_ACCEL, VALUE_OPTIONAL, RANGE, 
 		1, 7, SINGLE_VALUE, 1 },
 	
@@ -488,13 +490,13 @@ static PARAMINFO gParamInfo[] =
 
 	{ "mmonitor",
 		"Turns on/off across monitor movement in "
-		"multi-monitor desktop, default is on ",
+		"multi-monitor desktop, default is on. ",
 		XWACOM_PARAM_MMT, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "CoreEvent",
 		"Turns on/off device to send core event. "
-		"default is decided by X driver and xorg.conf ",
+		"Default is decided by X driver and xorg.conf. ",
 		XWACOM_PARAM_COREEVENT, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE },
 

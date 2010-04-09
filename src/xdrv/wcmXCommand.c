@@ -309,6 +309,7 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 				common->wcmThreshold);
 		break;
 	    case XWACOM_PARAM_THRESHOLD:
+		if ((value < 1) || (value > FILTER_PRESSURE_RES)) return BadValue;
 		common->wcmThreshold = value;
 		xf86ReplaceIntOption(local->options, "Threshold", 
 				common->wcmThreshold);
@@ -403,15 +404,6 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		{
 			common->wcmTapTime = value;
 			xf86ReplaceIntOption(local->options, "TapTime", value);
-		}
-		break;
-	    case XWACOM_PARAM_CAPACITY:
-		if ((value < -1) || (value > 5)) 
-			return BadValue;
-		else if (common->wcmCapacity != value)
-		{
-			common->wcmCapacity = value;
-			xf86ReplaceIntOption(local->options, "Capacity", value);
 		}
 		break;
 	    case XWACOM_PARAM_CURSORPROX:
@@ -845,8 +837,6 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return common->wcmTouch;
 	    case XWACOM_PARAM_GESTURE:
 		return common->wcmGesture;
-	    case XWACOM_PARAM_CAPACITY:
-		return common->wcmCapacity;
 	    case XWACOM_PARAM_ZOOMDISTANCE:
 		return common->wcmZoomDistance;
 	    case XWACOM_PARAM_SCROLLDISTANCE:
@@ -1030,8 +1020,6 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 		return common->wcmTPCButtonDefault;
 	case XWACOM_PARAM_TOUCH:
 		return common->wcmTouchDefault;
-	case XWACOM_PARAM_CAPACITY:
-		return common->wcmCapacityDefault;
 	case XWACOM_PARAM_GESTURE:
 		return common->wcmGestureDefault;
 	case XWACOM_PARAM_ZOOMDISTANCE:

@@ -1,3 +1,13 @@
+2010-04-09  Ping Cheng <pingc@wacom.com>
+	* Updated calibration in wacomcpl (Stefan Schimanski)
+	* Updated wacom_wac.c for 2.6.24+ 
+		- by Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	* Updated pressure normalization
+	* Updated ISDV4 data parsing routine
+	* Updated wacom man page
+	* Updated linuxwacom web pages
+	* Label 0.8.6
+
 2010-03-26  Ping Cheng <pingc@wacom.com>
 	* Updated kernel driver for 2FGT and Bamboo touch
 	* Added 2.6.30 path for kernels 2.6.30 and later

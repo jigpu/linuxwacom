@@ -344,27 +344,46 @@ static int isdv4Parse(LocalDevicePtr local, const unsigned char* data)
 	DBG(10, common->debugLevel, ErrorF("isdv4Parse \n"));
 
 	/* determine the type of message (touch or stylus)*/
-	if (data[0] & 0x10) /* a touch data */
+	if (data[0])
 	{
-		if ((last->device_id != TOUCH_DEVICE_ID && last->device_id &&
-			last->proximity) || !common->wcmTouch)
+		if(data[0] & 0x10) /* a touch data */
 		{
-			/* ignore touch event */
-			return common->wcmPktLength;
+			/* set touch PktLength */
+			common->wcmPktLength = WACOM_PKGLEN_TOUCH0;
+			if ((common->tablet_id == 0x9a) || (common->tablet_id == 0x9f))
+				common->wcmPktLength = WACOM_PKGLEN_TOUCH;
+			if ((common->tablet_id == 0xe2) || (common->tablet_id == 0xe3))
+				common->wcmPktLength = WACOM_PKGLEN_TOUCH2FG;
+
+			if ((last->device_id != TOUCH_DEVICE_ID && last->device_id &&
+				last->proximity) || !common->wcmTouch)
+			{
+				/* ignore touch event */
+				return common->wcmPktLength;
+			}
+		}
+		else /* penabled */
+		{
+			common->wcmPktLength = WACOM_PKGLEN_TPC;
+
+			/* touch was in control */
+			if (last->proximity && last->device_id == TOUCH_DEVICE_ID)
+				/* let touch go */
+				xf86WcmSoftOut(common, channel);
+		}
+
+		if (common->buffer + common->bufpos - data < common->wcmPktLength)
+		{
+			/* we can't handle this yet. 
+			 * But we want to keep the unprocessed data */
+			return 0;
 		}
 	}
-	else
-	{
-		/* touch was in control */
-		if (last->proximity && last->device_id == TOUCH_DEVICE_ID)
-			/* let touch go */
-			xf86WcmSoftOut(common, channel);
-	}
-
+		
 	if (common->buffer + common->bufpos - data < common->wcmPktLength)
 	{
-		/* we can't handle this yet */
-		return common->wcmPktLength;
+		/* we can't handle this yet so keep the unprocessed data */
+		return 0;
 	}
 
 	/* Coordinate data bit check */
@@ -381,10 +400,6 @@ static int isdv4Parse(LocalDevicePtr local, const unsigned char* data)
 	{
 		ds->x = (((int)data[1]) << 7) | ((int)data[2]);
 		ds->y = (((int)data[3]) << 7) | ((int)data[4]);
-		if (common->wcmPktLength == WACOM_PKGLEN_TOUCH)
-		{
-			ds->capacity = (((int)data[5]) << 7) | ((int)data[6]);
-		}
 		ds->buttons = ds->proximity = data[0] & 0x01;
 		ds->device_type = TOUCH_ID;
 		ds->device_id = TOUCH_DEVICE_ID;

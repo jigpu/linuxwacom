@@ -481,15 +481,11 @@ int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version)
 	if (model->GetRanges && (model->GetRanges(local) != Success))
 		return !Success;
 	
-ErrorF("Got range %s maxX=%d maxY=%d maxZ=%d "
-			"resX=%d resY=%d\n",
-			model->name, common->wcmMaxTouchX, common->wcmMaxTouchY, common->wcmMaxZ, 
-			common->wcmResolX, common->wcmResolY);
 	/* Default threshold value if not set */
 	if (common->wcmThreshold <= 0)
 	{
 		/* Threshold for counting pressure as a button */
-		common->wcmThreshold = FILTER_PRESSURE_RES * 3 / 25;
+		common->wcmThreshold = FILTER_PRESSURE_RES / 75;
 
 		ErrorF("%s Wacom using pressure threshold of %d for button 1\n",
 			XCONFIG_PROBED, common->wcmThreshold);
@@ -531,10 +527,6 @@ ErrorF("Got range %s maxX=%d maxY=%d maxZ=%d "
 			"speed, or not yet implemented\n"));
 	}
 
-ErrorF("display range %s maxX=%d maxY=%d maxZ=%d "
-			"resX=%d resY=%d\n",
-			model->name, common->wcmMaxTouchX, common->wcmMaxTouchY, common->wcmMaxZ, 
-			common->wcmResolX, common->wcmResolY);
 	/* output tablet state as probed */
 	if (xf86Verbose)
 	{

@@ -208,9 +208,6 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmScrollDistanceDefault = 20; /* default minimum motion before sending a scroll gesture */
 	common->wcmTapTime = 250;	   /* minimum time between taps for a right click */
 	common->wcmTapTimeDefault = 250;   /* default minimum time between taps for a right click */
-	common->wcmCapacity = -1;          /* Capacity is disabled */
-	common->wcmCapacityDefault = -1;   /* default to -1 when capacity isn't supported */
-					   /* 3 when capacity is supported */
 	common->wcmRotate = ROTATE_NONE;   /* default tablet rotation to off */
 	common->wcmMaxX = 0;               /* max tool logical X value */
 	common->wcmMaxY = 0;               /* max tool logical Y value */
@@ -223,7 +220,6 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmResolY = 0;             /* tool Y resolution in 
 				            * points/inch for penabled */
 	common->wcmTouchResolY = 0;        /* touch y resolution in points/mm */
-	common->wcmMaxCapacity = 0;        /* max capacity value */
  	common->wcmMaxDist = 0;            /* max distance value */
 	common->wcmMaxStripX = 4096;       /* Max fingerstrip X */
 	common->wcmMaxStripY = 4096;       /* Max fingerstrip Y */
@@ -956,11 +952,6 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		if ( common->wcmTPCButton )
 			xf86Msg(X_CONFIG, "%s: Tablet PC buttons are on \n", common->wcmDevice);
 	}
-
-	/* Touch capacity applies to the whole tablet */
-	common->wcmCapacity = xf86SetBoolOption(local->options, "Capacity", common->wcmCapacityDefault);
-	if ( common->wcmCapacity >= 0 )
-		xf86Msg(X_CONFIG, "%s: Touch capacity is enabled \n", common->wcmDevice);
 
 	/* Mouse cursor stays in one monitor in a multimonitor setup */
 	if ( !priv->wcmMMonitor )

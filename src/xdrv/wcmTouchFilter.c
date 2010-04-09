@@ -190,7 +190,8 @@ void xf86WcmGestureFilter(WacomDevicePtr priv, int channel)
 	if (!common->wcmGesture)
 		goto ret;
 
-	/* second finger in prox. wait for gesture event if first */
+	/* second finger in prox. wait for gesture event if first finger 
+	 * was in in prox */
 	if (ds[1].proximity && !common->wcmGestureMode && dsLast[0].proximity)
 	{
 		common->wcmTouchpadMode = 0;
@@ -281,7 +282,7 @@ void xf86WcmGestureFilter(WacomDevicePtr priv, int channel)
 		    xf86WcmFingerZoom(priv);
 	}
 ret:
-	if (!channel && !(priv->flags & ABSOLUTE_FLAG) && !common->wcmGestureMode)
+	if (!common->wcmGestureMode && !channel && !(priv->flags & ABSOLUTE_FLAG))
 		xf86WcmFirstFingerClick(common);
 }
 

@@ -963,10 +963,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			else if (event->code ==  ABS_TILT_Y)
 				ds->tilty = event->value - common->wcmMaxtiltY/2;
 			else if (event->code == ABS_PRESSURE) {
-				if (ds->device_type == TOUCH_ID)
-					ds->capacity = event->value;
-				else
-					ds->pressure = event->value;
+				ds->pressure = event->value;
 			} else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
 			else if (event->code == ABS_WHEEL || 

@@ -58,6 +58,7 @@
 #define WACOM_PKGLEN_TPC 	 9
 #define WACOM_PKGLEN_TPCCTL     11
 #define WACOM_PKGLEN_TOUCH2FG   13
+#define WACOM_PKGLEN_ALLLOWED	14
 
 /* defines to discriminate second side button and the eraser */
 #define ERASER_PROX     4
@@ -203,7 +204,6 @@ struct _WacomDeviceRec
 	int oldX;               /* previous X position */
 	int oldY;               /* previous Y position */
 	int oldZ;               /* previous pressure */
-	int oldCapacity;        /* previous capacity */
 	int oldTiltX;           /* previous tilt in x direction */
 	int oldTiltY;           /* previous tilt in y direction */    
 	int oldWheel;           /* previous wheel value */    
@@ -237,7 +237,7 @@ struct _WacomDeviceRec
 	/* JEJ - filters */
 	int* pPressCurve;       /* pressure curve */
 	int nPressCtrl[4];      /* control points for curve */
-	int minPressure;	/* the least pressure a tool may have */
+	int minPressure;	/* the minimum  pressure a pen may hold */
 
 	WacomToolPtr tool;         /* The common tool-structure for this device */
 	WacomToolAreaPtr toolarea; /* The area defined for this device */
@@ -273,7 +273,6 @@ struct _WacomDeviceState
 	int y;
 	int buttons;
 	int pressure;
-	int capacity;
 	int tiltx;
 	int tilty;
 	int stripx;
@@ -380,7 +379,6 @@ struct _WacomCommonRec
 	int wcmMaxZ;                 /* tablet max Z value */
 	                             /* tablet Z resolution is equivalent
 	                              * to wcmMaxZ which is equal to 100% pressure */
-	int wcmMaxCapacity;	     /* max capacity value */
 	int wcmMaxDist;              /* tablet max distance value */
 	int wcmMaxtiltX;	     /* styli max tilt in X directory */ 
 	int wcmMaxtiltY;	     /* styli max tilt in Y directory */ 
@@ -429,9 +427,6 @@ struct _WacomCommonRec
 	int wcmGestureUsed;	       /* retain used gesture count within one in-prox event */
 	int wcmTapTime;	   	       /* minimum time between taps for a right click */
 	int wcmTapTimeDefault;         /* default minimum time between taps for a right click */
-	int wcmCapacity;	       /* disable/enable capacity */
-	int wcmCapacityDefault;        /* default to -1 when capacity isn't supported/disabled */
-				       /* 3 when capacity is supported */
 	int wcmMaxCursorDist;	       /* Max mouse distance reported so far */
 	int wcmCursorProxoutDist;      /* Max mouse distance for proxy-out max/256 units */
 	int wcmCursorProxoutDistDefault; /* Default max mouse distance for proxy-out */
