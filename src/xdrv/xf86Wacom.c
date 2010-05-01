@@ -341,11 +341,6 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		}
 	}
 
-	DBG(2, priv->debugLevel, ErrorF("xf86WcmInitializeToolSize: \"%s\" "
-		"top X=%d top Y=%d bottom X=%d bottom Y=%d \n",
-		local->name, priv->topX, priv->topY, 
-		priv->bottomX, priv->bottomY));
-
 	return;
 }
 
@@ -813,7 +808,7 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 
 	remaining = sizeof(common->buffer) - common->bufpos;
 
-	DBG(1, common->debugLevel, ErrorF("xf86WcmReadPacket: pos=%d"
+	DBG(10, common->debugLevel, ErrorF("xf86WcmReadPacket: pos=%d"
 		" remaining=%d\n", common->bufpos, remaining));
 
 	/* fill buffer with as much data as we can handle */
@@ -981,7 +976,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
  *  coordinates that are scaled and suitable for screen resolution.
  ****************************************************************************/
 
-static Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
+Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
 		int v0, int v1, int v2, int v3, int v4, int v5, int* x, int* y)
 {
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;

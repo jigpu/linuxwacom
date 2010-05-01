@@ -155,6 +155,7 @@ static void wacom_bpt_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 {
 	int x = 0, y = 0;
 	int finger = idx + 1;
+	struct input_dev *input = wacom->input;
 
 	x = wacom_be16_to_cpu ((unsigned char *)&data[3 + (idx * 9)]) & 0x7ff;
 	y = wacom_be16_to_cpu ((unsigned char *)&data[5 + (idx * 9)]) & 0x7ff;
@@ -757,6 +758,7 @@ static void wacom_tpc_finger_in(struct wacom_wac *wacom, void *wcombo, char *dat
 	int finger = idx + 1;
 	int x = wacom_le16_to_cpu (&data[finger * 2]) & 0x7fff;
 	int y = wacom_le16_to_cpu (&data[4 + (finger * 2)]) & 0x7fff;
+	struct input_dev *input = wacom->input;
 
 	if (finger != wacom->last_finger) {
 		if (x == input->abs[ABS_X])

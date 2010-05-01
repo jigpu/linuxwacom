@@ -1,3 +1,10 @@
+2010-04-30  Ping Cheng <pingc@wacom.com>
+	* Updated wacom_sys.c for system resume
+	* Reset wcmTouchpadMode in xf86WcmSoftOutEvent
+	* Added wcmCustomDebug.c for extra debug information
+		- by Stefan Schimanski
+	* Label 0.8.6-1
+
 2010-04-09  Ping Cheng <pingc@wacom.com>
 	* Updated calibration in wacomcpl (Stefan Schimanski)
 	* Updated wacom_wac.c for 2.6.24+ 
@@ -32,7 +39,6 @@
 	* Label 0.8.5-11
 
 2010-02-12  Ping Cheng <pingc@wacom.com>
-
 	* Updated Bamboo series support in the kernel and X drivers
 		- by Jason Childs <oblivian@users.sourceforge.net>
 	* Support at least 7 buttons for each tool

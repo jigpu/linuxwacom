@@ -716,6 +716,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 			goto fail3;
 	}
 
+	wacom_wac->input = input_dev;
 	input_dev->name = wacom_wac->name;
 	wacom->wacom_wac = wacom_wac;
 	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
@@ -788,12 +789,11 @@ static int wacom_resume(struct usb_interface *intf)
 	int rv;
 
 	mutex_lock(&wacom->lock);
-	if (wacom->open) {
+	/* switch to wacom mode first */
+	wacom_reset_report(intf, features);
+	if (wacom->open)
 		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
-		/* switch to wacom mode if needed */
-		if (!wacom_retrieve_hid_descriptor(intf, features))
-			wacom_reset_report(intf, features);
-	} else
+	else
 		rv = 0;
 	mutex_unlock(&wacom->lock);
 

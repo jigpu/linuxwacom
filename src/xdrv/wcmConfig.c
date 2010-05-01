@@ -235,8 +235,11 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmRawSample = DEFAULT_SAMPLES;    
 			/* number of raw data to be used to for filtering */
 #ifdef WCM_ENABLE_LINUXINPUT
-	common->wcmLastToolSerial = 0;
+	common->wcmSerial = 0;
+	for (i =0; i<MAX_CHANNELS; i++)
+		common->wcmLastToolSerial[i] = 0;
 	common->wcmEventCnt = 0;
+	common->wcmLastChannel = 0;
 #endif
 
 	/* tool */
@@ -478,10 +481,6 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
 	/* Touch gesture applies to the whole tablet */
 	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
 		common->wcmGestureDefault);
-
-	/* User requested to default gesture to off for Bamboo touch */
-	if (common->tablet_id >= 0xD0 && common->tablet_id <= 0xD4)
-		common->wcmGesture = 0;
 
 	/* Set gesture size and timeouts for larger USB 2FGT tablets */
 	if ((common->wcmDevCls == &gWacomUSBDevice) &&

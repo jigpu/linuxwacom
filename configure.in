@@ -1,5 +1,5 @@
 AC_PREREQ(2.58)
-AC_INIT(linuxwacom, 0.8.5)
+AC_INIT(linuxwacom, 0.8.6)
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
@@ -963,6 +963,20 @@ if test "$GCC" = yes; then
 		[WCM_NO_STACK_PROTECTOR="-fno-stack-protector"; AC_MSG_RESULT(yes)],
 		[WCM_NO_STACK_PROTECTOR=; AC_MSG_RESULT(no)])
 	CFLAGS=$OLD_CFLAGS
+fi
+
+dnl =======================================================
+dnl Check if we need to build the driver with wcmCustomDebug.c
+WCM_CUSTOM_DEBUG=no
+AC_ARG_ENABLE(customdebug,
+	AC_HELP_STRING([--enable-customdebug], [Enable building with custom debug info [[default=no]]]),
+	WCM_CUSTOM_DEBUG=$enable_customdebug)
+if test "$WCM_CUSTOM_DEBUG" != yes; then
+	AM_CONDITIONAL(WCM_CUSTOM_DEBUG, false)
+else
+	AC_MSG_WARN([Extra debug information will be reported])
+	AM_CONDITIONAL(WCM_CUSTOM_DEBUG, true)
+	AC_DEFINE(WCM_CUSTOM_DEBUG, 1, [Enabled building with custom debug])
 fi
 
 dnl =======================================================

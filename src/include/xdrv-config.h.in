@@ -50,4 +50,7 @@
 /* Slightly diffent abi in XINPUT >= 1.0 */
 #undef WCM_XINPUTABI_MAJOR
 
+/* custom debug was off */
+#undef WCM_CUSTOM_DEBUG
+
 #endif /* _XDRV_CONFIG_H_ */

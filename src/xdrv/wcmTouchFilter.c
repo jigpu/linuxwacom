@@ -78,7 +78,7 @@ static Bool pointsInLine(WacomCommonPtr common, WacomDeviceState ds0,
 	return ret;
 }
 
-/* send a left button up event */
+/* send a button event */
 static void xf86WcmSendButtonClick(WacomDevicePtr priv, int button, int state)
 {
 	int x = 0;
@@ -91,11 +91,13 @@ static void xf86WcmSendButtonClick(WacomDevicePtr priv, int button, int state)
 		y = priv->oldY;
 	}
 
-	/* send button one up */
+	/* send button event in state */
 	xf86PostButtonEvent(priv->local->dev, mode,button,
 		state,0,priv->naxes,x,y,0,0,0,0);
 
-	priv->oldButtons = 0;
+	/* store left button up event since we need it in wcmCommon */
+	if (button == 1)
+		priv->oldButtons = 0;
 }
 
 /*****************************************************************************
@@ -166,7 +168,7 @@ static void xf86WcmFirstFingerClick(WacomCommonPtr common)
 	}
 }
 
-/* parsing gesture mode according 2FGT data */
+/* parsing gesture mode according to 2FGT data */
 void xf86WcmGestureFilter(WacomDevicePtr priv, int channel)
 {
 	WacomCommonPtr common = priv->common;
@@ -333,7 +335,7 @@ static void xf86WcmFingerScroll(WacomDevicePtr priv)
 
 	int midPoint_new = 0;
 	int midPoint_old = 0;
-	int i = 0, dist =0;
+	int i = 0, dist = 0;
 	WacomFilterState filterd;  /* borrow this struct */
 
 	DBG(10, priv->debugLevel, ErrorF("xf86WcmFingerScroll \n"));
@@ -398,7 +400,7 @@ static void xf86WcmFingerScroll(WacomDevicePtr priv)
 		}
 
 		dist = midPoint_old - midPoint_new;
-		xf86WcmSendScrollEvent(priv,  dist, SCROLL_UP, SCROLL_DOWN);
+		xf86WcmSendScrollEvent(priv, dist, SCROLL_UP, SCROLL_DOWN);
 	}
 
 	/* horizontal direction */
@@ -421,7 +423,7 @@ static void xf86WcmFingerScroll(WacomDevicePtr priv)
 		}
 
 		dist = midPoint_old - midPoint_new;
-		xf86WcmSendScrollEvent(priv,  dist, SCROLL_RIGHT, SCROLL_LEFT);
+		xf86WcmSendScrollEvent(priv, dist, SCROLL_RIGHT, SCROLL_LEFT);
 	}
 }
 
@@ -432,7 +434,7 @@ static void xf86WcmFingerZoom(WacomDevicePtr priv)
 	WacomChannelPtr secondChannel = common->wcmChannel + 1;
 	WacomDeviceState ds[2] = { firstChannel->valid.states[0],
 				secondChannel->valid.states[0] };
-	int i = 0, count; 
+	int i = 0, count, key; 
 	int dist = touchDistance(common->wcmGestureState[0], common->wcmGestureState[1]);
 
 	DBG(10, priv->debugLevel, ErrorF("xf86WcmFingerZoom \n"));
@@ -470,7 +472,7 @@ static void xf86WcmFingerZoom(WacomDevicePtr priv)
 	}
 
 	/* zooming? */
-	int key = (dist > 0) ? XK_plus : XK_minus;
+	key = (dist > 0) ? XK_plus : XK_minus;
 
 	while (i < (count - common->wcmGestureUsed))
 	{

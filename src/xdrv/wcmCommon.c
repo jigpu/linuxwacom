@@ -38,6 +38,12 @@ extern void xf86WcmTilt2R(WacomDeviceStatePtr ds);
 extern void xf86WcmGestureFilter(WacomDevicePtr priv, int channel);
 extern void xf86WcmSetScreen(LocalDevicePtr local, int v0, int v1);
 
+#ifdef WCM_CUSTOM_DEBUG
+	extern char * timestr();
+	extern Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
+		int v0, int v1, int v2, int v3, int v4, int v5, int* x, int* y);
+#endif
+
 /*****************************************************************************
  * Static functions
  ****************************************************************************/
@@ -325,12 +331,23 @@ static void sendAButton(LocalDevicePtr local, int button, int mask,
 		xf86XInputSetSendCoreEvents (local, TRUE);
 #endif
 
+#ifdef WCM_CUSTOM_DEBUG
+	int x = -1, y = -1;
+
+	gWacomModule.DevConvert(local, 0, 6, rx, ry, rz, v3, v4, v5, &x, &y); 
+	ErrorF("%s - sendAButton TPCButton(%s) button=%d state=%d " 
+		"code=%08x x=%d y=%d, for %s coreEvent=%s \n", 
+		timestr(), common->wcmTPCButton ? "on" : "off", 
+		button, mask, priv->button[button], x, y,
+		local->name, (priv->button[button] & AC_CORE) ? "yes" : "no");
+#else
 	DBG(4, priv->debugLevel, ErrorF(
 		"sendAButton TPCButton(%s) button=%d state=%d " 
 		"code=%08x, for %s coreEvent=%s \n", 
 		common->wcmTPCButton ? "on" : "off", 
 		button, mask, priv->button[button], 
 		local->name, (priv->button[button] & AC_CORE) ? "yes" : "no"));
+#endif
 
 	switch (priv->button[button] & AC_TYPE)
 	{
@@ -1528,6 +1545,10 @@ void xf86WcmSoftOutEvent(LocalDevicePtr local)
 	DBG(2, common->debugLevel, ErrorF("Send soft prox-out for"
 		" %s first\n", local->name));
 	xf86WcmSendEvents(local, &out);
+
+	/* reset wcmTouchpadMode */
+	if (DEVICE_ID(priv->flags == TOUCH_ID))
+		common->wcmTouchpadMode = 0;
 }
 
 void xf86WcmSoftOut(WacomCommonPtr common, int channel)
@@ -1541,10 +1562,6 @@ void xf86WcmSoftOut(WacomCommonPtr common, int channel)
 	DBG(2, common->debugLevel, ErrorF("Send soft prox-out for"
 		" %s at channel %d \n", common->wcmModel->name, channel));
 	xf86WcmEvent(common, channel, &out);
-
-	/* reset wcmTouchpadMode */
-	if (ds.device_type == TOUCH_ID)
-		common->wcmTouchpadMode = 0;
 }
 
 /*****************************************************************************

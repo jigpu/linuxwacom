@@ -8,6 +8,16 @@ x86module_DATA = @WCM_XF86MODULES@
 # the configuration.
 EXTRA_SCRIPTS = wacom_drv.o wacom_drv.so
 
+if WCM_CUSTOM_DEBUG
+EXTRA_DIST = xf86Wacom.c wcmXCommand.c xf86Wacom.h \
+		wcmSerial.c wcmISDV4.c wcmUSB.c \
+		wcmCommon.c wcmCompat.c wcmConfig.c \
+		wcmFilter.c wcmFilter.h wcmSerial.h \
+		../include/Xwacom.h wcmTilt2Rotation.c \
+		wcmTouchFilter.c wcmValidateDevice.c \
+		wcmCustomDebug.c \
+		wcmMapping.c 
+else
 EXTRA_DIST = xf86Wacom.c wcmXCommand.c xf86Wacom.h \
 		wcmSerial.c wcmISDV4.c wcmUSB.c \
 		wcmCommon.c wcmCompat.c wcmConfig.c \
@@ -15,6 +25,7 @@ EXTRA_DIST = xf86Wacom.c wcmXCommand.c xf86Wacom.h \
 		../include/Xwacom.h wcmTilt2Rotation.c \
 		wcmTouchFilter.c wcmValidateDevice.c \
 		wcmMapping.c 
+endif
 
 if WCM_ENV_XORGSDK
 DRIVER_INCLUDES = -I../include -I$(WCM_XORGSDK_DIR) $(X_CFLAGS) @XORG_CFLAGS@
@@ -42,10 +53,19 @@ if WCM_DLLOADER
 DLLOADER=-fPIC
 endif
 
+if WCM_CUSTOM_DEBUG
+XF86OBJS = xf86Wacom.o wcmSerial.o wcmUSB.o wcmISDV4.o \
+	wcmXCommand.o wcmCommon.o wcmCompat.o wcmConfig.o \
+	wcmFilter.o wcmTilt2Rotation.o wcmTouchFilter.o \
+	wcmCustomDebug.o \
+	wcmValidateDevice.o wcmMapping.o
+else
 XF86OBJS = xf86Wacom.o wcmSerial.o wcmUSB.o wcmISDV4.o \
 	wcmXCommand.o wcmCommon.o wcmCompat.o wcmConfig.o \
 	wcmFilter.o wcmTilt2Rotation.o wcmTouchFilter.o \
 	wcmValidateDevice.o wcmMapping.o
+endif
+
 $(XF86OBJS):
 	$(CC) $(CFLAGS) $(WCM_DEPFLAGS) $(DLLOADER) -pipe $(WCM_CLEVEL) \
 		-pedantic -Wall -Wpointer-arith $(NO_MERGE_CONSTANTS) \

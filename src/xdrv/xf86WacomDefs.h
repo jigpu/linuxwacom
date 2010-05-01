@@ -436,7 +436,9 @@ struct _WacomCommonRec
 	unsigned char buffer[BUFFER_SIZE]; /* data read from device */
 
 #ifdef WCM_ENABLE_LINUXINPUT
-	int wcmLastToolSerial;
+	int wcmLastToolSerial[MAX_CHANNELS];
+	int wcmSerial;
+	int wcmLastChannel;
 	int wcmEventCnt;
 	struct input_event wcmEvents[MAX_USB_EVENTS];  /* events for current change */
 #endif

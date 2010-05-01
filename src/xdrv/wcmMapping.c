@@ -334,7 +334,7 @@ void xf86WcmMappingFactor(LocalDevicePtr local)
 
 	priv->factorX = (double)screenX / (double)priv->sizeX;
 	priv->factorY = (double)screenY / (double)priv->sizeY;
-	DBG(2, priv->debugLevel, ErrorF("X factor = %.3g, Y factor = %.3g\n",
+	DBG(6, priv->debugLevel, ErrorF("X factor = %.3g, Y factor = %.3g\n",
 		priv->factorX, priv->factorY));
 }
 

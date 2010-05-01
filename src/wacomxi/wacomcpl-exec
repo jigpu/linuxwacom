@@ -5,7 +5,8 @@ exec wish -f "$0" ${1+"$@"}
 # wacomcpl-exec -- Wacom Control Panel Utility to Change Configuration Setting.
 #
 # Author	: Ping Cheng <pinglinux@gmail.com>
-# Creation date	: 04/05/2003 - 2010
+# Creation date	: 04/05/2003
+# Updated       : 2003 - 2010
 #
 # Based on calibrate 1998-99 Patrick Lecoanet --
 #
@@ -14,6 +15,9 @@ exec wish -f "$0" ${1+"$@"}
 #		tablet and screen mapping, as well as calibration. 
 #
 #  wacomcpl calibrate dev: fesatures calibration for a LCD device (identified as dev)
+#
+#  wacomcpl calibrate dev on: fesatures calibration for a LCD device (identified as dev)
+#			      and display warnings when abnormal coordinates are detected
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -63,6 +67,7 @@ set keystrokeB 38
 set maxNumTablets 227
 set numControls 0
 set calibration_sequence_only 0
+set calibration_with_warning 0
 
 proc updateCurrentScreenInfo {} {
     global device numScreens currentScreen 
@@ -136,6 +141,75 @@ proc updateXinitrc {device option value} {
 	exec xsetwacom set "$device" $option $v1 $v2 $v3 $v4
     } else {
 	exec xsetwacom set "$device" $option $value
+    }
+}
+
+proc verifycalibResultsTopLeft { } {
+    global device getOptionDefault xDevMin yDevMin
+    global screenWidth screenHeight size end
+
+    set tol_w [expr ($getOptionDefault($device,BottomY) - $getOptionDefault($device,TopY)) * $size / $screenHeight]
+    set tol_h [expr ($getOptionDefault($device,BottomX) - $getOptionDefault($device,TopX)) * $size / $screenWidth]
+
+    set tol_top [expr $getOptionDefault($device,TopY)]
+    set tol_bottom [expr $tol_top + $tol_h]
+    set tol_left [expr $getOptionDefault($device,TopX)]
+    set tol_right [expr $tol_left + $tol_w]
+
+    if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) ||
+    	($yDevMin < $tol_top) || ($yDevMin > $tol_bottom) } {
+    	.topleft.m configure -background "#ff0000"
+    	set end 0
+    	after 100 set end 1
+    	vwait end	
+
+    	.topleft.m configure -background "#505075"
+    	set end 0
+    	after 70 set end 1
+    	vwait end	
+
+    	.topleft.m configure -background "#ff0000"
+    	set end 0
+    	after 100 set end 1
+    	vwait end
+
+    	set xDevMin [expr ($getOptionDefault($device,TopX) + ($tol_w / 2))]
+    	set yDevMin [expr ($getOptionDefault($device,TopY) + ($tol_h / 2))]
+    }
+}
+
+proc verifycalibResultsBottomRight { } {
+    global device getOptionDefault xDevMax yDevMax
+    global screenWidth screenHeight size end
+
+    set tol_w [expr ($getOptionDefault($device,BottomY) - $getOptionDefault($device,TopY)) * $size / $screenHeight]
+    set tol_h [expr ($getOptionDefault($device,BottomX) - $getOptionDefault($device,TopX)) * $size / $screenWidth]
+
+    set tol_bottom [expr $getOptionDefault($device,BottomY)]
+    set tol_top [expr $tol_bottom - $tol_h]
+    set tol_right [expr $getOptionDefault($device,BottomX)]
+    set tol_left [expr $tol_right - $tol_w]
+
+    if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) ||
+    	($yDevMax < $tol_top) || ($yDevMax > $tol_bottom) } {
+    
+    	.bottomright.m configure -background "#ff0000"
+    	set end 0
+    	after 100 set end 1
+    	vwait end	
+
+    	.bottomright.m configure -background "#505075"
+    	set end 0
+    	after 70 set end 1
+    	vwait end	
+
+    	.bottomright.m configure -background "#ff0000"
+    	set end 0
+    	after 100 set end 1
+    	vwait end
+    
+    	set xDevMax [expr ($getOptionDefault($device,BottomX) - ($tol_w / 2))]
+    	set yDevMax [expr ($getOptionDefault($device,BottomY) - ($tol_h / 2))]
     }
 }
 
@@ -220,7 +294,8 @@ proc calibrationSequence {which xDev yDev} {
     global getDeviceModel screenXBottom screenYBottom
     global calibX_org calibY_org calibX_botm calibY_botm
     global xDevMin xDevMax yDevMin yDevMax
-    global calibration_sequence_only clickCheck
+    global calibration_sequence_only clickCheck 
+    global calibration_with_warning
 
     set scaling [exec xsetwacom get "$device" xscaling]
     if { $scaling == 1 } {
@@ -238,6 +313,10 @@ proc calibrationSequence {which xDev yDev} {
 
 	set xDevMin $calibResults(xDev,0)
 	set yDevMin $calibResults(yDev,0)
+
+	if { $calibration_with_warning != 0 } {
+		verifycalibResultsTopLeft
+	}
 
 	.topleft.m configure -background "#505075"
 	.topleft.m configure -cursor "watch #505075 #505075"
@@ -268,7 +347,12 @@ proc calibrationSequence {which xDev yDev} {
 	    set yDevMax $calibResults(yDev,0)
 	}
 
-	verifycalibResults
+	if { $calibration_with_warning != 0 } {
+	    verifycalibResultsBottomRight
+	    .bottomright.m configure -background "#505075"
+	} else {
+	    verifycalibResults
+	}
 
 	set widthDev [expr $xDevMax - $xDevMin]
 	set heightDev [expr $yDevMax - $yDevMin]
@@ -2048,19 +2132,23 @@ proc createControls { } {
     grid rowconfigure . 7 -weight 5
 }
 
-proc CalibrateOnly { dev } {
-    global device calibration_sequence_only
+proc CalibrateOnly { numArg argList } {
+    global device calibration_sequence_only calibration_with_warning
 
     set calibration_sequence_only 1
+    set device [ lindex $argList 1 ]
+
     createDeviceList
-    set device $dev
-    createScreenList $dev
+    createScreenList $device
+    if { $numArg == 3 } {
+	set calibration_with_warning 1
+    }
     Calibration
 }
 
 if { $argc > 1 && [lindex $argv 0] == "calibrate" } {
-    wm title . "Wacom Control Panel -Calibration"
-    CalibrateOnly [lindex $argv 1]
+    wm title . "Wacom Control Panel -Calibration"	
+    CalibrateOnly $argc $argv
     wm geometry . =350x200+$origin_x+$origin_y
 } else {
     wm title . "Wacom Control Panel"

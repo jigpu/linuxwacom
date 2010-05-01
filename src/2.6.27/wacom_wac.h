@@ -91,6 +91,7 @@ struct wacom_wac {
 	int last_finger;
 	struct wacom_features features;
 	struct wacom_shared *shared;
+	struct input_dev *input;
 	__u32 config;
 };
 

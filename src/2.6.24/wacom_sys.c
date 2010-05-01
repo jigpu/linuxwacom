@@ -710,6 +710,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 			goto fail3;
 	}
 
+	wacom_wac->input = input_dev;
 	input_dev->name = wacom_wac->name;
 	wacom->wacom_wac = wacom_wac;
 	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);

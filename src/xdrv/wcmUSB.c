@@ -33,6 +33,16 @@
 #define BTN_TOOL_TRIPLETAP 0x14e
 #endif
 
+#ifdef WCM_CUSTOM_DEBUG
+	static int lastPenSerial = 0;
+	extern void detectPressureIssue(struct input_event* event, WacomCommonPtr common);
+	extern void detectChannelChange(LocalDevicePtr local, int channel);
+	extern void dumpEventRing(LocalDevicePtr local);
+	extern void dumpChannels(LocalDevicePtr local);
+	extern char * timestr();
+	extern void logEvent(const struct input_event* event);
+#endif
+
 static Bool usbDetect(LocalDevicePtr);
 Bool usbWcmInit(LocalDevicePtr pDev, char* id, float *version);
 
@@ -735,10 +745,14 @@ static int usbParse(LocalDevicePtr local, const unsigned char* data)
 }
 
 
-static int usbChooseChannel(WacomCommonPtr common, int serial)
+static int usbChooseChannel(LocalDevicePtr local)
 {
 	/* figure out the channel to use based on serial number */
 	int i, channel = -1;
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
+	int serial = common->wcmSerial;
+
 	if (common->wcmProtocolLevel == 4)
 	{
 		/* Protocol 4 doesn't support tool serial numbers.
@@ -754,8 +768,8 @@ static int usbChooseChannel(WacomCommonPtr common, int serial)
 			channel = serial-1;
 		else
 			channel = 0;
-	}
-	else if (serial) /* serial number should never be 0 for V5 devices */
+	}  /* serial number should never be 0 for V5 devices */
+	else if (serial)
 	{
 		/* dual input is supported */
 		if ( strstr(common->wcmModel->name, "Intuos1") || strstr(common->wcmModel->name, "Intuos2") )
@@ -774,6 +788,9 @@ static int usbChooseChannel(WacomCommonPtr common, int serial)
 			/* find an empty channel */
 			if (channel < 0)
 			{
+#ifdef WCM_CUSTOM_DEBUG
+			        dumpChannels(local);
+#endif
 				for (i=0; i<MAX_CHANNELS; ++i)
 				{
 					if (!common->wcmChannel[i].work.proximity)
@@ -809,14 +826,25 @@ static int usbChooseChannel(WacomCommonPtr common, int serial)
 				common->wcmChannel[i].work.proximity = 0;
 				/* dispatch event */
 				xf86WcmEvent(common, i, &common->wcmChannel[i].work);
+#ifdef WCM_CUSTOM_DEBUG
+				DBG(2, common->debugLevel, ErrorF("%s - usbParse: dropping %d\n", 
+					timestr(), common->wcmChannel[i].work.serial_num));
+				/* we take this channel as a valid one */
+				channel = i;
+#endif
 			}
 		}
+#ifdef WCM_CUSTOM_DEBUG
+		DBG(1, common->debugLevel, ErrorF("%s - usbParse (%s with serial number: %u):"
+			" Exceeded channel count; ignoring the events.\n", 
+			timestr(), local->name, serial));
+		DBG(2, common->debugLevel, dumpEventRing(local));
+#else
 		DBG(1, common->debugLevel, ErrorF("usbParse (device with serial number: %u)"
 			" at %d: Exceeded channel count; ignoring the events.\n", 
 			serial, (int)GetTimeInMillis()));
+#endif
 	}
-	else
-		common->wcmLastToolSerial = serial;
 
 	return channel;
 }
@@ -833,12 +861,21 @@ static void usbParseEvent(LocalDevicePtr local,
 	 * the serial number; without it we cannot determine the
 	 * correct channel. */
 
+#ifdef WCM_CUSTOM_DEBUG
+	/* save event in ring buffer for debug output later */
+	logEvent(event);
+#endif
 	/* space left? bail if not. */
 	if (common->wcmEventCnt >=
 		(sizeof(common->wcmEvents)/sizeof(*common->wcmEvents)))
 	{
+#ifdef WCM_CUSTOM_DEBUG
+		ErrorF("%s - usbParse: Exceeded event queue (%d) \n",
+				timestr(), common->wcmEventCnt);
+#else
 		ErrorF("usbParse: Exceeded event queue (%d) \n",
 				common->wcmEventCnt);
+#endif
 		goto skipEvent;
 	}
 
@@ -847,15 +884,7 @@ static void usbParseEvent(LocalDevicePtr local,
 
 	if ((event->type == EV_MSC) && (event->code == MSC_SERIAL))
 	{
-		/* we don't report serial numbers for some tools
-		 * But we should never report a serail number with a value of 0 */
-		if (event->value == 0)
-		{
-			ErrorF("usbParse: Ignoring event from invalid serial 0\n");
-			goto skipEvent;
-		}
-
-		common->wcmLastToolSerial = event->value;
+		common->wcmSerial = event->value;
 
 		/* if SYN_REPORT is end of record indicator, we are done */
 		if (USE_SYN_REPORTS(common))
@@ -884,14 +913,28 @@ static void usbParseEvent(LocalDevicePtr local,
 	}
 
 	/* ignore events without information */
-	if (common->wcmEventCnt <= 2 && common->wcmLastToolSerial) 
+	if (common->wcmEventCnt <= 2 && common->wcmSerial) 
 	{
+#ifdef WCM_CUSTOM_DEBUG
+		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty %s event for serial %d\n", 
+			timestr(), local->name, common->wcmSerial));
+#else
 		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty event for serial %d\n", 
-			local->name, common->wcmLastToolSerial));
+			local->name, common->wcmSerial));
+#endif
 		goto skipEvent;
 	}
 
-	channel = usbChooseChannel(common, common->wcmLastToolSerial);
+#ifdef WCM_CUSTOM_DEBUG
+	/* detect tool change */
+	if (lastPenSerial != common->wcmSerial) 
+	{	   
+		DBG(2, common->debugLevel, ErrorF("%s - usbParse: oldPen %d, newPen %d\n", 
+			timestr(), lastPenSerial, common->wcmSerial));
+		lastPenSerial = common->wcmSerial;
+	}
+#endif
+	channel = usbChooseChannel(local);
 
 	/* couldn't decide channel? invalid data */
 	if (channel == -1) goto skipEvent;
@@ -901,13 +944,17 @@ static void usbParseEvent(LocalDevicePtr local,
 		memset(&common->wcmChannel[channel],0,sizeof(WacomChannel));
 		/* in case the in-prox event was missing */
 		common->wcmChannel[channel].work.proximity = 1;
-	}
 
+#ifdef WCM_CUSTOM_DEBUG
+		detectChannelChange(local, channel);
+#endif
+ 	}
 	/* dispatch event */
 	usbParseChannel(local, channel);
+	common->wcmLastToolSerial[channel] = common->wcmSerial;
+	common->wcmLastChannel = channel;
 
 skipEvent:
-	common->wcmLastToolSerial = 0;
 	common->wcmEventCnt = 0;
 }
 
@@ -935,7 +982,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	/* all USB data operates from previous context except relative values*/
 	ds = &common->wcmChannel[channel].work;
 	ds->relwheel = 0;
-	ds->serial_num = common->wcmLastToolSerial;
+	ds->serial_num = common->wcmSerial;
 
 	/* loop through all events in group */
 	for (i=0; i<common->wcmEventCnt; ++i)
@@ -964,6 +1011,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->tilty = event->value - common->wcmMaxtiltY/2;
 			else if (event->code == ABS_PRESSURE) {
 				ds->pressure = event->value;
+#ifdef WCM_CUSTOM_DEBUG
+				detectPressureIssue(event, common);
+#endif
+
 			} else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
 			else if (event->code == ABS_WHEEL || 
@@ -1095,6 +1146,17 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 						break;
 					}
 			}
+
+#ifdef WCM_CUSTOM_DEBUG
+			WacomChannelPtr pChannel = common->wcmChannel + channel;
+			WacomDeviceState dslast = pChannel->valid.state;
+			/* detect prox out events */
+			if (dslast.proximity && ds->proximity == 0) {
+				DBG(2, common->debugLevel, ErrorF("%s - usbParseChannel: prox out"
+					" for %d, channel %d\n", timestr(), ds->serial_num, channel));
+                                DBG(3, common->debugLevel, dumpEventRing(local));
+			}
+#endif
 		}
 	} /* next event */
 
