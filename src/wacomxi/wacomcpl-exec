@@ -58,14 +58,16 @@ set windowSize "700x300"
 
 set device ""
 set showHelp 0
-set modeToggleB 33
+set doubleClickB 33
 set ignoreButton 34
-set doubleClickB 35
+set modeToggleB 35
 set displayToggleB 36
 set screenToggleB 37
 set keystrokeB 38
 set maxNumTablets 227
 set numControls 0
+set maxNumButtons 18
+set maxNumStripEvents 4
 set calibration_sequence_only 0
 set calibration_with_warning 0
 
@@ -649,26 +651,24 @@ proc getDeviceOptionProc { dev i } {
 	    set getOption($dev,$Option($j)) $value
 	    set getOptionDefault($dev,$Option($j)) $value1
 	    if { $match } {
-		if { ($value > $doubleClickB) || ($value == 0) } {
-		    if { ![string compare -nocase -length 8 DBLCLICK $value ] } {
-			set getOption($dev,$Option($j)) $doubleClickB
-		    }
-		    if { ![string compare -nocase -length 4 CORE $value ] } {
-			set getOption($dev,$Option($j)) $keystrokeB
-			set oldKeys($Option($j)) $value
-		    }
-		    if { ![string compare -nocase -length 10 MODETOGGLE $value ] } {
-			set getOption($dev,$Option($j)) $modeToggleB
-		    }
-		    if { ![string compare -nocase -length 13 DISPLAYTOGGLE $value ] } {
-			set getOption($dev,$Option($j)) $displayToggleB
-		    }
-		    if { ![string compare -nocase -length 12 SCREENTOGGLE $value ] } {
-			set getOption($dev,$Option($j)) $screenToggleB
-		    }
-		    if { $value == 0 } {
-			set getOption($dev,$Option($j)) $ignoreButton
-		    }
+		if { ![string compare -nocase -length 8 DBLCLICK $value ] } {
+		    set getOption($dev,$Option($j)) $doubleClickB
+		}
+		if { ![string compare -nocase -length 4 CORE $value ] } {
+		    set getOption($dev,$Option($j)) $keystrokeB
+		    set oldKeys($Option($j)) $value
+		}
+		if { ![string compare -nocase -length 10 MODETOGGLE $value ] } {
+		    set getOption($dev,$Option($j)) $modeToggleB
+		}
+		if { ![string compare -nocase -length 13 DISPLAYTOGGLE $value ] } {
+		    set getOption($dev,$Option($j)) $displayToggleB
+		}
+		if { ![string compare -nocase -length 12 SCREENTOGGLE $value ] } {
+		    set getOption($dev,$Option($j)) $screenToggleB
+		}
+		if { $value == 0 } {
+		    set getOption($dev,$Option($j)) $ignoreButton
 		}
 		if { $value1 == 0 } {
 		    set getOptionDefault($dev,$Option($j)) $ignoreButton
@@ -919,15 +919,21 @@ proc updateButton {} {
 		 set v "ScreenToggle 1" }
 	    "KeyStroke"
 		{ set j $keystrokeB 
-		 if { $cKeys($spName($k)) == "" } {
-		     set v $oldKeys($spName($k))
-		 } else {
-		    set v $cKeys($spName($k)) 
-		    set oldKeys($spName($k)) $cKeys($spName($k))
-		 } }
+		    if { $cKeys($spName($k)) == "" } {
+			set v $oldKeys($spName($k))
+		    } else {
+			set v $cKeys($spName($k)) 
+			set oldKeys($spName($k)) $cKeys($spName($k))
+		    }
+		}
 	    "Ignore"
 		{ set j $ignoreButton
-		 set v "Button $j" }
+		    if { $i <= $numButton } {
+			set v "Button $i"
+		    } else {
+			set v "Button 0"
+		    }
+		}
 	}
 	set getOption($device,$spName($k)) $j
 	updateXinitrc $device $spName($k) $v
@@ -963,18 +969,18 @@ proc updateButton {} {
 }
 
 proc defaultButton {} {
-    global db db1 db2 db3 db4 db5 db6 db7 db8 db9 db10
-    global db11 db12 db13 db14 isLCD
+    global db isLCD
     global dm sm dmv smv numButton startS numStrips spName
-    global device getOptionDefault getDeviceModel
+    global device getOptionDefault getDeviceModel currentB
+
     for { set i 1 } { $i <= $numButton } { incr i 1 } {
-	set db$i $db($getOptionDefault($device,$spName($i)))
+	set currentB($i) $db($getOptionDefault($device,$spName($i)))
     }
 
     if { $startS } {
 	for { set i $startS } { $i <= [ expr ($startS+$numStrips-1) ] } { incr i 1 } {
 	    set k [ expr ($numButton+$i-$startS+1) ]
-	    set db$k $db($getOptionDefault($device,$spName($k)))
+	    set currentB($k) $db($getOptionDefault($device,$spName($k)))
 	}
     }
 
@@ -1012,7 +1018,8 @@ proc getNumButton { type } {
 	    }
 	}
     }
-    set numButton $t
+
+   set numButton $t
 }
 
 proc setspName {} {
@@ -1123,15 +1130,17 @@ proc displayMode {} {
 }
 
 proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
-    global currentb currentW wName currentk
+    global currentb currentW wName currentk numPadButtons 
+    global device getDeviceModel
 
     set currentb $cbutton
     set currentk $kcurrent
     if { $cbutton } {
 	set currentW .keystrokes
-   } else {
+    } else {
 	set currentW .allothers
     }
+
     toplevel $currentW
     wm geometry $currentW =650x425
     wm title $currentW $wName($winID)
@@ -1143,21 +1152,28 @@ proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
 
     set columnN 0
     if { $deF != 0 } {
+	# default column and row of buttons
+	set columnN 4
+	set rowN 8
+	set model $getDeviceModel($device,model)
+
+	if { [ expr ($numPadButtons($model)/2) ] > $rowN } {
+		set rowN [ expr ($numPadButtons($model)/2 + 4) ]
+	}
 	button $currentW.f.default -text "Default" -command $deF
-	grid $currentW.f.default -row 8 -column 0 -columnspan 3 -padx 10 -pady 10
+	grid $currentW.f.default -row $rowN -column 0 -columnspan 3 -padx 10 -pady 10
 	#
 	# Suppress tags on listboxes to prevent changing the
 	# device and disable other controls
 	bindtags .workingDev.list .
-	set columnN 4
     }
 
     disableButtons
     $initial
 
     grid $currentW.f -row 0 -column 0 -sticky nw
-    grid $currentW.f.ok -row 8 -column [expr ($columnN + 4)] -columnspan 3 -padx 10 -pady 10
-    grid $currentW.f.cancel -row 8 -column $columnN -columnspan 3 -padx 10 -pady 10
+    grid $currentW.f.ok -row $rowN -column [expr ($columnN + 4)] -columnspan 3 -padx 10 -pady 10
+    grid $currentW.f.cancel -row $rowN -column $columnN -columnspan 3 -padx 10 -pady 10
 }
 
 proc closeSubWindow {} {
@@ -1204,10 +1220,8 @@ proc closeTabWindow {} {
 }
 
 proc expressKeys { } {
-    global db db1 db2 db3 db4 db5 db6 db7 db8 db9 db10
-    global db11 db12 db13 db14 startS 
-    global currentW device numButton spName numStrips
-    global getDeviceModel cKeys oldKeys getOption
+    global db currentW device numButton spName numStrips startS
+    global getDeviceModel cKeys oldKeys getOption currentB
     global displayToggleB ignoreButton keystrokeB screenToggleB
     global numPadRings numPadStrips numPadAbsW numPadRelW
 
@@ -1222,24 +1236,25 @@ proc expressKeys { } {
 
     set s2 [expr ($startS + $numStrips) - 1]
     for { set i $startS } { $i <= $s2 } { incr i 1 } {
-	set cur [ expr ($numButton + $i - $startS + 1) ]
+	set curb [ expr ($numButton + $i - $startS + 1) ]
 	set curOption [ expr ($numButton + $i) ]
 	set opt $getOption($device,$spName($curOption))
 	if { $opt == "" } { set opt $ignoreButton }
 
-	set db$cur $db($opt) 
+	set currentB($curb) $db($opt) 
 	#reset keys
 	if { $opt != $keystrokeB } {
 	    set cKeys($spName($curOption)) ""
 	    set oldKeys($spName($curOption)) ""
 	}
-	set bmenu [ tk_optionMenu $currentW.f.$cur db$cur $db(1) $db(2) \
+
+	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
 	    $db(3) $db(4) $db(5) $db($ignoreButton) ]
 	$bmenu insert 7 radiobutton -label "$db($keystrokeB)" \
 	    -variable menvar -command "displaySubWindow \
-	    updateKeys 0 initialKeys 5 $cur $curOption"
+	    updateKeys 0 initialKeys 5 $curb $curOption"
 
-	label $currentW.f.name$cur -text "$name($i): "
+	label $currentW.f.name$curb -text "$name($i): "
 	set t2 [expr ($numButton+1)/2+1]
 	set t1 0
 	if { [expr ($s2 - $startS) > 1] } {
@@ -1255,14 +1270,13 @@ proc expressKeys { } {
 		set t1 2
 	    }
 	}
-	grid $currentW.f.$cur -row $t2 -column [expr $t1+1] 
-	grid $currentW.f.name$cur -row $t2 -column $t1
+	grid $currentW.f.$curb -row $t2 -column [expr $t1+1] 
+	grid $currentW.f.name$curb -row $t2 -column $t1
     }
 }
 
 proc addMenu { curb } {
-    global db db1 db2 db3 db4 db5 db6 db7 db8 db9 db10 
-    global db11 db12 db13 db14 currentW device spName
+    global db currentW device spName currentB
     global getOption getDeviceModel cKeys oldKeys 
     global keystrokeB doubleClickB screenToggleB
     global displayToggleB ignoreButton modeToggleB
@@ -1271,21 +1285,23 @@ proc addMenu { curb } {
     set type $getDeviceModel($device,type)
 
     set opt $getOption($device,$spName($curb))
+
     if { $opt == "" } { set opt $curb }
-    set db$curb $db($opt) 
-    #reset keys
+    set currentB($curb) $db($opt) 
+
+   #reset keys
     if { $opt != $keystrokeB } {
 	set cKeys($spName($curb)) ""
 	set oldKeys($spName($curb)) ""
     }
 
     if { [string compare $type "pad"] } {
-	set bmenu [ tk_optionMenu $currentW.f.$curb db$curb $db(1) $db(2) \
+	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
 		$db(3) $db(4) $db(5) $db($doubleClickB) $db($modeToggleB) \
 		$db($displayToggleB) $db($screenToggleB) $db($ignoreButton) ]
 	set i 9
     } else {
-	set bmenu [ tk_optionMenu $currentW.f.$curb db$curb $db(1) $db(2) \
+	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
 		$db(3) $db(4) $db(5) $db($doubleClickB) $db($displayToggleB) \
 		$db($screenToggleB) $db($ignoreButton) ]
 	set i 8
@@ -1787,9 +1803,7 @@ proc initialKeys {} {
 
 proc updateKeys {} {
     global device oldKeys currentb cKeys spName currentW
-    global db db1 db2 db3 db4 db5 db6 db7 db8 db9 db10
-    global db11 db12 db13 db14 currentk
-    global ignoreButton keystrokeB
+    global db currentk ignoreButton keystrokeB currentB
 
     set keys [ $currentW.f.panelt.input get 1.0 end ]
 
@@ -1809,9 +1823,9 @@ proc updateKeys {} {
     }
 
     if { $cKeys($spName($currentk)) != "" } {
-	set db$currentb $db($keystrokeB)
+	set currentB($currentb) $db($keystrokeB)
     } else {
-	set db$currentb $db($ignoreButton)
+	set currentB($currentb) $db($ignoreButton)
     }
 
     if { [ string length $cKeys($spName($currentk)) ] > 240 } {
@@ -1995,7 +2009,7 @@ proc updateModelInfo { } {
     set isLCD(227) 1 
 
     #Cintiq
-    for { set i 192 } { $i <= 199 } { incr i 1 } {
+    for { set i 197 } { $i <= 204 } { incr i 1 } {
 	set isLCD($i) 1 
     }
 
@@ -2044,6 +2058,10 @@ proc updateModelInfo { } {
     set numPadButtons(198) 10
     set numPadStrips(198) 2
 
+   # Cintiq 21UX2
+    set numPadButtons(204) 18
+    set numPadStrips(204) 2
+
     # I4
     set numPadButtons(184) 7
     set numPadRings(184) 1
@@ -2074,7 +2092,7 @@ proc updateModelInfo { } {
 
 proc createControls { } {
     global numScreens currentScreen cKeys spName
-    global oldKeys numStrips
+    global oldKeys numStrips maxNumButtons maxNumStripEvents
     global workingTags db dm sm wName bName numButton
     global doubleClickB ignoreButton displayToggleB 
     global modeToggleB keystrokeB screenToggleB 
@@ -2087,11 +2105,10 @@ proc createControls { } {
     set db(3) "Right"
     set db(4) "Fourth"
     set db(5) "Fifth"
-    set db(6) "Ignore"
-    set db(7) "Ignore"
-    set db(8) "Ignore"
-    set db(9) "Ignore"
-    set db(10) "Ignore"
+    set numB [ expr ($maxNumButtons + $maxNumStripEvents) ]
+    for { set i 6} { $i <= $numB } { incr i 1 } {
+	set db($i) "Ignore"
+    }
     set db($doubleClickB) "Left Double"
     set db($modeToggleB) "Mode Toggle"
     set db($displayToggleB) "Display Toggle"
@@ -2111,10 +2128,6 @@ proc createControls { } {
     set wName(4) "Screen Mapping"
     set wName(5) "Keystrokes"
     set wName(6) "Tablet Controls"
-
-    # up to the max number of buttons
-    set numButton 10
-    set numStrips 4
 
 #   Real help will be supported later
 #    checkbutton .showHelp -text "Turn Help on" -anchor w \

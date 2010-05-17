@@ -124,7 +124,7 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 
 	DBG(2, common->debugLevel, ErrorF(
 		    "%s - usbParse: prox in for %d, channel %d\n",
-		    timestr(), common->wcmLastToolSerial[channel], channel));
+		    timestr(), common->wcmChannel[channel].work.serial_num, channel));
 
 	noPressureEventSinceProxIn = 1;
 
@@ -149,14 +149,15 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	DBG(3, common->debugLevel, dumpEventRing(local));
 }
 
-void detectPressureIssue(struct input_event* event, WacomCommonPtr common)
+void detectPressureIssue(struct input_event* event, WacomCommonPtr common, int channel)
 {
-	int serial = common->wcmLastToolSerial[common->wcmLastChannel];
+	int serial = common->wcmChannel[channel].work.serial_num;
 
 	/* detect broken pens which always have high tip pressure */
 	if (noPressureEventSinceProxIn)
 	{
-		DBG(3, common->debugLevel, ErrorF("%s - usbParseChannel: prox-in pressure %d\n", 
+		DBG(3, common->debugLevel, ErrorF(
+			"%s - usbParseChannel: prox-in pressure %d\n",
 			timestr(), event->value));
 
 		/* ignore follow-up events until next prox-in */

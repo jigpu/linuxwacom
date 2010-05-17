@@ -35,11 +35,12 @@
 
 #ifdef WCM_CUSTOM_DEBUG
 	static int lastPenSerial = 0;
-	extern void detectPressureIssue(struct input_event* event, WacomCommonPtr common);
+	extern void detectPressureIssue(struct input_event* event,
+		    WacomCommonPtr common, int channel);
 	extern void detectChannelChange(LocalDevicePtr local, int channel);
 	extern void dumpEventRing(LocalDevicePtr local);
 	extern void dumpChannels(LocalDevicePtr local);
-	extern char * timestr();
+	extern char* timestr();
 	extern void logEvent(const struct input_event* event);
 #endif
 
@@ -405,7 +406,8 @@ static Bool usbDetect(LocalDevicePtr local)
 
 /* Key codes used to mark tablet buttons -- must be in sync
  * with the keycode array in wacom.c kernel driver.
- */
+ * turn this off for legacy support. Looks like on
+ * kernels 2.6.27 and later these keys are all recognized. /
 static unsigned short padkey_codes [] = {
 	BTN_0, BTN_1, BTN_2, BTN_3, BTN_4,
 	BTN_5, BTN_6, BTN_7, BTN_8, BTN_9,
@@ -414,6 +416,7 @@ static unsigned short padkey_codes [] = {
 	BTN_BASE4, BTN_BASE5, BTN_BASE6,
 	BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT
 };
+*/
 
 static struct
 {
@@ -546,11 +549,14 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
-	common->npadkeys = 0;
+/*      Use default (MAX_BUTTONS) for legacy support. 
+	We can not retrieve all the keys for lder kernel.
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
 		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
+*/
 
+	/* set default nbuttons */
 	if (ISBITSET (common->wcmKeys, BTN_TASK))
 		common->nbuttons = 10;
 	else if (ISBITSET (common->wcmKeys, BTN_BACK))
@@ -705,29 +711,12 @@ static int usbDetectConfig(LocalDevicePtr local)
 	WacomCommonPtr common = priv->common;
 
 	DBG(10, common->debugLevel, ErrorF("usbDetectConfig \n"));
-	if (IsPad (priv))
-	{
-		priv->nbuttons = common->npadkeys;
 
-/* This code will be used when we are ready to report valuators in tablet and tool 
- * specific form, which will need to clean InitValuatorAxisStruct() in xf86Wacom.c
- * and all the calls to X that are related to valuators, such as xf86PostButtonEvent and 
- * xf86PostButtonEvent, etc. Code under util directory will need to be updated as well.
- * This will take some time. We put it in the to-do list for now.  Ping 
-		unsigned long abs[NBITS(ABS_MAX)];
-		priv->naxes = 0;
-		if (ioctl(local->fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs) >= 0)
-		{
-			if (ISBITSET (abs, ABS_RX))
-				priv->naxes++;
-			if (ISBITSET (abs, ABS_RY))
-				priv->naxes++;
-			if (!priv->naxes)
-				priv->flags |= BUTTONS_ONLY_FLAG;
-		}
-*/	}
+	if (IsPad (priv))
+		priv->nbuttons = common->npadkeys;
 	else
 		priv->nbuttons = common->nbuttons;
+ErrorF("WACOM number of button %d for local %s \n", common->nbuttons, local->name);
 
 	if (!common->wcmCursorProxoutDist)
 		common->wcmCursorProxoutDist
@@ -751,7 +740,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 	int i, channel = -1;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
-	int serial = common->wcmSerial;
+	int serial = common->wcmLastToolSerial;
 
 	if (common->wcmProtocolLevel == 4)
 	{
@@ -884,7 +873,7 @@ static void usbParseEvent(LocalDevicePtr local,
 
 	if ((event->type == EV_MSC) && (event->code == MSC_SERIAL))
 	{
-		common->wcmSerial = event->value;
+		common->wcmLastToolSerial = event->value;
 
 		/* if SYN_REPORT is end of record indicator, we are done */
 		if (USE_SYN_REPORTS(common))
@@ -912,26 +901,30 @@ static void usbParseEvent(LocalDevicePtr local,
 		return;
 	}
 
-	/* ignore events without information */
-	if (common->wcmEventCnt <= 2 && common->wcmSerial) 
+	/* ignore events without information.
+	 * this case normally happens when a tool other than pad is in
+	 * prox while the expresskey (represented as pad) is pressed
+	 * with the same value (button/ring postion/strip)
+	 */
+	if (common->wcmEventCnt <= 2 && common->wcmLastToolSerial) 
 	{
 #ifdef WCM_CUSTOM_DEBUG
 		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty %s event for serial %d\n", 
-			timestr(), local->name, common->wcmSerial));
+			timestr(), local->name, common->wcmLastToolSerial));
 #else
 		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty event for serial %d\n", 
-			local->name, common->wcmSerial));
+			local->name, common->wcmLastToolSerial));
 #endif
 		goto skipEvent;
 	}
 
 #ifdef WCM_CUSTOM_DEBUG
 	/* detect tool change */
-	if (lastPenSerial != common->wcmSerial) 
+	if (lastPenSerial != common->wcmLastToolSerial) 
 	{	   
 		DBG(2, common->debugLevel, ErrorF("%s - usbParse: oldPen %d, newPen %d\n", 
-			timestr(), lastPenSerial, common->wcmSerial));
-		lastPenSerial = common->wcmSerial;
+			timestr(), lastPenSerial, common->wcmLastToolSerial));
+		lastPenSerial = common->wcmLastToolSerial;
 	}
 #endif
 	channel = usbChooseChannel(local);
@@ -951,8 +944,6 @@ static void usbParseEvent(LocalDevicePtr local,
  	}
 	/* dispatch event */
 	usbParseChannel(local, channel);
-	common->wcmLastToolSerial[channel] = common->wcmSerial;
-	common->wcmLastChannel = channel;
 
 skipEvent:
 	common->wcmEventCnt = 0;
@@ -982,7 +973,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	/* all USB data operates from previous context except relative values*/
 	ds = &common->wcmChannel[channel].work;
 	ds->relwheel = 0;
-	ds->serial_num = common->wcmSerial;
+	ds->serial_num = common->wcmLastToolSerial;
 
 	/* loop through all events in group */
 	for (i=0; i<common->wcmEventCnt; ++i)
@@ -1012,7 +1003,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			else if (event->code == ABS_PRESSURE) {
 				ds->pressure = event->value;
 #ifdef WCM_CUSTOM_DEBUG
-				detectPressureIssue(event, common);
+				detectPressureIssue(event, common, channel);
 #endif
 
 			} else if (event->code == ABS_DISTANCE)
@@ -1143,6 +1134,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					if (event->code == common->padkey_code [nkeys])
 					{
 						MOD_BUTTONS (nkeys, event->value);
+ErrorF("wacom usb BTN (%x) assigned to button %d \n", common->padkey_code [nkeys], nkeys);
 						break;
 					}
 			}

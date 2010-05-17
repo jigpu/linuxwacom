@@ -78,9 +78,10 @@
  * 2010-03-10 47-pc0.8.5-11- Support X RandR
  * 2010-03-24 47-pc0.8.5-12- Normalize pressure sensitivity to FILTER_PRESSURE_RES
  * 2010-04-09 47-pc0.8.6   - initial stable release
+ * 2010-05-13 47-pc0.8.7   - Add Cintiq 21UX2
  */
 
-static const char identification[] = "$Identification: 47-0.8.6 $";
+static const char identification[] = "$Identification: 47-0.8.7 $";
 
 /****************************************************************************/
 
@@ -372,14 +373,6 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 			             	     * This is only a workaround. 
 				     	     */
 
-	DBG(10, priv->debugLevel, ErrorF("xf86WcmRegisterX11Devices "
-		"(%s) %d buttons, %d keys, %d axes\n",
-		IsStylus(priv) ? "stylus" :
-		IsCursor(priv) ? "cursor" :
-		IsPad(priv) ? "pad" :
-		IsTouch(priv) ? "touch" : "eraser",
-		nbbuttons, nbkeys, nbaxes));
-
 	/* support at least 7 buttons */
 	num_buttons = nbbuttons > 3 ? (7 + (nbbuttons - 3)) : 7;
 
@@ -389,6 +382,14 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 
 	for(loop=1; loop<=num_buttons; loop++)
 		butmap[loop] = loop;
+
+	DBG(10, priv->debugLevel, ErrorF("xf86WcmRegisterX11Devices "
+		"(%s) %d buttons, %d keys, %d axes\n",
+		IsStylus(priv) ? "stylus" :
+		IsCursor(priv) ? "cursor" :
+		IsPad(priv) ? "pad" :
+		IsTouch(priv) ? "touch" : "eraser",
+		nbbuttons, nbkeys, nbaxes));
 
 	if (InitButtonClassDeviceStruct(local->dev, num_buttons, butmap) == FALSE)
 	{

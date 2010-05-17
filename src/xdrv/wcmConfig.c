@@ -182,8 +182,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->min_maj = 0;			 /* device major and minor */
 	common->wcmFlags = RAW_FILTERING_FLAG;   /* various flags */
 	common->wcmDevices = priv;
-	common->npadkeys = 0;		   /* Default number of pad keys */
-	common->wcmProtocolLevel = 4;      /* protocol level */
+	common->npadkeys = MAX_BUTTONS; /* Default number of pad keys */
+	common->wcmProtocolLevel = 4;   /* protocol level */
 	common->wcmThreshold = 0;       /* unconfigured threshold */
 	common->wcmLinkSpeed = 9600;    /* serial link speed */
 	common->wcmISDV4Speed = 38400;  /* serial ISDV4 link speed */
@@ -235,11 +235,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmRawSample = DEFAULT_SAMPLES;    
 			/* number of raw data to be used to for filtering */
 #ifdef WCM_ENABLE_LINUXINPUT
-	common->wcmSerial = 0;
-	for (i =0; i<MAX_CHANNELS; i++)
-		common->wcmLastToolSerial[i] = 0;
+	common->wcmLastToolSerial = 0;
 	common->wcmEventCnt = 0;
-	common->wcmLastChannel = 0;
 #endif
 
 	/* tool */
@@ -964,16 +961,12 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	for (i=0; i<MAX_BUTTONS; i++)
 	{
 		sprintf(b, "Button%d", i+1);
-		s = xf86SetStrOption(local->options, b, NULL);
-		if (s)
-		{
-			oldButton = priv->button[i];
-			priv->button[i] = xf86SetIntOption(local->options, b, priv->button[i]);
+		oldButton = priv->button[i];
+		priv->button[i] = xf86SetIntOption(local->options, b, priv->button[i]);
 
-			if (oldButton != priv->button[i])
-				xf86Msg(X_CONFIG, "%s: button%d assigned to %d\n",
+		if (oldButton != priv->button[i])
+			xf86Msg(X_CONFIG, "%s: button%d assigned to %d\n",
 					dev->identifier, i+1, priv->button[i]);
-		}
 	}
 
 	/* baud rate */

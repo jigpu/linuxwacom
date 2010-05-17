@@ -1,3 +1,15 @@
+2010-05-17  Ping Cheng <pingc@wacom.com>
+	* Restructured supported kernesl
+	* Removed kernels 2.6.9 to 2.6.15 support
+	* Added support for Cintiq 21UX2
+	* Label 0.8.7
+
+2010-05-12  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in to disable wacom_drv and its utilities
+	  and tell user to build wacom_drv from xf86-input-wacom for 
+	  Xorg server 1.7 or later
+	* Label 0.8.6-2
+	  
 2010-04-30  Ping Cheng <pingc@wacom.com>
 	* Updated wacom_sys.c for system resume
 	* Reset wcmTouchpadMode in xf86WcmSoftOutEvent

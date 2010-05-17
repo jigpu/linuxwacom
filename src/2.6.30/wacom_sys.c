@@ -45,12 +45,7 @@ struct hid_descriptor {
 	__le16   wDescriptorLength;
 } __attribute__ ((packed));
 
-/* defines to get/set USB message */
-#define USB_REQ_GET_REPORT	0x01
-#define USB_REQ_SET_REPORT	0x09
-#define WAC_HID_FEATURE_REPORT	0x03
-
-static int usb_get_report(struct usb_interface *intf, unsigned char type,
+int usb_get_report(struct usb_interface *intf, unsigned char type,
 				unsigned char id, void *buf, int size)
 {
 	return usb_control_msg(interface_to_usbdev(intf),
@@ -60,7 +55,7 @@ static int usb_get_report(struct usb_interface *intf, unsigned char type,
 		buf, size, 100);
 }
 
-static int usb_set_report(struct usb_interface *intf, unsigned char type,
+int usb_set_report(struct usb_interface *intf, unsigned char type,
 				unsigned char id, void *buf, int size)
 {
 	return usb_control_msg(interface_to_usbdev(intf),
@@ -535,7 +530,6 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 			goto fail3;
 	}
 
-	input_dev->name = wacom_wac->name;
 	input_dev->name = wacom_wac->name;
 	input_dev->dev.parent = &intf->dev;
 	input_dev->open = wacom_open;
