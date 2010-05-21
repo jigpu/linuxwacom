@@ -39,15 +39,6 @@
 /*
  * REVISION HISTORY
  *
- * 2007-10-25 47-pc0.7.9-1 - Support multimonitors in both horizonal and vertical settings
- * 2007-11-21 47-pc0.7.9-3 - Updated TwinView screen switch offset
- * 2007-12-07 47-pc0.7.9-4 - Support Cintiq 12WX and Bamboo
- * 2007-12-20 47-pc0.7.9-5 - multimonitor support update
- * 2008-01-08 47-pc0.7.9-6 - Configure script change for Xorg 7.3 support
- * 2008-01-17 47-pc0.7.9-7 - Preparing for hotplug-aware driver
- * 2008-02-27 47-pc0.7.9-8 - Support Cintiq 20
- * 2008-03-07 47-pc0.7.9-9 - Support keystrokes in wacomcpl
- * 2008-04-07 47-pc0.7.9-11- Synchronized databases
  * 2008-05-06 47-pc0.8.0-1 - new release
  * 2008-05-14 47-pc0.8.0-2 - Update rotation routine
  * 2008-07-09 47-pc0.8.1   - new release
@@ -79,9 +70,10 @@
  * 2010-03-24 47-pc0.8.5-12- Normalize pressure sensitivity to FILTER_PRESSURE_RES
  * 2010-04-09 47-pc0.8.6   - initial stable release
  * 2010-05-13 47-pc0.8.7   - Add Cintiq 21UX2
+ * 2010-05-18 47-pc0.8.7-1 - Add Intios4 wireless
  */
 
-static const char identification[] = "$Identification: 47-0.8.7 $";
+static const char identification[] = "$Identification: 47-0.8.7-1 $";
 
 /****************************************************************************/
 
@@ -430,8 +422,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 					  GetMotionHistorySize(),
 #endif
 					  ((priv->flags & ABSOLUTE_FLAG) ?
-					  Absolute : Relative) | 
-					  OutOfProximity ) == FALSE)
+					  Absolute : Relative)) == FALSE)
 	{
 		ErrorF("unable to allocate Valuator class device\n");
 		return FALSE;
@@ -517,8 +508,8 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	if (IsCursor(priv))
 	{
 		/* z-rot and throttle */
-		InitValuatorAxisStruct(local->dev, 3, -900, 899, 1, 1, 1);
-		InitValuatorAxisStruct(local->dev, 4, -1023, 1023, 1, 1, 1);
+		InitValuatorAxisStruct(local->dev, 3, 0, FILTER_PRESSURE_RES, 1, 1, 1);
+		InitValuatorAxisStruct(local->dev, 4, 0, FILTER_PRESSURE_RES, 1, 1, 1);
 	}
 	else if (IsPad(priv))
 	{
@@ -542,7 +533,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 		strstr(common->wcmModel->name, "Intuos4")) 
 			&& IsStylus(priv))
 		/* Art Marker Pen rotation */
-		InitValuatorAxisStruct(local->dev, 5, -900, 899, 1, 1, 1);
+		InitValuatorAxisStruct(local->dev, 5, 0, FILTER_PRESSURE_RES, 1, 1, 1);
 	else if ((strstr(common->wcmModel->name, "Bamboo") ||
 		strstr(common->wcmModel->name, "Intuos4"))
 			&& IsPad(priv))
@@ -551,7 +542,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	else
 	{
 		/* absolute wheel */
-		InitValuatorAxisStruct(local->dev, 5, 0, 1023, 1, 1, 1);
+		InitValuatorAxisStruct(local->dev, 5, 0, FILTER_PRESSURE_RES, 1, 1, 1);
 	}
 
 	if (IsTouch(priv))

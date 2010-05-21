@@ -1357,6 +1357,8 @@ static const struct wacom_features wacom_features_0xBA =
 	{ "Wacom Intuos4 8x13",   WACOM_PKGLEN_INTUOS,    65024, 40640, 2047, 63, INTUOS4L };
 static const struct wacom_features wacom_features_0xBB =
 	{ "Wacom Intuos4 12x19",  WACOM_PKGLEN_INTUOS,    97536, 60960, 2047, 63, INTUOS4L };
+static const struct wacom_features wacom_features_0xBC =
+	{ "Wacom Intuos4 WL",     WACOM_PKGLEN_INTUOS,    44704, 27940, 2047, 63, INTUOS4 };
 static const struct wacom_features wacom_features_0x3F =
 	{ "Wacom Cintiq 21UX",    WACOM_PKGLEN_INTUOS,    87200, 65600, 1023, 63, CINTIQ };
 static const struct wacom_features wacom_features_0xC5 =
@@ -1444,6 +1446,7 @@ const struct usb_device_id wacom_ids[] = {
 	{ USB_DEVICE_WACOM(0xB9) },
 	{ USB_DEVICE_WACOM(0xBA) },
 	{ USB_DEVICE_WACOM(0xBB) },
+	{ USB_DEVICE_WACOM(0xBC) },
 	{ USB_DEVICE_WACOM(0x3F) },
 	{ USB_DEVICE_WACOM(0xC5) },
 	{ USB_DEVICE_WACOM(0xC6) },

@@ -495,10 +495,13 @@ static struct
 	{ 0xB9, 5080, 5080, &usbIntuos4    }, /* Intuos4 6x9 */
 	{ 0xBA, 5080, 5080, &usbIntuos4    }, /* Intuos4 8x13 */
 	{ 0xBB, 5080, 5080, &usbIntuos4    }, /* Intuos4 12x19*/
+	{ 0xBC, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL USB Endpoint */
+	{ 0xBD, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL Bluetooth Endpoint */
 
 	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */ 
 	{ 0xC5, 5080, 5080, &usbCintiqV5   }, /* Cintiq 20WSX */ 
 	{ 0xC6, 5080, 5080, &usbCintiqV5   }, /* Cintiq 12WX */ 
+	{ 0xCC, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX2 */ 
 
 	{ 0x90, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x90 */ 
 	{ 0x93, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x93 */
@@ -994,9 +997,11 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->stripx = event->value; 
 			else if (event->code == ABS_RY)
 				ds->stripy = event->value;
-			else if (event->code == ABS_RZ) 
-				ds->rotation = event->value;
-			else if (event->code == ABS_TILT_X)
+			else if (event->code == ABS_RZ) {
+				ds->rotation = event->value - MIN_ROTATION;
+				ds->rotation *= FILTER_PRESSURE_RES;
+				ds->rotation /= (MAX_ROTATION - MIN_ROTATION);
+			} else if (event->code == ABS_TILT_X)
 				ds->tiltx = event->value - common->wcmMaxtiltX/2;
 			else if (event->code ==  ABS_TILT_Y)
 				ds->tilty = event->value - common->wcmMaxtiltY/2;
@@ -1008,12 +1013,18 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 
 			} else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
-			else if (event->code == ABS_WHEEL || 
-				    event->code == ABS_Z)
-				ds->abswheel = event->value;
-			else if (event->code == ABS_THROTTLE)
-				ds->throttle = event->value;
-			else if (event->code == ABS_MISC && event->value)
+			else if (event->code == ABS_WHEEL) {
+				ds->abswheel = event->value * FILTER_PRESSURE_RES;
+				ds->abswheel /= MAX_ABS_WHEEL;
+			} else if (event->code == ABS_Z) {
+				ds->abswheel = event->value - MIN_ROTATION;
+				ds->abswheel *= FILTER_PRESSURE_RES;
+				ds->abswheel /= (MAX_ROTATION - MIN_ROTATION);
+			} else if (event->code == ABS_THROTTLE) {
+				ds->throttle = event->value + MAX_ABS_WHEEL;
+				ds->throttle *= FILTER_PRESSURE_RES;
+				ds->throttle /= (2 * MAX_ABS_WHEEL);
+			} else if (event->code == ABS_MISC && event->value)
 				ds->device_id = event->value;
 		}
 		else if (event->type == EV_REL)

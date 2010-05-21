@@ -28,7 +28,6 @@
  * 2010-02-09 0.7 - Added gesture options
  */
 
-
 /****************************************************************************/
 
 #include "xf86Wacom.h"
@@ -972,8 +971,8 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	if ( param >= XWACOM_PARAM_STOPX0 && param <= XWACOM_PARAM_SBOTTOMY2)
 		return xf86WcmGetDefaultScreenInfo(local, param);
 
-	if (param >= XWACOM_PARAM_BUTTON6 && param <= XWACOM_PARAM_BUTTON32)
-		return 0;
+	if (param >= XWACOM_PARAM_BUTTON1 && param <= XWACOM_PARAM_BUTTON32)
+		return (param - XWACOM_PARAM_BUTTON1 + 1);
 
 	switch (param)
 	{
@@ -985,12 +984,6 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 		return priv->maxX;
 	case XWACOM_PARAM_BOTTOMY:
 		return priv->maxY;		
-	case XWACOM_PARAM_BUTTON1:
-	case XWACOM_PARAM_BUTTON2:
-	case XWACOM_PARAM_BUTTON3:
-	case XWACOM_PARAM_BUTTON4:
-	case XWACOM_PARAM_BUTTON5:
-		return (param - XWACOM_PARAM_BUTTON1 + 1);
 	case XWACOM_PARAM_MODE:
 		if (IsCursor(priv) || (IsPad(priv) && (priv->flags & COREEVENT_FLAG)))
 			return 0;

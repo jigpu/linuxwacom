@@ -37,13 +37,16 @@
     #define LONG(x)		((x)/BITS_PER_LONG)
 #endif /* WCM_ENABLE_LINUXINPUT */
 
-#define DEFAULT_SPEED 1.0       /* default relative cursor speed */
-#define MAX_ACCEL 7             /* number of acceleration levels */
-#define DEFAULT_SUPPRESS 2      /* default suppress */
-#define MAX_SUPPRESS 100        /* max value of suppress */
-#define BUFFER_SIZE 256         /* size of reception buffer */
-#define MAXTRY 3                /* max number of try to receive magic number */
-#define MAX_FINGER_WHEEL 71     /* max value of finger wheel */
+#define DEFAULT_SPEED 1.0    /* default relative cursor speed */
+#define MAX_ACCEL 7          /* number of acceleration levels */
+#define DEFAULT_SUPPRESS 2   /* default suppress */
+#define MAX_SUPPRESS 100     /* max value of suppress */
+#define BUFFER_SIZE 256      /* size of reception buffer */
+#define MAXTRY 3             /* max number of try to receive magic number */
+#define MAX_FINGER_WHEEL 71  /* max value of finger wheel */
+#define MIN_ROTATION  -900   /* the minimum value of the marker pen rotation */
+#define MAX_ROTATION   899   /* the maximum value of the marker pen rotation */
+#define MAX_ABS_WHEEL 1023   /* the maximum value of absolute wheel */
 
 /* Default max distance to the tablet at which a proximity-out event is generated for
  * cursor device (e.g. mouse). 

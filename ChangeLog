@@ -1,3 +1,12 @@
+2010-05-21  Ping Cheng <pingc@wacom.com>
+	* Normalized the 6th valuator to 2048
+	  this valuator reports absolute wheel or ArtPen rotation
+	  they are normally considered as the tangential pressure
+	* Updated wacomcpl for button options
+	* Added support for Intuos4WL (USB ndpoint)E in the kernel
+	* Added support for Intuos4WL in xdrv (both bluetooth and USB)
+	* Label 0.8.7-1
+
 2010-05-17  Ping Cheng <pingc@wacom.com>
 	* Restructured supported kernesl
 	* Removed kernels 2.6.9 to 2.6.15 support
