@@ -64,6 +64,7 @@ set modeToggleB 35
 set displayToggleB 36
 set screenToggleB 37
 set keystrokeB 38
+# application defined button number
 set originalButton 39
 set maxNumTablets 227
 set numControls 0
@@ -71,6 +72,7 @@ set maxNumButtons 18
 set maxNumStripEvents 4
 set calibration_sequence_only 0
 set calibration_with_warning 0
+set xDefinedButtons 7
 
 proc updateCurrentScreenInfo {} {
     global device numScreens currentScreen 
@@ -620,6 +622,7 @@ proc getDeviceOptionProc { dev i } {
     global getOption getOptionDefault Option oldKeys modeToggleB
     global displayToggleB ignoreButton screenToggleB doubleClickB keystrokeB 
     global numStrips numControls numButton spName originalButton
+    global xDefinedButtons
 
     for { set j 1 } { $j < [ expr $i+1 ] } { incr j 1 } {
 	set value [ exec xsetwacom get "$dev" $Option($j) ] 
@@ -659,13 +662,14 @@ proc getDeviceOptionProc { dev i } {
 	    }
 	    set getOption($dev,$Option($j)) $value
 	    set getOptionDefault($dev,$Option($j)) $value1
-	    if { $value1 == 0 } {
-		set getOptionDefault($dev,$Option($j)) $ignoreButton
-	    } elseif { ($value1 > 5) && ($value1 < $doubleClickB) } {
- 		set getOptionDefault($dev,$Option($j)) $originalButton
-	    }
 
 	    if { $match } {
+		if { $value1 == 0 } {
+		    set getOptionDefault($dev,$Option($j)) $ignoreButton
+		} elseif { ($value1 > $xDefinedButtons) && ($value1 < $doubleClickB) } {
+ 		    set getOptionDefault($dev,$Option($j)) $originalButton
+		}
+
 		if { ![string compare -nocase -length 8 DBLCLICK $value ] } {
 		    set getOption($dev,$Option($j)) $doubleClickB
 		} elseif { ![string compare -nocase -length 4 CORE $value ] } {
@@ -679,7 +683,7 @@ proc getDeviceOptionProc { dev i } {
 		    set getOption($dev,$Option($j)) $screenToggleB
 		} elseif { $value == 0 } {
 		    set getOption($dev,$Option($j)) $ignoreButton
-		} elseif { ($value1 > 5) && ($value1 < $doubleClickB) } {
+		} elseif { ($value1 > $xDefinedButtons) && ($value1 < $doubleClickB) } {
 		    set getOption($dev,$Option($j)) $originalButton
 		}
 	    }
@@ -885,10 +889,10 @@ proc displayScreenList { dev } {
 }
 
 proc updateButton {} {
-    global device getDeviceModel sm getOption spName isLCD
+    global device db getDeviceModel sm getOption spName isLCD
     global dm currentW oldKeys numButton cKeys numStrips startS
-    global modeToggleB ignoreButton doubleClickB keystrokeB 
-    global displayToggleB screenToggleB originalButton
+    global modeToggleB ignoreButton doubleClickB keystrokeB xDefinedButtons
+    global displayToggleB screenToggleB originalButton maxNumButtons
 
     set type $getDeviceModel($device,type)
     set model $getDeviceModel($device,model)
@@ -898,57 +902,39 @@ proc updateButton {} {
 	if { $i > $numButton } {
 	    set k [ expr ($startS-1+$i) ]
 	}
-	switch [ $currentW.f.$i cget -text ] {
-	    "Left"
-		{ set j 1 
-		  set v "Button 1" }
-	    "Middle"
-		{ set j 2 
-		 set v "Button 2" }
-	    "Right"
-		{ set j 3 
-		 set v "Button 3" }
-	    "Fourth"
-		{ set j 4 
-		 set v "Button 4" }
-	    "Fifth"
-		{ set j 5 
-		 set v "Button 5" }
-	    "Left Double"
-		{ set j $doubleClickB
-		 set v "DBLCLICK 1" }
-	    "Mode Toggle"
-		{ set j $modeToggleB
-		 set v "ModeToggle 1" }
-	    "Display Toggle"
-		{ set j $displayToggleB
-		 set v "DisplayToggle 1" }
-	    "Screen Toggle"
-		{ set j $screenToggleB
-		 set v "ScreenToggle 1" }
-	    "KeyStroke"
-		{ set j $keystrokeB 
+
+	set buttonAssigned [ $currentW.f.$i cget -text ]
+
+	set v $buttonAssigned
+	for { set l 1} { $l <= $originalButton } { incr l 1 } {
+	    if { $db($l) != "" && ![string compare -nocase $buttonAssigned $db($l)] } {
+		set j $l
+		set v "Button $l"
+puts "WE got  (j) $j and v |$v | at i($i) for $db($l) "
+
+		if { ![string compare -nocase $buttonAssigned "KeyStroke"] } {
+		    set j $keystrokeB
 		    if { $cKeys($spName($k)) == "" } {
 			set v $oldKeys($spName($k))
 		    } else {
 			set v $cKeys($spName($k)) 
 			set oldKeys($spName($k)) $cKeys($spName($k))
 		    }
-		}
-	    "Default"
-		{
-		    if { $i <= $numButton } {
+		} elseif { ![string compare -nocase $buttonAssigned "Application Defined"] } {
+		    #don't change application defined button number back to X server defined
+		    if { $i > $xDefinedButtons } {
+			set j $i
 			set v "Button $i"
-			set j $originalButton
-		    } else {
-			set v "Button 0"
-			set j $ignoreButton
 		    }
+		} elseif { ![string compare -nocase $buttonAssigned "Ignore"] } {
+		    set j $ignoreButton
+		    set v "Button 0"
+		} elseif { $l >= $doubleClickB && $l < $screenToggleB } {
+		    set j $l
+		    set v $db($l)
 		}
-	    "Ignore"
-		{ set j $ignoreButton
-		  set v "Button 0"
-		}
+		set l [ expr ($originalButton+1) ]
+	    }
 	}
 	set getOption($device,$spName($k)) $j
 	updateXinitrc $device $spName($k) $v
@@ -1166,9 +1152,9 @@ proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
     button $currentW.f.cancel -text "Cancel" -command closeSubWindow
 
     set columnN 0
+    set rowN 6
     if { $deF != 0 } {
-	# default column and row of buttons
-	set columnN 4
+	set columnN 2
 	set rowN 8
 	set model $getDeviceModel($device,model)
 
@@ -1188,7 +1174,7 @@ proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
 
     grid $currentW.f -row 0 -column 0 -sticky nw
     grid $currentW.f.ok -row $rowN -column [expr ($columnN + 4)] -columnspan 3 -padx 10 -pady 10
-    grid $currentW.f.cancel -row $rowN -column $columnN -columnspan 3 -padx 10 -pady 10
+    grid $currentW.f.cancel -row $rowN -column [expr ($columnN + 1)] -columnspan 3 -padx 10 -pady 10
 }
 
 proc closeSubWindow {} {
@@ -1264,7 +1250,7 @@ proc expressKeys { } {
 	}
 
 	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
-	    $db(3) $db(4) $db(5) $db($ignoreButton) ]
+	    $db(3) $db(4) $db(5) $db(6) $db(7) $db($ignoreButton) ]
 	$bmenu insert 7 radiobutton -label "$db($keystrokeB)" \
 	    -variable menvar -command "displaySubWindow \
 	    updateKeys 0 initialKeys 5 $curb $curOption"
@@ -1294,6 +1280,7 @@ proc addMenu { curb } {
     global db currentW device spName currentB getOption getDeviceModel
     global cKeys oldKeys keystrokeB doubleClickB screenToggleB
     global displayToggleB ignoreButton modeToggleB originalButton
+    global xDefinedButtons
 
     set model $getDeviceModel($device,model)
     set type $getDeviceModel($device,type)
@@ -1301,7 +1288,7 @@ proc addMenu { curb } {
     set opt $getOption($device,$spName($curb))
 
     if { $opt == "" } { set opt $curb }
-    if { ($opt > 5) && ($opt < $doubleClickB) } {
+    if { ($opt > $xDefinedButtons) && ($opt < $doubleClickB) } {
 	 set currentB($curb) $db($originalButton)
     } else {
 	set currentB($curb) $db($opt) 
@@ -1314,22 +1301,30 @@ proc addMenu { curb } {
     }
 
     if { [string compare $type "pad"] } {
-	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
-		$db(3) $db(4) $db(5) $db($doubleClickB) $db($modeToggleB) \
-		$db($displayToggleB) $db($screenToggleB) $db($originalButton) \
-		$db($ignoreButton) ]
-	set i 9
+	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) \
+		$db(1) $db(2) $db(3) $db(4) $db(5) $db(6) $db(7) \
+		$db($doubleClickB) $db($modeToggleB) $db($displayToggleB) \
+		$db($screenToggleB) $db($ignoreButton) ]
+	set i 11
     } else {
-	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) $db(1) $db(2) \
-		$db(3) $db(4) $db(5) $db($doubleClickB) $db($displayToggleB) \
-		$db($screenToggleB) $db($originalButton) $db($ignoreButton) ]
-	set i 8
+	set bmenu [ tk_optionMenu $currentW.f.$curb currentB($curb) \
+		$db(1) $db(2) $db(3) $db(4) $db(5) $db(6) $db(7) \
+		$db($doubleClickB) $db($displayToggleB) \
+		$db($screenToggleB) $db($ignoreButton) ]
+	set i 10
     }
 
-    set i [expr ($i+1)]
+    # add keystroke before "Application Defined"
     $bmenu insert $i radiobutton -label "$db($keystrokeB)" \
 	-variable menvar -command "displaySubWindow \
 	updateKeys 0 initialKeys 5 $curb $curb"
+
+    # add "Application Defined" only when it is necessary
+    set i [ expr ($i + 1) ]
+    if { ($curb > $xDefinedButtons) || ($opt > $xDefinedButtons) } {
+	$bmenu insert $i radiobutton -label "$db($originalButton)" \
+	    -variable menvar
+    }
 
     label $currentW.f.name$curb -text "Button $curb: "
     set t2 [expr ($curb-1)/2]
@@ -1539,7 +1534,7 @@ proc defaultTip {} {
 
 proc initialSet {} {
     global device getDeviceModel getOption Option
-    global tvd tvID snd currentW
+    global tvCurrent tvID snd currentW tvDefined
 
     # used by both TwinView and non TwinView multimonitor setup
     label $currentW.f.sns -text "Display Mapping: "
@@ -1583,20 +1578,21 @@ proc initialSet {} {
     }
 
     label $currentW.f.tv -text "TwinView Setup: "
-    set tv(0) "None"
-    set tv(1) "Xinerama"
-    set tv(2) "Vertical"
-    set tv(3) "Horizontal"
-    set tv(4) "AboveOf"
-    set tv(5) "LeftOf"
+    set tvDefined(0) "None"
+    set tvDefined(1) "Xinerama"
+    set tvDefined(2) "Vertical"
+    set tvDefined(3) "Horizontal"
+    set tvDefined(4) "AboveOf"
+    set tvDefined(5) "LeftOf"
 
     for { set i 0 } { $i < 6 } { incr i 1 } {
 	if { $tvID == $i } {
-	    set tvd $tv($i)
+	    set tvCurrent $tvDefined($i)
 	}
     }
 
-    tk_optionMenu $currentW.f.tvmenu tvd $tv(0) $tv(1) $tv(2) $tv(3) $tv(4) $tv(5)
+    tk_optionMenu $currentW.f.tvmenu tvCurrent $tvDefined(0) $tvDefined(1) \
+	$tvDefined(2) $tvDefined(3) $tvDefined(4) $tvDefined(5)
     grid $currentW.f.tv -row 4 -column 0 
     grid $currentW.f.tvmenu -row 4 -column 1
 
@@ -1613,7 +1609,7 @@ proc initialSet {} {
 }
 
 proc updateSet {} {
-    global device currentW tvd snd tvID
+    global device currentW tvCurrent snd tvID tvDefined
 
     set numS [ exec xsetwacom get "$device" NumScreen ]
 
@@ -1632,27 +1628,15 @@ proc updateSet {} {
 	set getOption($device,Screen_No) $sn
     }
 
-    set tv [ $currentW.f.tvmenu cget -text ]
-    if { ![ string compare $tv "None" ] } {
-	set tv 0
-    }
-    if { ![ string compare $tv "Xinerama" ] } {
-	set tv 1
-    }
-    if { ![ string compare $tv "Horizontal" ] } {
-	set tv 3
-    }
-    if { ![ string compare $tv "Vertical" ] } {
-	set tv 2
-    }
-    if { ![ string compare $tv "LeftOf" ] } {
-	set tv 5
-    }
-    if { ![ string compare $tv "AboveOf" ] } {
-	set tv 4
+    set tvString [ $currentW.f.tvmenu cget -text ]
+    for { set i 0 } {$i <= 5 } { incr i 1 } {
+	if { ![ string compare $tvString $tvDefined($i) ] } {
+	    set tv $i
+	}
     }
 
     if { $tv != $tvID } {
+	set tvCurrent $tv
 	updateXinitrc $device TwinView $tv
 	set getOption($device,TwinView) $tv
     }
@@ -1661,9 +1645,9 @@ proc updateSet {} {
 }
 
 proc defaultSet {} {
-    global tvd snd
+    global tvCurrent snd
 
-    set tvd "None"
+    set tvCurrent "None"
     set snd "Desktop"
 }
 
@@ -1843,7 +1827,7 @@ proc updateKeys {} {
 
     if { $cKeys($spName($currentk)) != "" } {
 	set currentB($currentb) $db($keystrokeB)
-    } elseif { [string compare -nocase -length 6 $spName($currentk) "button" } {
+    } elseif { [string compare -nocase -length 6 $spName($currentk) "button"] } {
 	set currentB($currentb) $db($originalButton)
     } else {
 	set currentB($currentb) $db($ignoreButton)
@@ -2112,7 +2096,7 @@ proc updateModelInfo { } {
 }
 
 proc createControls { } {
-    global numScreens currentScreen cKeys spName
+    global numScreens currentScreen cKeys spName xDefinedButtons
     global oldKeys numStrips maxNumButtons maxNumStripEvents
     global workingTags db dm sm wName bName numButton
     global doubleClickB ignoreButton displayToggleB 
@@ -2126,17 +2110,25 @@ proc createControls { } {
     set db(3) "Right"
     set db(4) "Fourth"
     set db(5) "Fifth"
-    set numB [ expr ($maxNumButtons + $maxNumStripEvents) ]
-    for { set i 6} { $i <= $numB } { incr i 1 } {
-	set db($i) "Ignore"
-    }
-    set db($doubleClickB) "Left Double"
-    set db($modeToggleB) "Mode Toggle"
-    set db($displayToggleB) "Display Toggle"
-    set db($screenToggleB) "Screen Toggle"
+    set db(6) "Sixth"
+    set db($xDefinedButtons) "Seventh"
+
+    set db($doubleClickB) "LeftDouble"
+    set db($modeToggleB) "ModeToggle"
+    set db($displayToggleB) "DisplayToggle"
+    set db($screenToggleB) "ScreenToggle"
     set db($ignoreButton) "Ignore"
     set db($keystrokeB) "KeyStroke"
-    set db($originalButton) "Default"
+    set db($originalButton) "Application Defined"
+
+    for { set i [ expr ($xDefinedButtons + 1) ] } { $i <= $maxNumButtons } { incr i 1 } {
+	set db($i) $db($originalButton)
+    }
+
+    for { set i [ expr ($maxNumButtons + 1) ] } { $i < $doubleClickB } { incr i 1 } {
+	set db($i) $db($ignoreButton)
+    }
+
     set dm(1) "Relative"
     set dm(2) "Absolute"
 

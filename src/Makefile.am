@@ -5,10 +5,18 @@ SUBDIRS = . wacomxi util xdrv @WCM_KERNEL_VER@
 endif
 
 wmanpagedir = @mandir@/man4
+xsetwacommandir = @mandir@/man4
+wacommanpagedir = @mandir@/man4
+
 wmanpage_HEADERS = wacom.4x.gz
+xsetwacomman_HEADERS = xsetwacom.4x.gz
+wacommanpage_HEADERS = $(wmanpage_HEADERS) $(xsetwacomman_HEADERS)
 
-EXTRA_DIST = wacom.4x
+wmanpage_DATA = wacom.4x
+xsetwacomman_DATA = xsetwacom.4x
+EXTRA_DIST = $(wmanpage_DATA) $(xsetwacomman_DATA)
 
-$(wmanpage_HEADERS): $(EXTRA_DIST)
-	rm -f $(wmanpage_HEADERS)
-	gzip -9c < $(srcdir)/$(EXTRA_DIST) > $(wmanpage_HEADERS)
+$(wacommanpage_HEADERS): $(EXTRA_DIST)
+	rm -f $(wacommanpage_HEADERS)
+	gzip -9c < $(srcdir)/$(wmanpage_DATA) > $(wmanpage_HEADERS)
+	gzip -9c < $(srcdir)/$(xsetwacomman_DATA) > $(xsetwacomman_HEADERS)

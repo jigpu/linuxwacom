@@ -1222,6 +1222,39 @@ static int idtotype(int id)
 	return type;
 }
 
+static struct
+{
+	__u16 device_type;
+	__u16 tool_key;
+} wcmTypeToKey [] =
+{
+	{ STYLUS_ID, BTN_TOOL_PEN       },
+	{ STYLUS_ID, BTN_TOOL_PENCIL    },
+	{ STYLUS_ID, BTN_TOOL_BRUSH     },
+	{ STYLUS_ID, BTN_TOOL_AIRBRUSH  },
+	{ ERASER_ID, BTN_TOOL_RUBBER    },
+	{ CURSOR_ID, BTN_TOOL_MOUSE     },
+	{ CURSOR_ID, BTN_TOOL_LENS      },
+	{ TOUCH_ID,  BTN_TOOL_DOUBLETAP },
+	{ TOUCH_ID,  BTN_TOOL_TRIPLETAP },
+	{ PAD_ID,    BTN_TOOL_FINGER    }
+};
+
+static int keytotype(__u16* keys)
+{
+	int i, device_type = STYLUS_ID;
+
+	for (i=0; i<sizeof (wcmTypeToKey) / sizeof (wcmTypeToKey [0]); i++)
+	{
+		if (ISBITSET(keys, wcmTypeToKey[i].tool_key))
+		{
+			device_type = wcmTypeToKey[i].device_type;
+			break;
+		}
+	}
+	return device_type;
+}
+
 static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 	const WacomChannelPtr pChannel, int suppress)
 {
@@ -1229,13 +1262,31 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 	WacomToolPtr tool = NULL;
 	WacomToolPtr tooldef = NULL;
 	WacomDeviceState* ds = &pChannel->valid.states[0];
+	WacomDeviceState* last_ds = &pChannel->valid.states[1];
 	WacomDevicePtr priv = NULL;
+
+	/* First time in prox and device type unknown for USB devices?
+	 * Tool may be on the tablet when X starts.
+	 */
+	if ((common->wcmDevCls == &gWacomUSBDevice) &&
+				!ds->device_type && !last_ds->proximity)
+	{
+		__u16 keys[NBITS(KEY_MAX)];
+		int i;
+
+		/* we have tried memset. it doesn't work */
+		for (i=0; i<NBITS(KEY_MAX); i++)
+			keys[i] = 0;
+
+		/* Retrieve the type by asking a resend from the kernel */
+		ioctl(common->fd, EVIOCGKEY(
+			(sizeof(__u16) * NBITS(KEY_MAX))), keys);
+		ds->device_type = keytotype(keys);
+	}
 
 	if (!ds->device_type && ds->proximity)
 	{
-		/* Tool may be on the tablet when X starts. 
-		 * Figure out device type by device id
-		 */
+		/* something went wrong. Figure out device type by device id */
 		switch (ds->device_id)
 		{
 			case STYLUS_DEVICE_ID:
@@ -1250,6 +1301,8 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 			case TOUCH_DEVICE_ID:
 				ds->device_type = TOUCH_ID;
 				break;
+			case PAD_DEVICE_ID:
+				ds->device_type = PAD_ID;
 			default:
 				ds->device_type = idtotype(ds->device_id);
 		}
@@ -1579,7 +1632,7 @@ static void transPressureCurve(WacomDevicePtr pDev, WacomDeviceStatePtr pState)
 			FILTER_PRESSURE_RES : p;
 
 		/* apply pressure curve function */
-		p = pDev->pPressCurve[p];
+		pState->pressure = pDev->pPressCurve[p];
 	}
 }
 

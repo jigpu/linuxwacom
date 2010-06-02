@@ -406,8 +406,7 @@ static Bool usbDetect(LocalDevicePtr local)
 
 /* Key codes used to mark tablet buttons -- must be in sync
  * with the keycode array in wacom.c kernel driver.
- * turn this off for legacy support. Looks like on
- * kernels 2.6.27 and later these keys are all recognized. /
+ */
 static unsigned short padkey_codes [] = {
 	BTN_0, BTN_1, BTN_2, BTN_3, BTN_4,
 	BTN_5, BTN_6, BTN_7, BTN_8, BTN_9,
@@ -416,7 +415,7 @@ static unsigned short padkey_codes [] = {
 	BTN_BASE4, BTN_BASE5, BTN_BASE6,
 	BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT
 };
-*/
+
 
 static struct
 {
@@ -535,7 +534,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	if (common->wcmModel && strstr(common->wcmModel->name, "TabletPC"))
 	{
 		/* Tablet PC button applied to the whole tablet. Not just one tool */
-		common->wcmTPCButtonDefault = 1; /* Tablet PC buttons on by default */
+		common->wcmTPCButtonDefault = 1;
 	}
 
 	if ( priv->flags & STYLUS_ID )
@@ -552,12 +551,9 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
-/*      Use default (MAX_BUTTONS) for legacy support. 
-	We can not retrieve all the keys for lder kernel.
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
 		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
-*/
 
 	/* set default nbuttons */
 	if (ISBITSET (common->wcmKeys, BTN_TASK))
@@ -719,7 +715,6 @@ static int usbDetectConfig(LocalDevicePtr local)
 		priv->nbuttons = common->npadkeys;
 	else
 		priv->nbuttons = common->nbuttons;
-ErrorF("WACOM number of button %d for local %s \n", common->nbuttons, local->name);
 
 	if (!common->wcmCursorProxoutDist)
 		common->wcmCursorProxoutDist
@@ -1145,7 +1140,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					if (event->code == common->padkey_code [nkeys])
 					{
 						MOD_BUTTONS (nkeys, event->value);
-ErrorF("wacom usb BTN (%x) assigned to button %d \n", common->padkey_code [nkeys], nkeys);
 						break;
 					}
 			}

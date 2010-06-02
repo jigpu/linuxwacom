@@ -388,7 +388,10 @@ static const char *default_options[] =
 static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
 {
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;
-    
+ 	WacomCommonPtr common = priv->common;
+	WacomToolPtr *toolv = &common->wcmTool;
+	WacomToolPtr tool = common->wcmTool;
+
 	DBG(1, priv->debugLevel, ErrorF("xf86WcmUninit\n"));
 
 	/* Xservers 1.4 and later but earlier than 1.5.2 need this call */
@@ -398,14 +401,37 @@ static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
    #endif
 #endif
 
-	/* free pressure curve */
+	/* free objects associated with priv */
 	if (priv->pPressCurve)
 		xfree(priv->pPressCurve);
-    
+	if (priv->tool && priv->tool->arealist)
+	{
+		WacomToolAreaPtr area = priv->tool->arealist;
+		for (; area; area = area->next)
+			xfree(area);
+	}
+
+	while(tool)
+	{
+		if (tool == priv->tool)
+		{
+			*toolv = tool->next;
+			break;
+		}
+		toolv = &tool->next;
+		tool = tool->next;
+	}
+
+	xfree(priv->tool);
+
 	/* free priv here otherwise X server 1.6 or later crashes 
 	 */
 	xfree(priv);
 	local->private = NULL;
+
+	/* the last priv frees the common */
+	if(!common->wcmDevices)
+		xfree(common);
 
 	xf86DeleteInput(local, 0);    
 }

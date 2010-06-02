@@ -1,3 +1,12 @@
+2010-06-02  Ping Cheng <pingc@wacom.com>
+	* Added the xsetwacom manpage
+		- by Peter Hutterer <peter.hutterer@redhat.com>
+	* Free common, common->toollist, priv->tool, and toolarea
+	* Added Application Defined functionality for buttons
+	* Retrieve supported tools from the kernel if a tool is on 
+	  the tablet when X server started
+	* Label 0.8.7-2
+
 2010-05-21  Ping Cheng <pingc@wacom.com>
 	* Normalized the 6th valuator to 2048
 	  this valuator reports absolute wheel or ArtPen rotation

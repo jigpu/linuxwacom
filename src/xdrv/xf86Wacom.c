@@ -73,7 +73,7 @@
  * 2010-05-18 47-pc0.8.7-1 - Add Intios4 wireless
  */
 
-static const char identification[] = "$Identification: 47-0.8.7-1 $";
+static const char identification[] = "$Identification: 47-0.8.7-2 $";
 
 /****************************************************************************/
 

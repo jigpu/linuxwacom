@@ -678,7 +678,8 @@ static int wacom_intuos_irq(struct wacom_wac *wacom)
 			input_report_abs(input, ABS_RY, ((data[3] & 0x1f) << 8) | data[4]);
 
 			if ((data[5] & 0x1f) | (data[6] & 0x1f) | (data[1] & 0x1f) |
-				data[2] | (data[3] & 0x1f) | data[4]) {
+				data[2] | (data[3] & 0x1f) | data[4] | data[8] |
+				(data[7] & 0x01)) {
 				input_report_key(input, wacom->tool[1], 1);
 				input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
 			} else {
