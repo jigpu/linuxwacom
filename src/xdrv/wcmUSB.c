@@ -551,6 +551,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
+	common->npadkeys = 0;
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
 		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
@@ -947,6 +948,24 @@ skipEvent:
 	common->wcmEventCnt = 0;
 }
 
+static struct
+{
+	unsigned long device_type;
+	unsigned long tool_key;
+} wcmTypeToKey [] =
+{
+	{ STYLUS_ID, BTN_TOOL_PEN       },
+	{ STYLUS_ID, BTN_TOOL_PENCIL    },
+	{ STYLUS_ID, BTN_TOOL_BRUSH     },
+	{ STYLUS_ID, BTN_TOOL_AIRBRUSH  },
+	{ ERASER_ID, BTN_TOOL_RUBBER    },
+	{ CURSOR_ID, BTN_TOOL_MOUSE     },
+	{ CURSOR_ID, BTN_TOOL_LENS      },
+	{ TOUCH_ID,  BTN_TOOL_DOUBLETAP },
+	{ TOUCH_ID,  BTN_TOOL_TRIPLETAP },
+	{ PAD_ID,    BTN_TOOL_FINGER    }
+};
+
 static void usbParseChannel(LocalDevicePtr local, int channel)
 {
 	int i, shift, nkeys;
@@ -954,6 +973,8 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	struct input_event* event;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
+	WacomChannelPtr pChannel = common->wcmChannel + channel;
+	WacomDeviceState dslast = pChannel->valid.state;
 	static WacomDeviceState* syslast;
 
 	DBG(6, common->debugLevel, ErrorF("usbParseChannel %d events received\n", common->wcmEventCnt));
@@ -1082,8 +1103,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			}
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
-				WacomChannelPtr pChannel = common->wcmChannel + channel;
-				WacomDeviceState dslast = pChannel->valid.state;
 				DBG(6, common->debugLevel, ErrorF(
 					"USB Touch detected %x (value=%d)\n",
 					event->code, event->value));
@@ -1103,8 +1122,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			}
 			else if (event->code == BTN_TOOL_TRIPLETAP)
 			{
-				WacomChannelPtr pChannel = common->wcmChannel + channel;
-				WacomDeviceState dslast = pChannel->valid.state;
 				DBG(6, common->debugLevel, ErrorF(
 					"USB Touch second finger detected %x (value=%d)\n",
 					event->code, event->value));
@@ -1145,8 +1162,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			}
 
 #ifdef WCM_CUSTOM_DEBUG
-			WacomChannelPtr pChannel = common->wcmChannel + channel;
-			WacomDeviceState dslast = pChannel->valid.state;
 			/* detect prox out events */
 			if (dslast.proximity && ds->proximity == 0) {
 				DBG(2, common->debugLevel, ErrorF("%s - usbParseChannel: prox out"
@@ -1156,6 +1171,27 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 #endif
 		}
 	} /* next event */
+
+	/* First time in prox and device type unknown?
+	 * Tool may be on the tablet when X starts.
+	 */
+	if (!ds->device_type && !dslast.proximity)
+	{
+		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
+		int i = 0;
+
+		/* Retrieve the type by asking a resend from the kernel */
+		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);
+
+		for (i=0; i<sizeof(wcmTypeToKey) / sizeof(wcmTypeToKey[0]); i++)
+		{
+			if (ISBITSET(keys, wcmTypeToKey[i].tool_key))
+			{
+				ds->device_type = wcmTypeToKey[i].device_type;
+				break;
+			}
+		}
+	}
 
 	/* don't send touch event when touch isn't enabled */
 	if ((ds->device_type == TOUCH_ID) && !common->wcmTouch)

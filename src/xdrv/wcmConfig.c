@@ -383,14 +383,71 @@ static const char *default_options[] =
 	NULL
 };
 
+static void xf86WcmRemoveAssociates(LocalDevicePtr local)
+{
+	WacomDevicePtr priv = (WacomDevicePtr) local->private;
+	WacomCommonPtr common = priv->common;
+	WacomDevicePtr *prev = &common->wcmDevices;
+	WacomDevicePtr dev = common->wcmDevices;
+
+	DBG(1, priv->debugLevel, ErrorF("xf86WcmRemoveAssociates\n"));
+
+	if (priv->toolarea)
+	{
+		WacomToolAreaPtr *preva = &priv->tool->arealist;
+		WacomToolAreaPtr area = *preva;
+		while (area)
+		{
+			if (area == priv->toolarea)
+			{
+				*preva = area->next;
+				break;
+			}
+			preva = &area->next;
+			area = area->next;
+		}
+		free(priv->toolarea);
+	}
+
+	if (priv->tool)
+	{
+		WacomToolPtr *prevt = &common->wcmTool;
+		WacomToolPtr tool = *prevt;
+
+		while (tool)
+		{
+			if (tool == priv->tool)
+			{
+				*prevt = tool->next;
+				break;
+			}
+			prevt =	&tool->next;
+			tool = tool->next;
+		}
+		free(priv->tool);
+	}
+
+	while (dev)
+	{
+		if (dev == priv)
+		{
+			*prev = dev->next;
+			break;
+		}
+		prev = &dev->next;
+		dev = dev->next;
+	}
+
+	free(priv);
+	local->private = NULL;
+}
+
 /* xf86WcmUninit - called when the device is no longer needed. */
 
 static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
 {
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;
  	WacomCommonPtr common = priv->common;
-	WacomToolPtr *toolv = &common->wcmTool;
-	WacomToolPtr tool = common->wcmTool;
 
 	DBG(1, priv->debugLevel, ErrorF("xf86WcmUninit\n"));
 
@@ -404,30 +461,8 @@ static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
 	/* free objects associated with priv */
 	if (priv->pPressCurve)
 		xfree(priv->pPressCurve);
-	if (priv->tool && priv->tool->arealist)
-	{
-		WacomToolAreaPtr area = priv->tool->arealist;
-		for (; area; area = area->next)
-			xfree(area);
-	}
 
-	while(tool)
-	{
-		if (tool == priv->tool)
-		{
-			*toolv = tool->next;
-			break;
-		}
-		toolv = &tool->next;
-		tool = tool->next;
-	}
-
-	xfree(priv->tool);
-
-	/* free priv here otherwise X server 1.6 or later crashes 
-	 */
-	xfree(priv);
-	local->private = NULL;
+	xf86WcmRemoveAssociates(local);
 
 	/* the last priv frees the common */
 	if(!common->wcmDevices)

@@ -182,7 +182,7 @@ Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys
 /* Choose valid types according to device ID */
 int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 {
-	int ret = 1, i, fd = -1;
+	int ret = 1, fd = -1;
 	unsigned int id = 0;
 	char* device, *stopstring;
 	struct serial_struct tmp;
@@ -196,10 +196,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 		return 0;
 	}
 
-	/* we have tried memset. it doesn't work */
-	for (i=0; i<NBITS(KEY_MAX); i++)
-		keys[i] = 0;
-
+	memset(keys, 0, sizeof(keys));
 	*tablet_id = 0;
 
 	/* serial ISDV4 devices */
@@ -274,8 +271,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 		struct input_id wacom_id;
 
 		/* test if the tool is defined in the kernel */
-		if (ioctl(fd, EVIOCGBIT(EV_KEY, (sizeof(unsigned long)
-			 * NBITS(KEY_MAX))), keys) < 0)
+		if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0)
 		{
 			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
 				"ioctl USB key bits.\n", local->name);

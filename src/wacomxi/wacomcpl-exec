@@ -910,7 +910,6 @@ proc updateButton {} {
 	    if { $db($l) != "" && ![string compare -nocase $buttonAssigned $db($l)] } {
 		set j $l
 		set v "Button $l"
-puts "WE got  (j) $j and v |$v | at i($i) for $db($l) "
 
 		if { ![string compare -nocase $buttonAssigned "KeyStroke"] } {
 		    set j $keystrokeB

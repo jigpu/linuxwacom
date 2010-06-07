@@ -1359,7 +1359,7 @@ static const struct wacom_features wacom_features_0xBA =
 static const struct wacom_features wacom_features_0xBB =
 	{ "Wacom Intuos4 12x19",  WACOM_PKGLEN_INTUOS,    97536, 60960, 2047, 63, INTUOS4L };
 static const struct wacom_features wacom_features_0xBC =
-	{ "Wacom Intuos4 WL",     WACOM_PKGLEN_INTUOS,    44704, 27940, 2047, 63, INTUOS4 };
+	{ "Wacom Intuos4 WL",     WACOM_PKGLEN_INTUOS,    40840, 25400, 2047, 63, INTUOS4 };
 static const struct wacom_features wacom_features_0x3F =
 	{ "Wacom Cintiq 21UX",    WACOM_PKGLEN_INTUOS,    87200, 65600, 1023, 63, CINTIQ };
 static const struct wacom_features wacom_features_0xC5 =

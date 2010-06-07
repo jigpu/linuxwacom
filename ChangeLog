@@ -1,3 +1,9 @@
+2010-06-07  Ping Cheng <pingc@wacom.com>
+	* Fixed free toolarea issue
+	* Moved "retrieving tools" from wcmCommon to wcmUSB, where it belongs
+	* Initialize common->npadkeys before recounting the keys
+	* Label 0.8.8
+
 2010-06-02  Ping Cheng <pingc@wacom.com>
 	* Added the xsetwacom manpage
 		- by Peter Hutterer <peter.hutterer@redhat.com>
