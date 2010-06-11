@@ -71,9 +71,10 @@
  * 2010-04-09 47-pc0.8.6   - initial stable release
  * 2010-05-13 47-pc0.8.7   - Add Cintiq 21UX2
  * 2010-05-18 47-pc0.8.7-1 - Add Intios4 wireless
+ * 2010-06-11 47-pc0.8.8-1   - Add DTU-2231
  */
 
-static const char identification[] = "$Identification: 47-0.8.7-2 $";
+static const char identification[] = "$Identification: 47-0.8.8-1 $";
 
 /****************************************************************************/
 
@@ -422,7 +423,7 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 					  GetMotionHistorySize(),
 #endif
 					  ((priv->flags & ABSOLUTE_FLAG) ?
-					  Absolute : Relative)) == FALSE)
+					  Absolute : Relative) | OutOfProximity) == FALSE)
 	{
 		ErrorF("unable to allocate Valuator class device\n");
 		return FALSE;

@@ -1,3 +1,9 @@
+2010-06-11  Ping Cheng <pingc@wacom.com>
+	* Fixed a few minor issues
+	* Added DTU-2231 support
+	* Added DTU-1631 support
+	* Label 0.8.8-1
+
 2010-06-07  Ping Cheng <pingc@wacom.com>
 	* Fixed free toolarea issue
 	* Moved "retrieving tools" from wcmCommon to wcmUSB, where it belongs

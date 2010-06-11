@@ -459,6 +459,8 @@ static struct
 	{ 0xC2,  508,  508, &usbCintiq     }, /* DTF720a */
 	{ 0xC4,  508,  508, &usbCintiq     }, /* DTF521 */ 
 	{ 0xC7, 2540, 2540, &usbCintiq     }, /* DTU1931 */
+	{ 0xCE, 2540, 2540, &usbCintiq     }, /* DTU2231 */
+	{ 0xF0, 2540, 2540, &usbCintiq     }, /* DTU1631 */
 
 	{ 0x41, 2540, 2540, &usbIntuos2    }, /* Intuos2 4x5 */
 	{ 0x42, 2540, 2540, &usbIntuos2    }, /* Intuos2 6x8 */
@@ -548,6 +550,12 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 		common->wcmModel = &usbUnknown;
 		common->wcmResolX = common->wcmResolY = 1016;
 	}
+
+	/* we have to call this ioclt again since on some older kernels the first time
+	 * when system reboot, we do not get all keys. Looks like kernel 2.6.27 and 
+	 * later work all right.
+	 */
+	ioctl(local->fd, EVIOCGBIT(EV_KEY, sizeof(common->wcmKeys)), common->wcmKeys);
 
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
@@ -1178,7 +1186,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	if (!ds->device_type && !dslast.proximity)
 	{
 		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
-		int i = 0;
 
 		/* Retrieve the type by asking a resend from the kernel */
 		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);

@@ -683,7 +683,7 @@ proc getDeviceOptionProc { dev i } {
 		    set getOption($dev,$Option($j)) $screenToggleB
 		} elseif { $value == 0 } {
 		    set getOption($dev,$Option($j)) $ignoreButton
-		} elseif { ($value1 > $xDefinedButtons) && ($value1 < $doubleClickB) } {
+		} elseif { ($value > $xDefinedButtons) && ($value < $doubleClickB) } {
 		    set getOption($dev,$Option($j)) $originalButton
 		}
 	    }
@@ -904,7 +904,6 @@ proc updateButton {} {
 	}
 
 	set buttonAssigned [ $currentW.f.$i cget -text ]
-
 	set v $buttonAssigned
 	for { set l 1} { $l <= $originalButton } { incr l 1 } {
 	    if { $db($l) != "" && ![string compare -nocase $buttonAssigned $db($l)] } {
@@ -935,6 +934,7 @@ proc updateButton {} {
 		set l [ expr ($originalButton+1) ]
 	    }
 	}
+
 	set getOption($device,$spName($k)) $j
 	updateXinitrc $device $spName($k) $v
 
@@ -2013,7 +2013,7 @@ proc updateModelInfo { } {
     set isLCD(227) 1 
 
     #Cintiq
-    for { set i 197 } { $i <= 204 } { incr i 1 } {
+    for { set i 197 } { $i <= 206 } { incr i 1 } {
 	set isLCD($i) 1 
     }
 
