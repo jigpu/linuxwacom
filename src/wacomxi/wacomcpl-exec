@@ -692,18 +692,15 @@ proc getDeviceOptionProc { dev i } {
 }
 
 proc CreateDevicePanel { type model } {
-    global hasPad isLCD hasTouch hasGesture
+    global isLCD hasGesture
+
     if { ![ string compare $type "pad" ] } {
-	if { $hasPad($model) } {
-	    createPanel 0 1 0 0
-	}
+	createPanel 0 1 0 0
     } elseif { ![ string compare $type "touch" ] } {
-	if { $hasTouch($model) } {
-	    if { $hasGesture($model) } {
-		createPanel 1 1 0 1
-	    } else {
-		createPanel 1 0 0 1
-	    }
+	if { $hasGesture($model) != 0 } {
+	    createPanel 1 1 0 1
+	} else {
+	    createPanel 1 0 0 1
 	}
     } elseif { $isLCD($model) } { 
 	if { ![ string compare $type "stylus" ] } {
@@ -750,7 +747,7 @@ proc updateDevice {} {
 }
 
 proc createDeviceList {} {
-    global getDeviceModel deviceList
+    global getDeviceModel deviceList hasPad hasTouch isLCD
 
     set infoString [exec xsetwacom list]
     set index 0
@@ -762,9 +759,15 @@ proc createDeviceList {} {
 	set type [ lindex $infoString $index ]
 
 	if { [catch { exec xsetwacom get "$dev" TabletID } model] == 0 } {
-	    set getDeviceModel($dev,type) $type
-	    set getDeviceModel($dev,model) $model
-	    set deviceList "$deviceList \"$dev\""
+	    if { (![ string compare $type "cursor" ] && !$isLCD($model)) ||
+		(![ string compare $type "touch" ] && $hasTouch($model)) ||
+		(![ string compare $type "pad" ] && $hasPad($model)) ||
+		![ string compare $type "stylus" ] || 
+		![ string compare $type "eraser" ] } {
+		    set getDeviceModel($dev,type) $type
+		    set getDeviceModel($dev,model) $model
+		    set deviceList "$deviceList \"$dev\""
+	    }
 	    set index [ expr $index+1 ]
 	}
 	set dev [ lindex $infoString $index ]
@@ -1293,7 +1296,7 @@ proc addMenu { curb } {
 	set currentB($curb) $db($opt) 
     }
 
-   #reset keys
+    #reset keys
     if { $opt != $keystrokeB } {
 	set cKeys($spName($curb)) ""
 	set oldKeys($spName($curb)) ""
@@ -1850,8 +1853,7 @@ proc touchState { theCButton } {
 }
 
 proc gestureState { theCButton } {
-    global device touchButton getDeviceModel hasGesture
-    global gestureButton 
+    global device touchButton getDeviceModel gestureButton 
 
     # gesture supported and touch is on 
     if { [ exec xsetwacom get "$device" touch ] } {
@@ -2101,8 +2103,8 @@ proc createControls { } {
     global doubleClickB ignoreButton displayToggleB 
     global modeToggleB keystrokeB screenToggleB originalButton
 
-    createDeviceListPanel 
     updateModelInfo
+    createDeviceListPanel 
 
     set db(1) "Left"
     set db(2) "Middle"

@@ -43,6 +43,7 @@ enum {
 	GRAPHIRE,
 	WACOM_G4,
 	PTU,
+	DTU,
 	PL,
 	BAMBOO_PT,
 	INTUOS,
