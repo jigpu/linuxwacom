@@ -879,7 +879,7 @@ AC_ARG_ENABLE(wacomxrrd,
 if test "$enable_wacomxrrd" != "no"; then
 	if test "$WCM_OPTION_LIBWACOMCFG" != yes; then
 		AC_MSG_WARN([requires libwacomcfg, xsetwacom not built])
-	else
+	elif test "$WCM_XORG_XSERVER_1_4" = "yes"; then
 		AC_CHECK_HEADER(X11/extensions/Xrandr.h, [WCM_OPTION_WACOMXRRD=yes])
 	fi
 	if test "$WCM_OPTION_WACOMXRRD" = yes; then

@@ -1,3 +1,8 @@
+2010-06-18  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in for older X servers
+	* Updated 2.6.16/wacom_wac.c for Cintiq 21UX2
+	* Label 0.8.8-3
+
 2010-06-16  Ping Cheng <pingc@wacom.com>
 	* Updated wacom_wac.c and wacom_wac.h for DTU-2231 and DTU-1631
 	* Updated wacomcpl

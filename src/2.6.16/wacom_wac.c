@@ -496,7 +496,7 @@ static int wacom_intuos_inout(struct wacom_wac *wacom)
 		wacom->id[idx] = (data[2] << 4) | (data[3] >> 4) |
 			((data[7] & 0x0f) << 20) | ((data[8] & 0xf0) << 12);
 
-		switch (wacom->id[idx]) {
+		switch (wacom->id[idx] & 0xfffff) {
 		case 0x812: /* Inking pen */
 		case 0x801: /* Intuos3 Inking pen */
 		case 0x20802: /* Intuos4 Inking Pen */
@@ -567,7 +567,7 @@ static int wacom_intuos_inout(struct wacom_wac *wacom)
 	}
 
 	/* older I4 styli don't work with new Cintiqs */
-	if (!((wacom->tool[idx] << 20) & 0x01) &&
+	if (!((wacom->id[idx] >> 20) & 0x01) &&
 			(features->type == WACOM_21UX2))
 		return 1;
 
