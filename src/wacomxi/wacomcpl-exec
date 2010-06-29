@@ -153,9 +153,9 @@ proc verifycalibResultsTopLeft { } {
     global device getOptionDefault xDevMin yDevMin
     global screenWidth screenHeight size end
 
-    set tol_w [expr ($getOptionDefault($device,BottomY) -
+    set tol_w [expr ($getOptionDefault($device,BottomY) - \
 		$getOptionDefault($device,TopY)) * $size / $screenHeight]
-    set tol_h [expr ($getOptionDefault($device,BottomX) -
+    set tol_h [expr ($getOptionDefault($device,BottomX) - \
 		$getOptionDefault($device,TopX)) * $size / $screenWidth]
 
     set tol_top [expr $getOptionDefault($device,TopY)]
@@ -163,7 +163,7 @@ proc verifycalibResultsTopLeft { } {
     set tol_left [expr $getOptionDefault($device,TopX)]
     set tol_right [expr $tol_left + $tol_w]
 
-    if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) ||
+    if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) || \
     	($yDevMin < $tol_top) || ($yDevMin > $tol_bottom) } {
     	.topleft.m configure -background "#ff0000"
     	set end 0
@@ -189,9 +189,9 @@ proc verifycalibResultsBottomRight { } {
     global device getOptionDefault xDevMax yDevMax
     global screenWidth screenHeight size end
 
-    set tol_w [expr ($getOptionDefault($device,BottomY) -
+    set tol_w [expr ($getOptionDefault($device,BottomY) - \
 		$getOptionDefault($device,TopY)) * $size / $screenHeight]
-    set tol_h [expr ($getOptionDefault($device,BottomX) -
+    set tol_h [expr ($getOptionDefault($device,BottomX) - \
 		$getOptionDefault($device,TopX)) * $size / $screenWidth]
 
     set tol_bottom [expr $getOptionDefault($device,BottomY)]
@@ -199,7 +199,7 @@ proc verifycalibResultsBottomRight { } {
     set tol_right [expr $getOptionDefault($device,BottomX)]
     set tol_left [expr $tol_right - $tol_w]
 
-    if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) ||
+    if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) || \
     	($yDevMax < $tol_top) || ($yDevMax > $tol_bottom) } {
     
     	.bottomright.m configure -background "#ff0000"
@@ -265,12 +265,12 @@ proc verifycalibResults { } {
 	} elseif { ($xDevMin > $tol_left) && ($xDevMin < $tol_right) } {
 	    # set tablet X values to normal when offset is by half tablet size
 	    set xDevMin [expr ($xDevMin - ($getOptionDefault($device,BottomX) / 2))]
-	   set xDevMax [expr ($xDevMax - ($getOptionDefault($device,BottomX) / 2))]
+	    set xDevMax [expr ($xDevMax - ($getOptionDefault($device,BottomX) / 2))]
 	}
     } else {
-	set tol_w [expr ($getOptionDefault($device,BottomY) -
+	set tol_w [expr ($getOptionDefault($device,BottomY) - \
 		$getOptionDefault($device,TopY)) * $size / $screenHeight]
-	set tol_h [expr ($getOptionDefault($device,BottomX) -
+	set tol_h [expr ($getOptionDefault($device,BottomX) - \
 		$getOptionDefault($device,TopX)) * $size / $screenWidth]
 
 	set tol_top [expr $getOptionDefault($device,TopY)]
@@ -278,14 +278,14 @@ proc verifycalibResults { } {
 	set tol_left [expr $getOptionDefault($device,TopX)]
 	set tol_right [expr $tol_left + $tol_w]
 
-	if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) ||
+	if { ($xDevMin < $tol_left) || ($xDevMin > $tol_right) || \
 		($yDevMin < $tol_top) || ($yDevMin > $tol_bottom) } {
 	    set clickCheck 1
 	}
 
-	set tol_w [expr ($getOptionDefault($device,BottomY) -
+	set tol_w [expr ($getOptionDefault($device,BottomY) - \
 		$getOptionDefault($device,TopY)) * $size / $screenHeight]
-	set tol_h [expr ($getOptionDefault($device,BottomX) -
+	set tol_h [expr ($getOptionDefault($device,BottomX) - \
 		$getOptionDefault($device,TopX)) * $size / $screenWidth]
 
 	set tol_bottom [expr $getOptionDefault($device,BottomY)]
@@ -293,7 +293,7 @@ proc verifycalibResults { } {
 	set tol_right [expr $getOptionDefault($device,BottomX)]
 	set tol_left [expr $tol_right - $tol_w]
 
-	if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) ||
+	if { ($xDevMax < $tol_left) || ($xDevMax > $tol_right) || \
 		($yDevMax < $tol_top) || ($yDevMax > $tol_bottom) } {
 	    set clickCheck 1
 	}

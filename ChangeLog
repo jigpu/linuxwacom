@@ -1,3 +1,9 @@
+2010-06-29  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in and src/Makefile.am for XFree86 servers
+	* Updated 2.6.16/wacom_wac.c for kernels older than 2.6.21
+	* Added "\" to wacomcpl-exec to continue the partial lines
+	* Label 0.8.8-4
+
 2010-06-18  Ping Cheng <pingc@wacom.com>
 	* Updated configure.in for older X servers
 	* Updated 2.6.16/wacom_wac.c for Cintiq 21UX2

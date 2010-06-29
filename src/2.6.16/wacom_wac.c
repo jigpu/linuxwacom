@@ -1097,21 +1097,12 @@ static void wacom_setup_intuos(struct wacom_wac *wacom_wac)
 	input_dev->mscbit[0] |= BIT(MSC_SERIAL);
 	input_dev->relbit[0] |= BIT(REL_WHEEL);
 
-	__set_bit(BTN_LEFT, input_dev->keybit);
-	__set_bit(BTN_RIGHT, input_dev->keybit);
-	__set_bit(BTN_MIDDLE, input_dev->keybit);
-	__set_bit(BTN_SIDE, input_dev->keybit);
-	__set_bit(BTN_EXTRA, input_dev->keybit);
-
-	__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
-	__set_bit(BTN_TOOL_PEN, input_dev->keybit);
-	__set_bit(BTN_TOOL_MOUSE, input_dev->keybit);
-	__set_bit(BTN_TOOL_BRUSH, input_dev->keybit);
-	__set_bit(BTN_TOOL_PENCIL, input_dev->keybit);
-	__set_bit(BTN_TOOL_AIRBRUSH, input_dev->keybit);
-	__set_bit(BTN_TOOL_LENS, input_dev->keybit);
-	__set_bit(BTN_STYLUS, input_dev->keybit);
-	__set_bit(BTN_STYLUS2, input_dev->keybit);
+	input_dev->keybit[LONG(BTN_MOUSE)] |= BIT(BTN_LEFT) | BIT(BTN_RIGHT) |
+		BIT(BTN_MIDDLE) | BIT(BTN_SIDE) | BIT(BTN_EXTRA);
+	input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_RUBBER) |
+		BIT(BTN_TOOL_MOUSE) | BIT(BTN_TOOL_BRUSH) | BIT(BTN_TOOL_PENCIL)
+		| BIT(BTN_TOOL_AIRBRUSH) | BIT(BTN_TOOL_LENS) | BIT(BTN_STYLUS2)
+		| BIT(BTN_TOOL_PEN) | BIT(BTN_STYLUS);
 
 	input_set_abs_params(input_dev, ABS_DISTANCE,
 			     0, wacom_wac->features.distance_max, 0, 0);
@@ -1130,39 +1121,32 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 
 	input_dev->evbit[0] |= BIT(EV_KEY) | BIT(EV_ABS);
 
-	__set_bit(BTN_TOUCH, input_dev->keybit);
+	input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOUCH);
 
 	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
 	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
-
-	__set_bit(ABS_MISC, input_dev->absbit);
+	input_dev->absbit[LONG(ABS_MISC)] |= BIT(ABS_MISC);
 
 	switch (wacom_wac->features.type) {
 	case BAMBOO_PT:
 		if (features->device_type == BTN_TOOL_TRIPLETAP) {
-			__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
-			__set_bit(BTN_TOOL_TRIPLETAP, input_dev->keybit);
-			__set_bit(BTN_0, input_dev->keybit);
-			__set_bit(BTN_1, input_dev->keybit);
-			__set_bit(BTN_2, input_dev->keybit);
-			__set_bit(BTN_3, input_dev->keybit);
-			__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_DOUBLETAP);
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_TRIPLETAP);
+			input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_0) | BIT(BTN_1)
+				| BIT(BTN_2) | BIT(BTN_3);
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_FINGER);
 			input_dev->evbit[0] |= BIT(EV_MSC);
 			input_dev->mscbit[0] |= BIT(MSC_SERIAL);
 			input_set_abs_params(input_dev, ABS_RX, 0, features->x_phy, 0, 0);
 			input_set_abs_params(input_dev, ABS_RY, 0, features->y_phy, 0, 0);
 		}
-		if (features->device_type == BTN_TOOL_PEN) {
-			__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
-			__set_bit(BTN_TOOL_PEN, input_dev->keybit);
-			__set_bit(BTN_STYLUS, input_dev->keybit);
-			__set_bit(BTN_STYLUS2, input_dev->keybit);
-		}
+		if (features->device_type == BTN_TOOL_PEN)
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_RUBBER) |
+				BIT(BTN_TOOL_PEN) | BIT(BTN_STYLUS) | BIT(BTN_STYLUS2);
 		break;
 	case WACOM_MO:
-		__set_bit(BTN_1, input_dev->keybit);
-		__set_bit(BTN_5, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_1) | BIT(BTN_5);
 
 		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
 		/* fall through */
@@ -1170,60 +1154,44 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 	case WACOM_G4:
 		input_dev->evbit[0] |= BIT(EV_MSC);
 		input_dev->mscbit[0] |= BIT(MSC_SERIAL);
-		__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
-		__set_bit(BTN_0, input_dev->keybit);
-		__set_bit(BTN_4, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_FINGER);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_0) | BIT(BTN_4);
 		/* fall through */
 
 	case GRAPHIRE:
 		input_dev->evbit[0] |= BIT(EV_REL);
 		input_dev->relbit[0] |= BIT(REL_WHEEL);
 
-		__set_bit(BTN_LEFT, input_dev->keybit);
-		__set_bit(BTN_RIGHT, input_dev->keybit);
-		__set_bit(BTN_MIDDLE, input_dev->keybit);
-
-		__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
-		__set_bit(BTN_TOOL_PEN, input_dev->keybit);
-		__set_bit(BTN_TOOL_MOUSE, input_dev->keybit);
-		__set_bit(BTN_STYLUS, input_dev->keybit);
-		__set_bit(BTN_STYLUS2, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MOUSE)] |= BIT(BTN_LEFT) |
+			BIT(BTN_RIGHT) | BIT(BTN_MIDDLE);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_RUBBER) |
+			BIT(BTN_TOOL_MOUSE) | BIT(BTN_TOOL_PEN) |
+			BIT(BTN_STYLUS) | BIT(BTN_STYLUS2);
 		break;
 
 	case WACOM_21UX2:
-		__set_bit(BTN_A, input_dev->keybit);
-		__set_bit(BTN_B, input_dev->keybit);
-		__set_bit(BTN_C, input_dev->keybit);
-		__set_bit(BTN_X, input_dev->keybit);
-		__set_bit(BTN_Y, input_dev->keybit);
-		__set_bit(BTN_Z, input_dev->keybit);
-		__set_bit(BTN_BASE, input_dev->keybit);
-		__set_bit(BTN_BASE2, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_A) | BIT(BTN_B) |
+			BIT(BTN_C) | BIT(BTN_X) | BIT(BTN_Y) | BIT(BTN_Z) |
+			BIT(BTN_BASE) | BIT(BTN_BASE2);
 		/* fall through */
 
 	case WACOM_BEE:
-		__set_bit(BTN_8, input_dev->keybit);
-		__set_bit(BTN_9, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_8) | BIT(BTN_9);
 		/* fall through */
 
 	case INTUOS3:
 	case INTUOS3L:
 	case CINTIQ:
-		__set_bit(BTN_4, input_dev->keybit);
-		__set_bit(BTN_5, input_dev->keybit);
-		__set_bit(BTN_6, input_dev->keybit);
-		__set_bit(BTN_7, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_4) | BIT(BTN_5)
+			| BIT(BTN_6) | BIT(BTN_7);
 
 		input_set_abs_params(input_dev, ABS_RY, 0, 4096, 0, 0);
 		/* fall through */
 
 	case INTUOS3S:
-		__set_bit(BTN_0, input_dev->keybit);
-		__set_bit(BTN_1, input_dev->keybit);
-		__set_bit(BTN_2, input_dev->keybit);
-		__set_bit(BTN_3, input_dev->keybit);
-
-		__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_0) | BIT(BTN_1)
+			| BIT(BTN_2) | BIT(BTN_3);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_FINGER);
 
 		input_set_abs_params(input_dev, ABS_RX, 0, 4096, 0, 0);
 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
@@ -1235,14 +1203,13 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 
 	case INTUOS4:
 	case INTUOS4L:
-		__set_bit(BTN_7, input_dev->keybit);
-		__set_bit(BTN_8, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_7) | BIT(BTN_8);
 		/* fall through */
 
 	case INTUOS4S:
 		for (i = 0; i < 7; i++)
-			__set_bit(BTN_0 + i, input_dev->keybit);
-		__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
+			input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_0 + i);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_FINGER);
 
 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
 		wacom_setup_intuos(wacom_wac);
@@ -1250,7 +1217,7 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 
 	case TABLETPC2FG:
 		if (features->device_type == BTN_TOOL_TRIPLETAP) {
-			__set_bit(BTN_TOOL_TRIPLETAP, input_dev->keybit);
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_TRIPLETAP);
 			input_dev->evbit[0] |= BIT(EV_MSC);
 			input_dev->mscbit[0] |= BIT(MSC_SERIAL);
 		}
@@ -1259,9 +1226,9 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 	case TABLETPC:
 		if (features->device_type == BTN_TOOL_DOUBLETAP ||
 		    features->device_type == BTN_TOOL_TRIPLETAP) {
+			input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_DOUBLETAP);
 			input_set_abs_params(input_dev, ABS_RX, 0, features->x_phy, 0, 0);
 			input_set_abs_params(input_dev, ABS_RY, 0, features->y_phy, 0, 0);
-			__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
 		}
 
 		if (features->device_type != BTN_TOOL_PEN)
@@ -1272,13 +1239,12 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 	case PL:
 	case PTU:
 	case DTU:
-		__set_bit(BTN_TOOL_PEN, input_dev->keybit);
-		__set_bit(BTN_STYLUS, input_dev->keybit);
-		__set_bit(BTN_STYLUS2, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_PEN) |
+			BIT(BTN_STYLUS) | BIT(BTN_STYLUS2);
 		/* fall through */
 
 	case PENPARTNER:
-		__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
+		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_RUBBER);
 		break;
 	}
 }
