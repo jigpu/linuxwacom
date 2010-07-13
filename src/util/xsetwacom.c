@@ -41,10 +41,11 @@
 **   2009-09-31 0.2.2 - PC - Add Dual Touch
 **   2009-10-31 0.2.3 - PC - Support spaced names from hot-plugged devices
 **   2010-02-09 0.2.4 - PC - Add options for gesture
+**   2010-07-12 0.2.5 - PC - Added is_display
 **
 ****************************************************************************/
 
-#define XSETWACOM_VERSION "0.2.4"
+#define XSETWACOM_VERSION "0.2.5"
 
 #include "../include/util-config.h"
 
@@ -655,6 +656,11 @@ static PARAMINFO gParamInfo[] =
 	{ "XScaling", 
 		"Returns the status of XSCALING is set or not. ",
 		XWACOM_PARAM_XSCALING, VALUE_REQUIRED },
+
+	{ "IsDisplay",
+		"Returns true if the tablet is a display tablet. Otherwise, false. ",
+		XWACOM_PARAM_ISDISPLAY, VALUE_OPTIONAL, RANGE, 
+		0, 1, BOOLEAN_VALUE, 1 },	
 
 	{ NULL }
 };

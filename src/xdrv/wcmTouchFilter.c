@@ -461,7 +461,6 @@ static void xf86WcmFingerZoom(WacomDevicePtr priv)
 	dist = touchDistance(ds[0], ds[1]) - dist;
 	count = (int)(((double)abs(dist)/(double)common->wcmZoomDistance) + 0.5);
 
-	/* user might have changed from left to right or vice versa */
 	if (count < common->wcmGestureUsed)
 	{
 		/* reset the initial states for the new getsure */
@@ -474,14 +473,14 @@ static void xf86WcmFingerZoom(WacomDevicePtr priv)
 	/* zooming? */
 	key = (dist > 0) ? XK_plus : XK_minus;
 
+	emitKeysym (priv->local->dev, XK_Control_L, 1);
 	while (i < (count - common->wcmGestureUsed))
 	{
-		emitKeysym (priv->local->dev, XK_Control_L, 1);
 		emitKeysym (priv->local->dev, key, 1);
 		emitKeysym (priv->local->dev, key, 0);
-		emitKeysym (priv->local->dev, XK_Control_L, 0);
 		i++;
 	}
+	emitKeysym (priv->local->dev, XK_Control_L, 0);
 	common->wcmGestureUsed += i;
 }
 #endif /* WCM_KEY_SENDING_SUPPORT */

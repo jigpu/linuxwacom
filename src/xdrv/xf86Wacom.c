@@ -72,9 +72,10 @@
  * 2010-05-13 47-pc0.8.7   - Add Cintiq 21UX2
  * 2010-05-18 47-pc0.8.7-1 - Add Intios4 wireless
  * 2010-06-16 47-pc0.8.8-2 - Add DTU-2231 and DTU-1631
+ * 2010-07-12 47-pc0.8.8-5 - Use default nbuttons and npadkeys to back support k2.6.24-
  */
 
-static const char identification[] = "$Identification: 47-0.8.8-2 $";
+static const char identification[] = "$Identification: 47-0.8.8-5 $";
 
 /****************************************************************************/
 

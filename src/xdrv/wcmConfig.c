@@ -561,6 +561,43 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
 		"TapTime", common->wcmTapTimeDefault);
 }
 
+static void wcmIsDisplay(WacomCommonPtr common)
+{
+	common->is_display = FALSE;
+	switch (common->tablet_id)
+	{
+		case 0x30:	/* PL400 */
+		case 0x31:	/* PL500 */
+		case 0x32:	/* PL600 */
+		case 0x33:	/* PL600SX */
+		case 0x34:	/* PL550 */
+		case 0x35:	/* PL800 */
+		case 0x37:	/* PL700 */
+		case 0x38:	/* PL510 */
+		case 0x39:	/* PL710 */ 
+		case 0xC0:	/* DTF720 */
+		case 0xC2:	/* DTF720a */
+		case 0xC4:	/* DTF521 */ 
+		case 0xC7:	/* DTU1931 */
+		case 0xCE:	/* DTU2231 */
+		case 0xF0:	/* DTU1631 */
+
+		case 0x3F:	/* Cintiq 21UX */ 
+		case 0xC5:	/* Cintiq 20WSX */ 
+		case 0xC6:	/* Cintiq 12WX */ 
+		case 0xCC:	/* Cintiq 21UX2 */ 
+
+		case 0x90:	/* TabletPC 0x90 */ 
+		case 0x93:	/* TabletPC 0x93 */
+		case 0x9A:	/* TabletPC 0x9A */
+		case 0x9F:	/* CapPlus  0x9F */
+		case 0xE2:	/* TabletPC 0xE2 */ 
+		case 0xE3:	/* TabletPC 0xE3 */
+			common->is_display = TRUE;
+			break;
+	}
+}
+
 /* xf86WcmInit - called when the module subsection is found in XF86Config */
 static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
@@ -652,7 +689,8 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 
 	/* Hardware specific initialization relies on tablet_id */
 	common->tablet_id = tablet_id;
-
+	
+	wcmIsDisplay(common);
 #ifdef LINUX_INPUT
 	/* Autoprobe if not given */
 	if (!common->wcmDevice || !strcmp (common->wcmDevice, "auto-dev")) 

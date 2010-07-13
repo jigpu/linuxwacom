@@ -1,11 +1,4 @@
-if WCM_XORG_XORG
-SUBDIRS = . wacomxi util xdrv @WCM_KERNEL_VER@
-else
-	SUBDIRS = . wacomxi util xdrv @WCM_KERNEL_VER@
-	if WCM_XORG_XSERVER_1_7 
-	SUBDIRS = @WCM_KERNEL_VER@
-	endif
-endif
+SUBDIRS = @WCM_SRC_SUBDIRS@
 
 wmanpagedir = @mandir@/man4
 xsetwacommandir = @mandir@/man4

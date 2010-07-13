@@ -406,7 +406,7 @@ static Bool usbDetect(LocalDevicePtr local)
 
 /* Key codes used to mark tablet buttons -- must be in sync
  * with the keycode array in wacom.c kernel driver.
- */
+
 static unsigned short padkey_codes [] = {
 	BTN_0, BTN_1, BTN_2, BTN_3, BTN_4,
 	BTN_5, BTN_6, BTN_7, BTN_8, BTN_9,
@@ -415,7 +415,7 @@ static unsigned short padkey_codes [] = {
 	BTN_BASE4, BTN_BASE5, BTN_BASE6,
 	BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT
 };
-
+ */
 
 static struct
 {
@@ -550,7 +550,10 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 		common->wcmModel = &usbUnknown;
 		common->wcmResolX = common->wcmResolY = 1016;
 	}
-
+#ifdef NEVER
+/* Use the default nbuttons and npadkeys since the EVIOCGBIT does always return the 
+ * correct number of keys/buttons
+*/
 	/* we have to call this ioclt again since on some older kernels the first time
 	 * when system reboot, we do not get all keys. Looks like kernel 2.6.27 and 
 	 * later work all right.
@@ -577,7 +580,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 		common->nbuttons = 6;
 	else
 		common->nbuttons = 5;
-
+#endif
 	return Success;
 }
 
@@ -625,7 +628,8 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	 * requires it to act the same as Touch.
 	 */
 	if (ISBITSET(common->wcmKeys, BTN_TOOL_DOUBLETAP) &&
-	    ISBITSET(common->wcmKeys, BTN_TOOL_FINGER))
+	    ISBITSET(common->wcmKeys, BTN_TOOL_FINGER) && 
+	    (common->tablet_id >= 0xd0 && common->tablet_id <= 0xd3))
 		is_touch = 1;
 
 	if (ioctl(local->fd, EVIOCGBIT(EV_SYN, sizeof(ev)), ev) < 0)

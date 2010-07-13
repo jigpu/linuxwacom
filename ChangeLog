@@ -1,3 +1,11 @@
+2010-07-12  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in and src/Makefile.am to include xorg server 1.6.5
+	* Updated wcmUSB.c to use default nbuttons and npadkeys since kernels 
+	  older than 2.6.24 doesn't return proper keys from EVIOCGKEY
+	* Added a new xsetwacom option, isDisplay, to report if the tablet is a 
+	  display tablet or not 
+	* Label 0.8.8-5
+
 2010-06-29  Ping Cheng <pingc@wacom.com>
 	* Updated configure.in and src/Makefile.am for XFree86 servers
 	* Updated 2.6.16/wacom_wac.c for kernels older than 2.6.21

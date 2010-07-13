@@ -811,6 +811,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 			       (priv->nPressCtrl [2] << 8) |
 			       (priv->nPressCtrl [3]);
 		return -1;
+	    case XWACOM_PARAM_ISDISPLAY:
+		return common->is_display;
 	    case XWACOM_PARAM_MODE:
 		return ((priv->flags & ABSOLUTE_FLAG) ? 1 : 0);
 	    case XWACOM_PARAM_COREEVENT:
