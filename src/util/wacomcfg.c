@@ -2,7 +2,7 @@
 ** wacomcfg.c
 **
 ** Copyright (C) 2003-2004 - John E. Joganic
-** Copyright (C) 2004-2009 - Ping Cheng
+** Copyright (C) 2004-2010 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -124,6 +124,10 @@ WACOMCONFIG * WacomConfigInit(Display* pDisplay, WACOMERRORFUNC pfnErrorHandler)
 void WacomConfigTerm(WACOMCONFIG *hConfig)
 {
 	if (!hConfig) return;
+	if (hConfig->pDevs)
+	{
+		XFreeDeviceList(hConfig->pDevs);
+	}
 	free(hConfig);
 }
 

@@ -103,12 +103,15 @@ static void xf86WcmDevReadInput(LocalDevicePtr local);
 static void xf86WcmDevControlProc(DeviceIntPtr device, PtrCtrl* ctrl);
 static void xf86WcmDevClose(LocalDevicePtr local);
 static int xf86WcmDevProc(DeviceIntPtr pWcm, int what);
-static Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
+#ifdef WCM_CUSTOM_DEBUG
+	Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
 		int v0, int v1, int v2, int v3, int v4, int v5, int* x, int* y);
+#else
+	static Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
+		int v0, int v1, int v2, int v3, int v4, int v5, int* x, int* y);
+#endif
 static Bool xf86WcmDevReverseConvert(LocalDevicePtr local, int x, int y,
 		int* valuators);
-extern Bool usbWcmInit(LocalDevicePtr pDev);
-extern int usbWcmGetRanges(LocalDevicePtr local);
 extern int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control);
 extern int xf86WcmDevSwitchMode(ClientPtr client, DeviceIntPtr dev, int mode);
 extern void xf86WcmRotateTablet(LocalDevicePtr local, int value);

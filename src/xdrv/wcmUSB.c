@@ -511,6 +511,34 @@ static struct
 	{ 0xE3, 2540, 2540, &usbTabletPC   }  /* TabletPC 0xE3 */
 };
 
+static void usbRetrieveKeys(WacomCommonPtr common)
+{
+	int i;
+
+	ioctl(common->fd, EVIOCGBIT(EV_KEY, sizeof(common->wcmKeys)), common->wcmKeys);
+
+	/* Find out supported button codes - except mouse button codes
+	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
+	common->npadkeys = 0;
+	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
+		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
+			common->padkey_code [common->npadkeys++] = padkey_codes [i];
+
+	/* set default nbuttons */
+	if (ISBITSET (common->wcmKeys, BTN_TASK))
+		common->nbuttons = 10;
+	else if (ISBITSET (common->wcmKeys, BTN_BACK))
+		common->nbuttons = 9;
+	else if (ISBITSET (common->wcmKeys, BTN_FORWARD))
+		common->nbuttons = 8;
+	else if (ISBITSET (common->wcmKeys, BTN_EXTRA))
+		common->nbuttons = 7;
+	else if (ISBITSET (common->wcmKeys, BTN_SIDE))
+		common->nbuttons = 6;
+	else
+		common->nbuttons = 5;
+}
+
 Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 {
 	int i;
@@ -554,33 +582,12 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	 * when system reboot, we do not get all keys. Looks like kernel 2.6.27 and 
 	 * later work all right.
 	 */
-	ioctl(local->fd, EVIOCGBIT(EV_KEY, sizeof(common->wcmKeys)), common->wcmKeys);
+	usbRetrieveKeys(common);
 
-	/* Find out supported button codes - except mouse button codes
-	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
-	common->npadkeys = 0;
-	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
-		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
-			common->padkey_code [common->npadkeys++] = padkey_codes [i];
-
-#ifdef NEVER
-/* Use the default nbuttons and npadkeys since the EVIOCGBIT does always return the 
- * correct number of keys/buttons
-*/
-	/* set default nbuttons */
-	if (ISBITSET (common->wcmKeys, BTN_TASK))
-		common->nbuttons = 10;
-	else if (ISBITSET (common->wcmKeys, BTN_BACK))
-		common->nbuttons = 9;
-	else if (ISBITSET (common->wcmKeys, BTN_FORWARD))
-		common->nbuttons = 8;
-	else if (ISBITSET (common->wcmKeys, BTN_EXTRA))
-		common->nbuttons = 7;
-	else if (ISBITSET (common->wcmKeys, BTN_SIDE))
-		common->nbuttons = 6;
-	else
-		common->nbuttons = 5;
-#endif
+	/* Use the default nbuttons and npadkeys since the EVIOCGBIT does not always
+	 * return the correct number of keys/buttons
+	*/
+	common->nbuttons =  common->npadkeys = MAX_BUTTONS;
 	return Success;
 }
 
@@ -1165,8 +1172,11 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				MOD_BUTTONS (4, event->value);
 			else
 			{
-				for (nkeys = 0; nkeys < common->npadkeys; nkeys++)
-					if (event->code == common->padkey_code [nkeys])
+				/* go through the whole array since usbRetrieveKeys 
+				 * may not get all keys on older kernels */
+				for (nkeys = 0; nkeys < sizeof (padkey_codes) / 
+						sizeof (padkey_codes [0]); nkeys++)
+					if (event->code == padkey_codes [nkeys])
 					{
 						MOD_BUTTONS (nkeys, event->value);
 						break;
@@ -1189,14 +1199,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	 */
 	if (!ds->device_type && !dslast.proximity)
 	{
-		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
-
-		/* Retrieve the type by asking a resend from the kernel */
-		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);
-
+		usbRetrieveKeys(common);
 		for (i=0; i<sizeof(wcmTypeToKey) / sizeof(wcmTypeToKey[0]); i++)
 		{
-			if (ISBITSET(keys, wcmTypeToKey[i].tool_key))
+			if (ISBITSET(common->wcmKeys, wcmTypeToKey[i].tool_key))
 			{
 				ds->device_type = wcmTypeToKey[i].device_type;
 				break;

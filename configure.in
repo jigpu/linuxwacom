@@ -27,7 +27,6 @@ WCM_TCLPKGS=""
 WCM_XSERVER64=""
 
 dnl Configuration
-WCM_MODVER=
 WCM_ENV_XFREE86=no
 WCM_ENV_XORGSDK=no
 WCM_XDRIVER_QUIRKS=
@@ -92,7 +91,6 @@ dnl Enable linux specific features if linux kernel is detected.
 dnl  kernel source, module versioning, etc
 WCM_OPTION_WACOM=no
 WCM_OPTION_HID=no
-WCM_OPTION_MODVER=no
 WCM_PATCH_HID=
 WCM_ENV_KERNEL=no
 WCM_KERNEL_DIR=
@@ -115,16 +113,29 @@ else
 	if test "$WCM_KERNEL_DIR" = "yes" -o -z "$WCM_KERNEL_DIR"; then
 		WCM_KERNEL_DIR=
 		dnl Kernel source not specified, guess where it is
-		for i in /lib/modules/`uname -r`/source /lib/modules/`uname -r`/build \
-			/usr/src/linux /usr/src/linux-`uname -r` \
-			/usr/src/linux-2.6; do
-			if test -f "$i/include/linux/input.h"; then
+		for i in /lib/modules/`uname -r`/build /usr/src/linux \
+			/usr/src/linux-`uname -r` /usr/src/linux-2.6; do
+			if test -f "$i/.config"; then
 				WCM_KERNEL_DIR=$i
 				WCM_ENV_KERNEL=yes
 				AC_MSG_RESULT($WCM_KERNEL_DIR)
 				break
 			fi
 		done
+
+		if test "$WCM_ENV_KERNEL" != "yes"; then
+			for i in /lib/modules/`uname -r`/source /lib/modules/`uname -r`/build \
+				/usr/src/linux /usr/src/linux-`uname -r` \
+				/usr/src/linux-2.6; do
+				if test -f "$i/include/linux/input.h"; then
+					WCM_KERNEL_DIR=$i
+					WCM_ENV_KERNEL=yes
+					AC_MSG_RESULT($WCM_KERNEL_DIR)
+					break
+				fi
+			done
+		fi
+
 		if test -z "$WCM_KERNEL_DIR"; then
 			AC_MSG_RESULT(not found)
 			echo "***"
@@ -1018,7 +1029,6 @@ AC_SUBST(WCM_MODULES)
 AC_SUBST(WCM_XF86MODULES)
 AC_SUBST(WCM_ARCH)
 AC_SUBST(WCM_KSTACK)
-AC_SUBST(WCM_MODVER)
 AC_SUBST(WCM_KERNEL_DIR)
 AC_SUBST(WCM_KERNEL_VER)
 AC_SUBST(WCM_XFREE86_DIR)
@@ -1056,7 +1066,6 @@ echo "----------------------------------------"
 echo "  BUILD ENVIRONMENT:"
 echo "       architecture - $WCM_ARCHITECTURE"
 echo "       linux kernel - $WCM_ISLINUX $WCM_KERNEL_VER"
-echo "  module versioning - $WCM_OPTION_MODVER $WCM_MODVER"
 echo "      kernel source - $WCM_ENV_KERNEL $WCM_KERNEL_DIR"
 echo "     XFree86 source - $WCM_ENV_XFREE86 $WCM_XFREE86_DIR"
 echo "           Xorg SDK - $WCM_ENV_XORGSDK $WCM_XORGSDK_DIR"

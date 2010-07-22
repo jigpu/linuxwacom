@@ -1,3 +1,10 @@
+2010-07-22  Ping Cheng <pingc@wacom.com>
+	* Fixed a memory leakage in util/wacomcfg.c (Eldar Firing <eldarf@sf.net>)
+	* Replaced usb_buffer_free with usb_free_coherent for 2.6.35 
+		- by Diego Calleja <diegocg@gmail.com>
+	* Removed a few unused routines in xf86Wacom.c
+	* Label 0.8.8-7
+
 2010-07-14  Ping Cheng <pingc@wacom.com>
 	* Updated udev wacom rules
 	* Updated web pages for new devices
