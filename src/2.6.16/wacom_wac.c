@@ -20,8 +20,9 @@ static int wacom_penpartner_irq(struct wacom_wac *wacom)
 	unsigned char *data = wacom->data;
 	struct input_dev *input = wacom->input;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	switch (data[0]) {
 	case 1:
 		if (data[5] & 0x80) {
@@ -69,8 +70,9 @@ static int wacom_dtu_irq(struct wacom_wac *wacom)
 
 	dbg("wacom_dtu_irq: received report #%d", data[0]);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	if (prox) { /* first in prox */
 		/* Going into proximity select tool */
 		wacom->tool[0] = (data[1] & 0x0c) ? BTN_TOOL_RUBBER : BTN_TOOL_PEN;
@@ -109,8 +111,9 @@ static int wacom_pl_irq(struct wacom_wac *wacom)
 
 	prox = data[1] & 0x40;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	if (prox) {
 		wacom->id[0] = ERASER_DEVICE_ID;
 		pressure = (signed char)((data[7] << 1) | ((data[4] >> 2) & 1));
@@ -179,8 +182,9 @@ static int wacom_ptu_irq(struct wacom_wac *wacom)
 		return 0;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	if (data[1] & 0x04) {
 		input_report_key(input, BTN_TOOL_RUBBER, data[1] & 0x20);
 		input_report_key(input, BTN_TOUCH, data[1] & 0x08);
@@ -278,8 +282,9 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, size_t len)
 		goto exit;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	/* Touch packet */
 	if (len == WACOM_PKGLEN_BBTOUCH) {
 
@@ -379,8 +384,9 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
 		goto exit;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	prox = data[1] & 0x80;
 	if (prox || wacom->id[0]) {
 		if (prox) {
@@ -653,8 +659,9 @@ static int wacom_intuos_irq(struct wacom_wac *wacom)
                 return 0;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	/* tool number */
 	if (features->type == INTUOS)
 		idx = data[1] & 0x01;
@@ -948,8 +955,9 @@ static int wacom_tpc_irq(struct wacom_wac *wacom, size_t len)
 
 	dbg("wacom_tpc_irq: received report #%d", data[0]);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	input_regs(input, wacom->regs);
-
+#endif
 	if (len == WACOM_PKGLEN_TPC1FG ||		 /* single touch */
 	    data[0] == WACOM_REPORT_TPC1FG ||		 /* single touch */
 	    data[0] == WACOM_REPORT_TPC2FG) {		 /* 2FG touch */

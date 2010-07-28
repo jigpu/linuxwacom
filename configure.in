@@ -182,8 +182,9 @@ else
 				if test $MINOR -ge 16; then
 					case $MINOR in
 						16|17) WCM_KERNEL_VER="2.6.16";;
-						18|19|20|21) WCM_KERNEL_VER="2.6.18";;
-						22|23|24|25) WCM_KERNEL_VER="2.6.24";;
+						18|19|20|21|22|23)
+WCM_KERNEL_VER="2.6.18";;
+						24|25) WCM_KERNEL_VER="2.6.24";;
 						*) WCM_KERNEL_VER="2.6.30";;
 					esac
 				else

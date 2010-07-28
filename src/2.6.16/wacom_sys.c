@@ -70,7 +70,11 @@ static int usb_set_report(struct usb_interface *intf, unsigned char type,
 		buf, size, 1000);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 static void wacom_sys_irq(struct urb *urb, struct pt_regs *regs)
+#else
+static void wacom_sys_irq(struct urb *urb)
+#endif
 {
 	struct wacom *wacom = urb->context;
 	int retval;
@@ -89,8 +93,9 @@ static void wacom_sys_irq(struct urb *urb, struct pt_regs *regs)
 		dbg("%s - nonzero urb status received: %d", __func__, urb->status);
 		goto exit;
 	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	wacom->wacom_wac.regs = regs;
-
+#endif
 	wacom_wac_irq(&wacom->wacom_wac, urb->actual_length);
 
  exit:

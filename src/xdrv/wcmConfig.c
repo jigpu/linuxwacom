@@ -635,12 +635,12 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	type = xf86FindOptionValue(fakeLocal->options, "Type");
 
         /* leave the undefined for auto-dev (if enabled) to deal with */
-#ifdef WCM_XORG_XSERVER_1_4
         if(device)
         {
 		/* initialize supported keys */
 		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
 
+#ifdef WCM_XORG_XSERVER_1_4
         	/* check if the type is valid for the device
  		 * that is not defined in xorg.conf	
  		 */
@@ -650,8 +650,8 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
                 /* check if the device has been added */
                 if (wcmIsDuplicate(device, fakeLocal))
                         goto SetupProc_fail;
-        }
 #endif   /* WCM_XORG_XSERVER_1_4 */
+        }
 
 	if (type && (xf86NameCmp(type, "stylus") == 0))
 		local = xf86WcmAllocateStylus();

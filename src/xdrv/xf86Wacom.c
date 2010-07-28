@@ -75,7 +75,7 @@
  * 2010-07-12 47-pc0.8.8-5 - Use default nbuttons and npadkeys to back support k2.6.24-
  */
 
-static const char identification[] = "$Identification: 47-0.8.8-6 $";
+static const char identification[] = "$Identification: 47-0.8.8-7 $";
 
 /****************************************************************************/
 
@@ -727,9 +727,9 @@ static int xf86WcmDevOpen(DeviceIntPtr pWcm)
 		}
 #ifdef WCM_XORG_XSERVER_1_4
 	#ifdef _XF86_ANSIC_H
-		if (xf86fstat(local->fd, &st) == -1)
+		if (xf86stat(common->wcmDevice, &st) == -1)
 	#else
-		if (fstat(local->fd, &st) == -1)
+		if (stat(common->wcmDevice, &st) == -1)
 	#endif
 		{
 			/* can not access major/minor */

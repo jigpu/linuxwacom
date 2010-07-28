@@ -9,6 +9,7 @@
 #ifndef WACOM_WAC_H
 #define WACOM_WAC_H
 
+#include <linux/version.h>
 #include <linux/types.h>
 
 /* maximum packet length for USB devices */
@@ -77,7 +78,6 @@ struct wacom_features {
 	unsigned char unitExpo;
 };
 
-
 struct wacom_wac {
 	char name[64];
 	unsigned char *data;
@@ -87,7 +87,9 @@ struct wacom_wac {
 	int last_finger;
 	struct wacom_features features;
 	struct input_dev *input;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
 	struct pt_regs *regs;
+#endif
 };
 
 #endif

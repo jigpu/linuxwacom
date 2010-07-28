@@ -1,3 +1,7 @@
+2010-07-27  Ping Cheng <pingc@wacom.com>
+	* Updated kernel driver for 2.6.23 and later
+	* Label 0.8.8-8
+
 2010-07-22  Ping Cheng <pingc@wacom.com>
 	* Fixed a memory leakage in util/wacomcfg.c (Eldar Firing <eldarf@sf.net>)
 	* Replaced usb_buffer_free with usb_free_coherent for 2.6.35 

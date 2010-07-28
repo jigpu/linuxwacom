@@ -550,7 +550,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* fetch model name */
 	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
-
+ErrorF("Wacom got device id ox%x \n", common->tablet_id);
 	/* search for the proper device id */
 	for (i = 0; i < sizeof (WacomModelDesc) / sizeof (WacomModelDesc [0]); i++)
 		if (common->tablet_id == WacomModelDesc [i].model_id)
@@ -775,6 +775,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 			channel = serial-1;
 		else
 			channel = 0;
+ErrorF("Wacom P4 channel %d for %s \n", channel, local->name);
 	}  /* serial number should never be 0 for V5 devices */
 	else if (serial)
 	{
@@ -818,6 +819,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 				channel = 0;
 		}
 	}
+ErrorF("Wacom final channel %d for %s \n", channel, local->name);
 
 	/* fresh out of channels */
 	if (channel < 0)
@@ -947,6 +949,7 @@ static void usbParseEvent(LocalDevicePtr local,
 #endif
 	channel = usbChooseChannel(local);
 
+ErrorF("Wacom got channel %d for %s \n", channel, local->name);
 	/* couldn't decide channel? invalid data */
 	if (channel == -1) goto skipEvent;
 
@@ -1231,6 +1234,9 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			"DTF 720 doesn't support eraser "));
 		return;
 	}
+
+	if (!ds->proximity)
+		common->wcmLastToolSerial = 0;
 
 	/* dispatch event */
 	xf86WcmEvent(common, channel, ds);

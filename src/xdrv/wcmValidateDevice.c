@@ -18,12 +18,13 @@
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+#include <linux/serial.h>
+
 #ifdef WCM_XORG_XSERVER_1_4
     #ifndef _XF86_ANSIC_H
 	#include <fcntl.h>
 	#include <sys/stat.h>
     #endif
-    #include <linux/serial.h>
 
 /*****************************************************************************
  * xf86WcmCheckSource - Check if there is another source defined this device
@@ -81,25 +82,11 @@ int wcmIsDuplicate(char* device, LocalDevicePtr local)
 	struct stat st;
 #endif
 	int isInUse = 0;
-	local->fd = -1;
-
-	/* open the port */
-	do {
-        	SYSCALL(local->fd = open(device, O_RDONLY, 0));
-	} while (local->fd < 0 && errno == EINTR);
-
-	if (local->fd < 0)
-	{
-		/* can not open the device */
-        	xf86Msg(X_ERROR, "Unable to open Wacom device \"%s\".\n", device);
-		isInUse = 1;
-		goto ret;
-	}
 
 #ifdef _XF86_ANSIC_H
-	if (xf86fstat(local->fd, &st) == -1)
+	if (xf86stat(device, &st) == -1)
 #else
-	if (fstat(local->fd, &st) == -1)
+	if (stat(device, &st) == -1)
 #endif
 	{
 		/* can not access major/minor to check device duplication */
@@ -115,7 +102,7 @@ int wcmIsDuplicate(char* device, LocalDevicePtr local)
 		/* device matches with another added port */
 		if (xf86WcmCheckSource(local, st.st_rdev))
 		{
-			isInUse = 3;
+			isInUse = 1;
 			goto ret;
 		}
 	}
@@ -124,14 +111,9 @@ int wcmIsDuplicate(char* device, LocalDevicePtr local)
 		/* major/minor can never be 0, right? */
 		xf86Msg(X_ERROR, "%s: device opened with a major/minor of 0. "
 			"Something was wrong.\n", local->name);
-		isInUse = 4;
+		isInUse = 2;
 	}
 ret:
-	if (local->fd >= 0)
-	{ 
-		close(local->fd);
-		local->fd = -1;
-	}
 	return isInUse;
 }
 
@@ -178,6 +160,7 @@ Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys
 	}
 	return ret;
 }
+#endif   /* WCM_XORG_XSERVER_1_4 */
 
 /* Choose valid types according to device ID */
 int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
@@ -286,9 +269,30 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 		}
 		else
 			*tablet_id = wacom_id.product;
+ErrorF("Wacom got Pid ox%x \n", wacom_id.product);
+
+if (!wacom_id.product)
+{
+		if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0)
+		{
+			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
+				"ioctl USB key bits.\n", local->name);
+			ret = 0;
+		}
+
+		if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
+		{
+			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
+				"ioctl Device ID.\n", local->name);
+			ret = 0;
+		}
+		else
+			*tablet_id = wacom_id.product;
+}
+ErrorF("Wacom got Pid ox%x again\n", wacom_id.product);
+
 	}
 	close(fd);
 	return ret;
 }
-#endif   /* WCM_XORG_XSERVER_1_4 */
 
