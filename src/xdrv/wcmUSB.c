@@ -44,6 +44,8 @@
 	extern void logEvent(const struct input_event* event);
 #endif
 
+extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
+extern void wcmIsDisplay(WacomCommonPtr common);
 static Bool usbDetect(LocalDevicePtr);
 Bool usbWcmInit(LocalDevicePtr pDev, char* id, float *version);
 
@@ -550,7 +552,14 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* fetch model name */
 	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
-ErrorF("Wacom got device id ox%x \n", common->tablet_id);
+
+
+#ifndef WCM_XORG_XSERVER_1_4
+	/* older servers/kernels normally fail the first time */
+	wcmDeviceTypeKeys(local, common->wcmKeys, &common->tablet_id);	
+	wcmIsDisplay(common);
+#endif   /* WCM_XORG_XSERVER_1_4 */
+
 	/* search for the proper device id */
 	for (i = 0; i < sizeof (WacomModelDesc) / sizeof (WacomModelDesc [0]); i++)
 		if (common->tablet_id == WacomModelDesc [i].model_id)
@@ -775,7 +784,6 @@ static int usbChooseChannel(LocalDevicePtr local)
 			channel = serial-1;
 		else
 			channel = 0;
-ErrorF("Wacom P4 channel %d for %s \n", channel, local->name);
 	}  /* serial number should never be 0 for V5 devices */
 	else if (serial)
 	{
@@ -819,7 +827,6 @@ ErrorF("Wacom P4 channel %d for %s \n", channel, local->name);
 				channel = 0;
 		}
 	}
-ErrorF("Wacom final channel %d for %s \n", channel, local->name);
 
 	/* fresh out of channels */
 	if (channel < 0)
@@ -838,8 +845,6 @@ ErrorF("Wacom final channel %d for %s \n", channel, local->name);
 #ifdef WCM_CUSTOM_DEBUG
 				DBG(2, common->debugLevel, ErrorF("%s - usbParse: dropping %d\n", 
 					timestr(), common->wcmChannel[i].work.serial_num));
-				/* we take this channel as a valid one */
-				channel = i;
 #endif
 			}
 		}
@@ -949,7 +954,6 @@ static void usbParseEvent(LocalDevicePtr local,
 #endif
 	channel = usbChooseChannel(local);
 
-ErrorF("Wacom got channel %d for %s \n", channel, local->name);
 	/* couldn't decide channel? invalid data */
 	if (channel == -1) goto skipEvent;
 
@@ -1075,6 +1079,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 
 		else if (event->type == EV_KEY)
 		{
+#ifdef WCM_CUSTOM_DEBUG
+			int oldProx = ds->proximity;
+#endif
+
 			if ((event->code == BTN_TOOL_PEN) ||
 				(event->code == BTN_TOOL_PENCIL) ||
 				(event->code == BTN_TOOL_BRUSH) ||
@@ -1088,6 +1096,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				DBG(6, common->debugLevel, ErrorF(
 					"USB stylus detected %x\n",
 					event->code));
+#ifdef WCM_CUSTOM_DEBUG
+				if (oldProx)
+					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PEN\n", timestr()));
+#endif
 			}
 			else if (event->code == BTN_TOOL_RUBBER)
 			{
@@ -1101,6 +1113,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				DBG(6, common->debugLevel, ErrorF(
 					"USB eraser detected %x (value=%d)\n",
 					event->code, event->value));
+#ifdef WCM_CUSTOM_DEBUG
+				if (oldProx)
+					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool RUBBER\n", timestr()));
+#endif
 			}
 			else if ((event->code == BTN_TOOL_MOUSE) ||
 				(event->code == BTN_TOOL_LENS))
@@ -1113,6 +1129,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				if (common->wcmProtocolLevel == 4)
 					ds->device_id = CURSOR_DEVICE_ID;
 				ds->proximity = (event->value != 0);
+#ifdef WCM_CUSTOM_DEBUG
+				if (oldProx)
+					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool MOUSE\n", timestr()));
+#endif
 			}
 			else if (event->code == BTN_TOOL_FINGER)
 			{

@@ -1110,9 +1110,11 @@ if test "$WCM_XORG_XSERVER_1_7" = "yes"; then
 	fi
 	echo ""
 	echo ""
-	echo "NOTE: this package only supports Xorg server older than 1.7."
+	echo "NOTE: the X driver in this package only supports Xorg servers older than 1.7."
 	echo "          You are running a newer version. "
 	echo "Please build the X driver from xf86-input-wacom."
+	echo "The kernel driver provided in this package is independent of "
+	echo "the X server version"
 else
 	if test "$WCM_OPTION_WACOM" = "yes"; then
 		echo ""

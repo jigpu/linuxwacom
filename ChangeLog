@@ -1,3 +1,12 @@
+2010-10-01  Ping Cheng <pingc@wacom.com>
+	* Specify the tools supported by Intuos and CintiqV5 
+	  series respectively in the kernel
+	* Calibration-only wacomcpl has the options to display warnings or 
+	  flashing the crosshairs in red when abnormal (x,y) is detected
+	* Enable all tools for X server 1.4 and older and kernel 2.6.24 and older
+	* Peter Hutterer's configure message update for newer Xorg
+	* Label 0.8.8-9
+
 2010-07-27  Ping Cheng <pingc@wacom.com>
 	* Updated kernel driver for 2.6.23 and later
 	* Label 0.8.8-8

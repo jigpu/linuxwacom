@@ -19,10 +19,12 @@
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+
+extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
+extern void wcmIsDisplay(WacomCommonPtr common);
 #ifdef WCM_XORG_XSERVER_1_4
     extern Bool wcmIsAValidType(LocalDevicePtr local, const char *type, unsigned long* keys);
     extern int wcmIsDuplicate(char* device, LocalDevicePtr local);
-    extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
 #endif
 
 /*****************************************************************************
@@ -510,6 +512,7 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 	return 0;
 }
 
+#ifdef WCM_XORG_XSERVER_1_4
 /* retrieve the specific options for the device */
 static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
 {
@@ -560,8 +563,9 @@ static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
 	common->wcmTapTime = xf86SetIntOption(local->options,
 		"TapTime", common->wcmTapTimeDefault);
 }
+#endif  /* WCM_XORG_XSERVER_1_4 */
 
-static void wcmIsDisplay(WacomCommonPtr common)
+void wcmIsDisplay(WacomCommonPtr common)
 {
 	common->is_display = FALSE;
 	switch (common->tablet_id)
@@ -635,23 +639,23 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	type = xf86FindOptionValue(fakeLocal->options, "Type");
 
         /* leave the undefined for auto-dev (if enabled) to deal with */
-        if(device)
+       if(device)
         {
-		/* initialize supported keys */
+		/* initialize supported keys for Xorg server 1.4 or later */
 		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
 
-#ifdef WCM_XORG_XSERVER_1_4
         	/* check if the type is valid for the device
  		 * that is not defined in xorg.conf	
  		 */
-        	if(!wcmIsAValidType(fakeLocal, type, keys))
+#ifdef WCM_XORG_XSERVER_1_4
+		if(!wcmIsAValidType(fakeLocal, type, keys))
         	        goto SetupProc_fail;
 
                 /* check if the device has been added */
                 if (wcmIsDuplicate(device, fakeLocal))
                         goto SetupProc_fail;
 #endif   /* WCM_XORG_XSERVER_1_4 */
-        }
+       }
 
 	if (type && (xf86NameCmp(type, "stylus") == 0))
 		local = xf86WcmAllocateStylus();
@@ -687,10 +691,16 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
     
 	common->wcmDevice = xf86FindOptionValue(local->options, "Device");
 
+	/* reassign the keys back */
+	for (i=0; i<NBITS(KEY_MAX); i++)
+		common->wcmKeys[i] |= keys[i];
+
 	/* Hardware specific initialization relies on tablet_id */
 	common->tablet_id = tablet_id;
 	
 	wcmIsDisplay(common);
+
+
 #ifdef LINUX_INPUT
 	/* Autoprobe if not given */
 	if (!common->wcmDevice || !strcmp (common->wcmDevice, "auto-dev")) 
@@ -728,10 +738,6 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		}
 	}
 
-	/* reassign the keys back */
-	for (i=0; i<NBITS(KEY_MAX); i++)
-		common->wcmKeys[i] |= keys[i];
-
 	/* Process the common options for individual tool */
 	xf86ProcessCommonOptions(local, local->options);
 
@@ -739,9 +745,9 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	 * it is called only once for each device   */	
 #ifdef WCM_XORG_XSERVER_1_4
 	wcmDeviceSpecCommonOptions(local);
-#endif
-	/* Optional configuration */
+#endif /* WCM_XORG_XSERVER_1_4 */
 
+	/* Optional configuration */
 	xf86Msg(X_CONFIG, "%s device is %s\n", dev->identifier,
 			common->wcmDevice);
 

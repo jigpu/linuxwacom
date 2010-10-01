@@ -1389,37 +1389,44 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 
 		if (IsStylus(priv) || IsEraser(priv))
 		{
-			double tmpP;
+			double tmpP = 0;
+			int pRate = 0, tol = FILTER_PRESSURE_RES / 75, tol_more = 0;
 
 			/* set the minimum pressure when in prox */
 			if (!priv->oldProximity)
 				priv->minPressure = filtered.pressure;
-			else if (priv->minPressure > filtered.pressure)
-				priv->minPressure = filtered.pressure;
+
+			/* increase the tolerance for worn out pen */
+			if (priv->minPressure)
+				tol_more += 2 * tol;
+
+			/* log the percentage of the initial pressure so we know
+			 * if the tool is worn out or not
+			 */
+			pRate = 100 - (priv->minPressure * 100) / 
+					(double)common->wcmMaxZ;
+
+			if (pRate < 10)
+				ErrorF("%s has an initial pressure(%d) which is "
+					"too close to the maximum value(%d). "
+					"Time to change your tool. \n", pDev->name,
+					priv->minPressure, common->wcmMaxZ);
 
 			/* normalize pressure to FILTER_PRESSURE_RES */
-			tmpP = (filtered.pressure - priv->minPressure)
-				 * FILTER_PRESSURE_RES;
-			tmpP /= common->wcmMaxZ - priv->minPressure;
+			if (filtered.pressure > priv->minPressure)
+			{
+				tmpP = (filtered.pressure - priv->minPressure)
+					 * FILTER_PRESSURE_RES;
+				tmpP /= (double)(common->wcmMaxZ - priv->minPressure);
+			}
 			filtered.pressure = (int)tmpP;
 
-			/* set button1 (left click) off */
-			if (filtered.pressure < common->wcmThreshold)
-			{
+			if (filtered.pressure < common->wcmThreshold + tol_more)
 				filtered.buttons &= ~button;
-				if (priv->oldButtons & button) /* left click was on */
-				{
-					/* threshold tolerance */
-					int tol = FILTER_PRESSURE_RES / 125;
-
-					/* don't set it off if it is within the tolerance 
-					   and the tolerance is larger than threshold */
-					if ((common->wcmThreshold > tol) &&
-					    (filtered.pressure > common->wcmThreshold - tol))
-						filtered.buttons |= button;
-				}
-			}
-			else
+			else if (filtered.pressure > common->wcmThreshold + tol + tol_more)
+			/* don't send button 1 within the tolerance otherwise the button will be switched
+			 * on and off if the pressure stays around the wcmThreshold
+			 */
 				filtered.buttons |= button;
 
 			/* transform pressure */

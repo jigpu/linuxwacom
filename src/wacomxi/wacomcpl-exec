@@ -15,9 +15,11 @@ exec wish -f "$0" ${1+"$@"}
 #		tablet and screen mapping, as well as calibration. 
 #
 #  wacomcpl calibrate dev: fesatures calibration for a LCD device (identified as dev)
+#		and flash the crosshairs in red when abnormal coordinates are detected.
 #
 #  wacomcpl calibrate dev on: fesatures calibration for a LCD device (identified as dev)
-#			      and display warnings when abnormal coordinates are detected
+#		and a warning message window will be displayed when abnormal coordinates
+#		are detected.
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -55,6 +57,7 @@ set line_size 30
 set origin_x [ expr ($desktopWidth/2) - ($desktopWidth/4) ]
 set origin_y [ expr ($desktopHeight/2) - ($desktopHeight/4) ]
 set windowSize "700x300"
+set cWindowSize "7x3"
 
 set device ""
 set showHelp 0
@@ -327,7 +330,7 @@ proc calibrationSequence {which xDev yDev} {
 	set xDevMin $calibResults(xDev,0)
 	set yDevMin $calibResults(yDev,0)
 
-	if { $calibration_with_warning != 0 } {
+	if { $calibration_with_warning == 0 } {
 		verifycalibResultsTopLeft
 	}
 
@@ -360,7 +363,7 @@ proc calibrationSequence {which xDev yDev} {
 	    set yDevMax $calibResults(yDev,0)
 	}
 
-	if { $calibration_with_warning != 0 } {
+	if { $calibration_with_warning == 0 } {
 	    verifycalibResultsBottomRight
 	    .bottomright.m configure -background "#505075"
 	} else {
@@ -394,7 +397,7 @@ proc calibrationSequence {which xDev yDev} {
 	    }
 	}
 
-	if { $clickCheck == 1 } {
+	if { $clickCheck == 1 && $calibration_with_warning != 0 } {
 	    messageWindow "Warning !!!" \
 		"\n\nIf the cursor follows the tip of your\n\
 		tool better than before, you are fine.\n\
@@ -2175,9 +2178,10 @@ proc CalibrateOnly { numArg argList } {
 }
 
 if { $argc > 1 && [lindex $argv 0] == "calibrate" } {
-    wm title . "Wacom Control Panel -Calibration"	
+    wm title . "Wacom Control Panel -Calibration"
+    updateModelInfo	
     CalibrateOnly $argc $argv
-    wm geometry . =350x200+$origin_x+$origin_y
+    wm geometry . =$cWindowSize+0+0
 } else {
     wm title . "Wacom Control Panel"
     createControls

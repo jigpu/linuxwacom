@@ -134,7 +134,6 @@ static struct
 Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys)
 {
 	int j, ret = FALSE;
-	char*	dsource = xf86CheckStrOption(local->options, "_source", "");
 
 	if (!type)
 		return ret;
@@ -144,18 +143,12 @@ Bool wcmIsAValidType(LocalDevicePtr local, const char* type, unsigned long* keys
 	{
 		if (!strcmp(wcmType[j].type, type))
 		{
-			if (ISBITSET (keys, wcmType[j].tool))
-			{
-				ret = TRUE;
-				break;
-			}
-			else if (!strlen(dsource)) /* tool comes from xorg.conf? */
-			{
-				/* make the type valid */
-				keys[LONG(wcmType[j].tool)] |= BIT(wcmType[j].tool);
-				ret = TRUE;
-				break;
-			}
+			/* make the type valid since not all distros have 
+			 * the valid keys set at this stage 
+			 */
+			keys[LONG(wcmType[j].tool)] |= BIT(wcmType[j].tool);
+			ret = TRUE;
+			break;
 		}
 	}
 	return ret;
@@ -263,34 +256,16 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id)
 
 		if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
 		{
-			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
-				"ioctl Device ID.\n", local->name);
+			sleep(1000);
+			if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
+			{
+				xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
+					"ioctl Device ID.\n", local->name);
+			}
 			ret = 0;
 		}
 		else
 			*tablet_id = wacom_id.product;
-ErrorF("Wacom got Pid ox%x \n", wacom_id.product);
-
-if (!wacom_id.product)
-{
-		if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0)
-		{
-			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
-				"ioctl USB key bits.\n", local->name);
-			ret = 0;
-		}
-
-		if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
-		{
-			xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
-				"ioctl Device ID.\n", local->name);
-			ret = 0;
-		}
-		else
-			*tablet_id = wacom_id.product;
-}
-ErrorF("Wacom got Pid ox%x again\n", wacom_id.product);
-
 	}
 	close(fd);
 	return ret;

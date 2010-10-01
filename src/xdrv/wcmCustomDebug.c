@@ -40,9 +40,7 @@ static const int limitLowPressure = 400;
 char * timestr()
 {
 	time_t t;
-	time(&t);
 	struct tm tm;
-	localtime_r(&t, &tm);
 	static char wday_name[7][3] = {
 		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 	};
@@ -53,6 +51,9 @@ char * timestr()
 	static char result[26];
 
 	struct timeval tv;
+
+	time(&t);
+	localtime_r(&t, &tm);
 	gettimeofday(&tv, NULL);
 	
 	sprintf(result, "%.3s %.3s%3d %.2d:%.2d:%.2d.%.6d",
@@ -121,6 +122,8 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
+	int nowUsedChannels = 0;
+	int i = 0;
 
 	DBG(2, common->debugLevel, ErrorF(
 		    "%s - usbParse: prox in for %d, channel %d\n",
@@ -129,8 +132,7 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	noPressureEventSinceProxIn = 1;
 
 	/* count currently used channels */
-	int nowUsedChannels = 0;
-	for (int i=0; i<MAX_CHANNELS; ++i)
+	for (i=0; i<MAX_CHANNELS; ++i)
 	{
 		if (common->wcmChannel[i].work.proximity)
 			nowUsedChannels++;
