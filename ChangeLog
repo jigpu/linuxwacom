@@ -1,3 +1,8 @@
+2010-10-12  Ping Cheng <pingc@wacom.com>
+	* Fixed a kernel bug for Cintiq 21UX2 pressure (Aristeu Rozanski <aris@redhat.com>)
+	* Fixed a print format error in xidump.c (Aristeu Rozanski)
+	* Label 0.8.8-10
+
 2010-10-01  Ping Cheng <pingc@wacom.com>
 	* Specify the tools supported by Intuos and CintiqV5 
 	  series respectively in the kernel

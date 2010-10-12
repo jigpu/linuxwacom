@@ -639,7 +639,7 @@ static int CursesRun(Display* pDisp, XDeviceInfo* pDevInfo, FORMATTYPE fmt)
 			bDown = (pAny->type == gnInputEvent[INPUTEVENT_KEY_PRESS]);
 			nBtn = pKey->keycode - 7; /* first key is always 8 */
 			if ((nBtn < 1) || (nBtn > 5)) nBtn=6;
-			snprintf(chBuf,sizeof(chBuf),"02%d-%s",pKey->keycode - 7,
+			snprintf(chBuf,sizeof(chBuf),"%02d-%s",pKey->keycode - 7,
 					bDown ? "DOWN" : "UP  ");
 			if (bDown) wacscrn_standout();
 			wacscrn_output(nKeyRow,12 + (nBtn-1) * 10,chBuf);
