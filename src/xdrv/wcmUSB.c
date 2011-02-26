@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2010 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2002-2011 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1217,20 +1217,42 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 		}
 	} /* next event */
 
-	/* First time in prox and device type unknown?
-	 * Tool may be on the tablet when X starts.
-	 */
-	if (!ds->device_type && !dslast.proximity)
+	/* device type unknown? Retrive it from the kernel again */
+	if (!ds->device_type)
 	{
-		usbRetrieveKeys(common);
+		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
+		
+		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);
+
 		for (i=0; i<sizeof(wcmTypeToKey) / sizeof(wcmTypeToKey[0]); i++)
 		{
-			if (ISBITSET(common->wcmKeys, wcmTypeToKey[i].tool_key))
+			if (ISBITSET(keys, wcmTypeToKey[i].tool_key))
 			{
 				ds->device_type = wcmTypeToKey[i].device_type;
 				break;
 			}
 		}
+	}
+
+	/* retrieve (x,y) at the first time in-prox */
+	if (!dslast.proximity)
+	{
+		struct input_absinfo absinfo;
+
+		if (ioctl(common->fd, EVIOCGABS(ABS_X), &absinfo) < 0)
+		{
+			ErrorF("WACOM: unable to ioctl x value.\n");
+			return;
+		}
+		ds->x = absinfo.value;
+
+		if (ioctl(common->fd, EVIOCGABS(ABS_Y), &absinfo) < 0)
+		{
+			ErrorF("WACOM: unable to ioctl ymax value.\n");
+			return;
+		}
+		ds->y = absinfo.value;
+		
 	}
 
 	/* don't send touch event when touch isn't enabled */

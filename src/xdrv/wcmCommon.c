@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>		
+ * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>		
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1064,19 +1064,6 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 			priv = common->wcmDevices;
 		}
 	}
-
-#ifdef WCM_ENABLE_LINUXINPUT
-	/* Discard the first 2 USB packages due to events delay */
-	if ( (pChannel->nSamples < 2) && (common->wcmDevCls == &gWacomUSBDevice) && 
-		(ds.device_type != PAD_ID) && (ds.device_type != TOUCH_ID))
-	{
-		DBG(11, common->debugLevel, 
-			ErrorF("discarded %dth USB data.\n", 
-			pChannel->nSamples));
-		++pChannel->nSamples;
-		return; /* discard */
-	}
-#endif
 
 	/* ignore Bamboo touch data if point is abnormal */
 	if ((ds.device_type == TOUCH_ID) && (common->tablet_id >= 0xd0
