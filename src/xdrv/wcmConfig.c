@@ -213,21 +213,21 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmRotate = ROTATE_NONE;   /* default tablet rotation to off */
 	common->wcmMaxX = 0;               /* max tool logical X value */
 	common->wcmMaxY = 0;               /* max tool logical Y value */
- 	common->wcmMaxTouchX = 0;          /* max touch logical X value */
-	common->wcmMaxTouchY = 0;          /* max touch logical Y value */
+ 	common->wcmMaxTouchX = 1024;       /* max touch logical X value */
+	common->wcmMaxTouchY = 1024;       /* max touch logical Y value */
 	common->wcmMaxZ = 0;               /* max Z value */
 	common->wcmResolX = 0;             /* tool X resolution in 
 				            * points/inch for penabled */
-	common->wcmTouchResolX = 0;        /* touch X resolution in points/mm */
+	common->wcmTouchResolX = 10;       /* touch X resolution in points/mm */
 	common->wcmResolY = 0;             /* tool Y resolution in 
 				            * points/inch for penabled */
-	common->wcmTouchResolY = 0;        /* touch y resolution in points/mm */
+	common->wcmTouchResolY = 10;       /* touch y resolution in points/mm */
  	common->wcmMaxDist = 0;            /* max distance value */
 	common->wcmMaxStripX = 4096;       /* Max fingerstrip X */
 	common->wcmMaxStripY = 4096;       /* Max fingerstrip Y */
 	common->wcmMaxtiltX = 128;	   /* Max tilt in X directory */
 	common->wcmMaxtiltY = 128;	   /* Max tilt in Y directory */
-	common->wcmMaxCursorDist = 0;	/* Max distance received so far */
+	common->wcmMaxCursorDist = 0;	   /* Max distance received so far */
 	common->wcmCursorProxoutDist = 0;
 			/* Max mouse distance for proxy-out max/256 units */
 	common->wcmCursorProxoutDistDefault = PROXOUT_INTUOS_DISTANCE; 
@@ -240,6 +240,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmLastToolSerial = 0;
 	common->wcmEventCnt = 0;
 #endif
+	common->wcmInitedTools = 0;  /* start with no tool */
+	common->wcmEnabledTools = 0; /* start with no tool */
 
 	/* tool */
 	priv->tool = tool;
@@ -394,6 +396,12 @@ static void xf86WcmRemoveAssociates(LocalDevicePtr local)
 
 	DBG(1, priv->debugLevel, ErrorF("xf86WcmRemoveAssociates\n"));
 
+	if (!priv)
+		return;
+
+	if (priv->pPressCurve)
+		xfree(priv->pPressCurve);
+
 	if (priv->toolarea)
 	{
 		WacomToolAreaPtr *preva = &priv->tool->arealist;
@@ -461,13 +469,10 @@ static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
 #endif
 
 	/* free objects associated with priv */
-	if (priv->pPressCurve)
-		xfree(priv->pPressCurve);
-
 	xf86WcmRemoveAssociates(local);
 
 	/* the last priv frees the common */
-	if(!common->wcmDevices)
+	if(common && !common->wcmDevices)
 		xfree(common);
 
 	xf86DeleteInput(local, 0);    

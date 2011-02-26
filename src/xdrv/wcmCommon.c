@@ -1330,7 +1330,7 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 #if WCM_XINPUTABI_MAJOR == 0
 	if (!miPointerCurrentScreen())
 #else
-	if (pDev && !miPointerGetScreen(pDev->dev))
+	if (!pDev || !pDev->dev || !pDev->dev->enabled || !miPointerGetScreen(pDev->dev))
 #endif
 	{
 		ErrorF("commonDispatchDevice: Wacom driver can not get Current Screen ID\n");
@@ -1340,7 +1340,7 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 
 	/* if a device matched criteria, handle filtering per device
 	 * settings, and send event to XInput */
-	if (pDev)
+	if (pDev && pDev->dev)
 	{
 		WacomDeviceState filtered = pChannel->valid.state;
 

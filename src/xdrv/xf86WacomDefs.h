@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -444,6 +444,8 @@ struct _WacomCommonRec
 	int wcmEventCnt;
 	struct input_event wcmEvents[MAX_USB_EVENTS];  /* events for current change */
 #endif
+	int wcmInitedTools;     /* number of initialized tools associated with a tablet */
+	int wcmEnabledTools;    /* number of enabled tools associated with a tablet */
 
 	WacomToolPtr wcmTool; /* List of unique tools */
 };

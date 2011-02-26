@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org> 
- * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -75,7 +75,7 @@
  * 2010-07-12 47-pc0.8.8-5 - Use default nbuttons and npadkeys to back support k2.6.24-
  */
 
-static const char identification[] = "$Identification: 47-0.8.8-9 $";
+static const char identification[] = "$Identification: 47-0.8.8-11 $";
 
 /****************************************************************************/
 
@@ -756,7 +756,16 @@ static int xf86WcmDevOpen(DeviceIntPtr pWcm)
 	}
 
 	if (!xf86WcmRegisterX11Devices (local))
+	{
+		local->fd = -1;
+		common->fd_refs--;
+		if (!common->fd_refs)
+		{
+			xf86CloseSerial(common->fd);
+			common->fd = -1;
+		}
 		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -768,11 +777,16 @@ static int xf86WcmDevOpen(DeviceIntPtr pWcm)
 
 static void xf86WcmDevReadInput(LocalDevicePtr local)
 {
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
 	int loop=0;
 	#define MAX_READ_LOOPS 10
 
-	WacomDevicePtr priv = (WacomDevicePtr)local->private;
-	WacomCommonPtr common = priv->common;
+	/* do not process the data while another tool on the port is being
+	 * added or at least one tool has been removed during driver unloading
+	 */
+	if (common->wcmInitedTools != common->wcmEnabledTools)
+		return;
 
 	/* move data until we exhaust the device */
 	for (loop=0; loop < MAX_READ_LOOPS; ++loop)
@@ -824,7 +838,7 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 		{
 			if (wDev->local->fd >= 0)
 				xf86WcmDevProc(wDev->local->dev, DEVICE_OFF);
-		}
+		}			
 		return;
 	}
 
@@ -905,6 +919,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 {
 	LocalDevicePtr local = (LocalDevicePtr)pWcm->public.devicePrivate;
 	WacomDevicePtr priv = (WacomDevicePtr)PRIVATE(pWcm);
+	WacomCommonPtr common = priv->common;
 
 	DBG(2, priv->debugLevel, ErrorF("BEGIN xf86WcmDevProc dev=%p priv=%p "
 			"type=%s(%s) flags=%d fd=%d what=%s\n",
@@ -924,6 +939,11 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 		 * register even a 'pad' which doesn't "SendCoreEvents"
 		 */
 		case DEVICE_INIT:
+			/* we need this counter in combination with wcmEnabledTools
+			 * to prevent event processing while tools are initialized
+			 * or removed
+			 */
+			common->wcmInitedTools++;
 			priv->wcmDevOpenCount = 0;
 			priv->wcmInitKeyClassCount = 0;
 			if (!xf86WcmDevOpen(pWcm))
@@ -944,6 +964,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 			priv->wcmDevOpenCount++;
 			xf86AddEnabledDevice(local);
 			pWcm->public.on = TRUE;
+			common->wcmEnabledTools++;
 			break;
 
 		case DEVICE_OFF:
@@ -955,6 +976,7 @@ static int xf86WcmDevProc(DeviceIntPtr pWcm, int what)
 			}
 			pWcm->public.on = FALSE;
 			priv->wcmDevOpenCount = 0;
+			common->wcmEnabledTools--;
 			break;
 
 		default:
