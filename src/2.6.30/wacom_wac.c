@@ -81,9 +81,11 @@ static int wacom_dtu_irq(struct wacom_wac *wacom)
 		pressure = features->pressure_max + pressure + 1;
 	input_report_abs(input, ABS_PRESSURE, pressure);
 	input_report_key(input, BTN_TOUCH, data[1] & 0x05);
-	if (!prox) /* out-prox */
+	if (!prox) { /* out-prox */
 		wacom->id[0] = 0;
-	else {
+		input_report_abs(input, ABS_X, 0);
+		input_report_abs(input, ABS_Y, 0);
+	} else {
 		input_report_abs(input, ABS_X, le16_to_cpup((__le16 *)&data[2]));
 		input_report_abs(input, ABS_Y, le16_to_cpup((__le16 *)&data[4]));
 	}
@@ -157,6 +159,8 @@ static int wacom_pl_irq(struct wacom_wac *wacom)
 			/* Unknown tool selected default to pen tool */
 			wacom->tool[1] = BTN_TOOL_PEN;
 		}
+		input_report_abs(input, ABS_X, 0);
+		input_report_abs(input, ABS_Y, 0);
 		input_report_key(input, wacom->tool[1], prox);
 	}
 
@@ -288,7 +292,10 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, size_t len)
 			input_report_key(input, BTN_3, data[1] & 0x8);
 			input_report_key(input, BTN_TOOL_FINGER, prox);
 			input_report_abs(input, ABS_MISC, wacom->id[1]);
-			input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+			if (prox)
+				input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+			else
+				input_event(input, EV_MSC, MSC_SERIAL, 1);
 			input_sync(input);
 		}
 
@@ -342,6 +349,8 @@ static int wacom_bpt_irq(struct wacom_wac *wacom, size_t len)
 		if (!prox) {
 			wacom->id[0] = 0;
 			wacom->shared->stylus_in_proximity = false;
+			input_report_abs(input, ABS_X, 0);
+			input_report_abs(input, ABS_Y, 0);
 		} else {
 			input_report_abs(input, ABS_X, le16_to_cpup((__le16 *)&data[2]));
 			input_report_abs(input, ABS_Y, le16_to_cpup((__le16 *)&data[4]));
@@ -412,14 +421,17 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
 			input_report_rel(input, REL_WHEEL, rw);
 		}
 
-		if (!prox)
+		if (!prox) {
 			wacom->id[0] = 0;
-		else {
+			input_report_abs(input, ABS_X, 0);
+			input_report_abs(input, ABS_Y, 0);
+		} else {
 			input_report_abs(input, ABS_X, le16_to_cpup((__le16 *)&data[2]));
 			input_report_abs(input, ABS_Y, le16_to_cpup((__le16 *)&data[4]));
 		}
 		input_report_abs(input, ABS_MISC, wacom->id[0]); /* report tool id */
 		input_report_key(input, wacom->tool[0], prox);
+		input_event(input, EV_MSC, MSC_SERIAL, 1);
 		input_sync(input); /* sync last event */
 	}
 
@@ -443,7 +455,7 @@ static int wacom_graphire_irq(struct wacom_wac *wacom)
 		break;
 
 	case WACOM_MO:
-		prox = (data[7] & 0xf8) || data[8];
+		prox = (data[7] & 0x78) || (data[8] & 0x7f);
 		if (prox || wacom->id[1]) {
 			wacom->id[1] = PAD_DEVICE_ID;
 			input_report_key(input, BTN_0, (data[7] & 0x08));
@@ -567,6 +579,8 @@ static int wacom_intuos_inout(struct wacom_wac *wacom)
 		 * when in-prox next time
 		 */
 		input_report_abs(input, ABS_DISTANCE, 0);
+		input_report_abs(input, ABS_X, 0);
+		input_report_abs(input, ABS_Y, 0);
 		input_report_abs(input, ABS_TILT_X, 0);
 		input_report_abs(input, ABS_TILT_Y, 0);
 		if (wacom->tool[idx] >= BTN_TOOL_MOUSE) {
@@ -1001,6 +1015,8 @@ static int wacom_tpc_irq(struct wacom_wac *wacom, size_t len)
 		if (!prox) { /* out-prox */
 			wacom->id[0] = 0;
 			wacom->shared->stylus_in_proximity = false;
+			input_report_abs(input, ABS_X, 0);
+			input_report_abs(input, ABS_Y, 0);
 		} else {
 			input_report_abs(input, ABS_X, le16_to_cpup((__le16 *)&data[2]));
 			input_report_abs(input, ABS_Y, le16_to_cpup((__le16 *)&data[4]));
