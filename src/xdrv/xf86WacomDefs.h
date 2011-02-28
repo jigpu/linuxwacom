@@ -446,6 +446,7 @@ struct _WacomCommonRec
 #endif
 	int wcmInitedTools;     /* number of initialized tools associated with a tablet */
 	int wcmEnabledTools;    /* number of enabled tools associated with a tablet */
+	Bool wcmWarnOnce;       /* flag to log device disconnetion message only once */
 
 	WacomToolPtr wcmTool; /* List of unique tools */
 };

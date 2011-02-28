@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -242,6 +242,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 #endif
 	common->wcmInitedTools = 0;  /* start with no tool */
 	common->wcmEnabledTools = 0; /* start with no tool */
+	common->wcmWarnOnce = FALSE;
 
 	/* tool */
 	priv->tool = tool;

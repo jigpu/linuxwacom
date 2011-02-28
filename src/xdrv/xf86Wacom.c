@@ -828,17 +828,26 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 
 	if (len <= 0)
 	{
-		/* In case of error, we assume the device has been
-		 * disconnected. So we close it and iterate over all
-		 * wcmDevices to actually close associated devices. */
-		WacomDevicePtr wDev = common->wcmDevices;
-		xf86Msg(X_ERROR, "Error reading wacom device : %s\n",
-			strerror(errno));
-		for(; wDev; wDev = wDev->next)
+		if (errno != EAGAIN && errno != EINTR)
 		{
-			if (wDev->local->fd >= 0)
-				xf86WcmDevProc(wDev->local->dev, DEVICE_OFF);
-		}			
+			/* We get here 10 times when a device is disconnected before
+			 * it is actually removed from the driver. One log message
+			 * shows all we need to know.
+			 */
+			if (!common->wcmWarnOnce)
+			{
+				xf86Msg(X_ERROR,"%s: Error reading wacom device : %s(%d)\n",
+					local->name, strerror(errno), errno);
+				common->wcmWarnOnce  = TRUE;
+			}
+			/* The hotplugging code will remove the device later */
+		}
+		else
+			/* We'll read it again */
+			DBG(10, common->debugLevel,
+				ErrorF("%s: Reading wacom device interrupted: %s(%d)\n",
+				local->name, strerror(errno), errno));
+			
 		return;
 	}
 
