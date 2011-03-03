@@ -831,6 +831,9 @@ static int usbChooseChannel(LocalDevicePtr local)
 	/* fresh out of channels */
 	if (channel < 0)
 	{
+		static BOOL tool_on_tablet = FALSE;
+		BOOL has_tool = FALSE;
+
 		/* This should never happen in normal use.
 		 * Let's start over again. Force prox-out for all channels.
 		 */
@@ -842,21 +845,34 @@ static int usbChooseChannel(LocalDevicePtr local)
 				common->wcmChannel[i].work.proximity = 0;
 				/* dispatch event */
 				xf86WcmEvent(common, i, &common->wcmChannel[i].work);
+				has_tool = TRUE;
 #ifdef WCM_CUSTOM_DEBUG
 				DBG(2, common->debugLevel, ErrorF("%s - usbParse: dropping %d\n", 
 					timestr(), common->wcmChannel[i].work.serial_num));
 #endif
 			}
 		}
+
+		if (has_tool)
+		{
+			DBG(1, common->debugLevel, ErrorF("%s: Looks like more than one tool are"
+			" on the tablet. Please bring only one tool in at a time.\n", local->name));
+			has_tool = TRUE;
+		}
+		else if (!tool_on_tablet)
+		{
+			/* tool might be on the tablet when driver started */
+			xf86Msg(X_ERROR,"%s: Error decide Wacom tool channel. "
+				"Please bring the tool out then back again.\n",
+				local->name);
+			tool_on_tablet = TRUE;
+		}
+
 #ifdef WCM_CUSTOM_DEBUG
 		DBG(1, common->debugLevel, ErrorF("%s - usbParse (%s with serial number: %u):"
 			" Exceeded channel count; ignoring the events.\n", 
 			timestr(), local->name, serial));
 		DBG(2, common->debugLevel, dumpEventRing(local));
-#else
-		DBG(1, common->debugLevel, ErrorF("usbParse (device with serial number: %u)"
-			" at %d: Exceeded channel count; ignoring the events.\n", 
-			serial, (int)GetTimeInMillis()));
 #endif
 	}
 
@@ -1221,6 +1237,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	if (!ds->device_type)
 	{
 		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
+		struct input_absinfo absinfo;
 		
 		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);
 
@@ -1232,10 +1249,22 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				break;
 			}
 		}
+		
+		if (ioctl(common->fd, EVIOCGABS(ABS_MISC), &absinfo) < 0)
+		{
+			ErrorF("WACOM: unable to ioctl device_id value.\n");
+			return;
+		}
+
+		if (absinfo.value)
+		{
+			ds->device_id = absinfo.value;
+			ds->proximity = 1;
+		}
 	}
 
-	/* retrieve (x,y) at the first time in-prox */
-	if (!dslast.proximity)
+	/* retrieve (x,y) at the first time in-prox if it is not a pad */
+	if (!dslast.proximity && ds->device_type != PAD_ID)
 	{
 		struct input_absinfo absinfo;
 
@@ -1252,7 +1281,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			return;
 		}
 		ds->y = absinfo.value;
-		
 	}
 
 	/* don't send touch event when touch isn't enabled */
