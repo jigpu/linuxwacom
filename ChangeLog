@@ -1,3 +1,10 @@
+2010-03-03  Ping Cheng <pingc@wacom.com>
+	* Always retrieve (x,y) from the kernel the first time in prox for non-pad tool
+	* Don't read data while driver loading/unloading to avoid a hotplugging race condition
+	* Don't turn device off when getting read errors
+	* Fixed a missing tool type for Cintiq in 2.6.16/wacom_wac.c
+	* Label 0.8.8-11
+
 2010-10-12  Ping Cheng <pingc@wacom.com>
 	* Fixed a kernel bug for Cintiq 21UX2 pressure (Aristeu Rozanski <aris@redhat.com>)
 	* Fixed a print format error in xidump.c (Aristeu Rozanski)
