@@ -283,6 +283,8 @@ WACOMDEVICETYPE mapStringToType (const char* name)
 		return WACOMDEVICETYPE_ERASER;
 	else if (strstr(name,"pad") != NULL)
 		return WACOMDEVICETYPE_PAD;
+	else if (strstr(name,"finger") != NULL)
+		return WACOMDEVICETYPE_TOUCH;
 	/* touch has to be the last in case the device name has touch in it */
 	else if (strstr(name,"touch") != NULL)
 		return WACOMDEVICETYPE_TOUCH;
