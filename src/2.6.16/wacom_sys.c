@@ -440,7 +440,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	/* Retrieve the physical and logical size for OEM devices */
 	error = wacom_retrieve_hid_descriptor(intf, features);
 	if (error)
-		goto fail2;
+		goto fail3;
 
 	strlcpy(wacom_wac->name, features->name, sizeof(wacom_wac->name));
 
