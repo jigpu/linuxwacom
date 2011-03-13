@@ -640,6 +640,7 @@ static struct usb_driver wacom_driver = {
 	.suspend =	wacom_suspend,
 	.resume =	wacom_resume,
 	.reset_resume =	wacom_reset_resume,
+	.ioctl =	wacom_ioctl,
 	.supports_autosuspend = 1,
 };
 
