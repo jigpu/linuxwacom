@@ -656,16 +656,16 @@ int usbWcmGetRanges(LocalDevicePtr local)
 
 	common->wcmFlags |= USE_SYN_REPORTS_FLAG;
 
-	if (ioctl(local->fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs) < 0)
-	{
-		ErrorF("WACOM: unable to ioctl abs bits.\n");
-		return !Success;
-	}
-
 	/* absolute values */
 	if (!ISBITSET(ev, EV_ABS))
 	{
-		ErrorF("WACOM: unable to ioctl max values.\n");
+		ErrorF("WACOM: no abs bits.\n");
+		return !Success;
+	}
+
+	if (ioctl(local->fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs) < 0)
+	{
+		ErrorF("WACOM: unable to ioctl abs bits.\n");
 		return !Success;
 	}
 
