@@ -75,7 +75,7 @@ $(XF86OBJS):
 
 if WCM_DLLOADER
 wacom_drv.so: .depend $(XF86OBJS)
-	$(CC) -shared -nostdlib -o wacom_drv.so $(XF86OBJS) -Bstatic -lgcc
+	$(CC) -shared -nostdlib -o wacom_drv.so $(XF86OBJS) -Bstatic -lgcc -lc
 else
 wacom_drv.o: .depend $(XF86OBJS)
 	$(LD) -r $(XF86OBJS) -o wacom_drv.o

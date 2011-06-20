@@ -75,7 +75,7 @@
  * 2010-07-12 47-pc0.8.8-5 - Use default nbuttons and npadkeys to back support k2.6.24-
  */
 
-static const char identification[] = "$Identification: 47-0.8.8-11 $";
+static const char identification[] = "$Identification: 47-0.9.0 $";
 
 /****************************************************************************/
 

@@ -1,4 +1,17 @@
-2010-03-03  Ping Cheng <pingc@wacom.com>
+2011-06-20  Ping Cheng <pingc@wacom.com>
+	* Add "-lc" to Makefile.am (Daniel Grafe)
+	* Updated wacdump.php with input from Patrick Horgan and David Foley
+	* Updated "Building wacom driver On RHEL 5" page by Sylvain Giasson
+	* Label 0.9.0
+
+2011-04-27  Ping Cheng <pingc@wacom.com>
+	* Put wacom_ioctl back for OLED (Eduard Hasenleithner)
+	* Fixed error path in wacom_probe (Alexander Strakh)
+	* Updated wacomcfg.c for touch device (David Foley)
+	* Some minor kernel updated
+	* Label 0.8.9
+
+2011-03-03  Ping Cheng <pingc@wacom.com>
 	* Always retrieve (x,y) from the kernel the first time in prox for non-pad tool
 	* Don't read data while driver loading/unloading to avoid a hotplugging race condition
 	* Don't turn device off when getting read errors

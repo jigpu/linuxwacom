@@ -1,5 +1,5 @@
 AC_PREREQ(2.58)
-AC_INIT(linuxwacom, 0.8.8)
+AC_INIT(linuxwacom, 0.9.0)
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
