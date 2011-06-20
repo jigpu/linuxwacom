@@ -1,5 +1,6 @@
 2011-06-20  Ping Cheng <pingc@wacom.com>
 	* Add "-lc" to Makefile.am (Daniel Grafe)
+	* Add "ignore first USB motion events" back. Otherwise cursor jumps when first in prox
 	* Updated wacdump.php with input from Patrick Horgan and David Foley
 	* Updated "Building wacom driver On RHEL 5" page by Sylvain Giasson
 	* Label 0.9.0
