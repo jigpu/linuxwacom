@@ -1,6 +1,8 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
  * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
+ * Use is subject to license terms.
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,6 +26,10 @@
 
 #include <sys/utsname.h>
 
+#ifdef sun
+#include <sys/stropts.h>
+
+#else	/* !sun */
 /* support for compiling module on kernels older than 2.6 */
 #ifndef EV_MSC
 #define EV_MSC 0x04
@@ -48,6 +54,7 @@
 #ifndef BTN_TOOL_DOUBLETAP
 #define BTN_TOOL_DOUBLETAP 0x14d
 #endif
+#endif /* sun */
 
 static Bool usbDetect(LocalDevicePtr);
 Bool usbWcmInit(LocalDevicePtr pDev, char* id, float *version);
@@ -387,6 +394,19 @@ static Bool usbDetect(LocalDevicePtr local)
 
 	DBG(1, priv->debugLevel, ErrorF("usbDetect\n"));
 
+#ifdef sun
+	int retval;
+
+	retval = ioctl(local->fd, I_FIND, "usbwcm");
+	if (retval == 0)
+		retval = ioctl(local->fd, I_PUSH, "usbwcm");
+	if (retval < 0)
+	{
+		ErrorF("usbDetect: can not find/push STREAMS module\n");
+		return 0;
+	}
+#endif	/* sun */
+
 	SYSCALL(err = ioctl(local->fd, EVIOCGVERSION, &version));
 
 	if (err < 0)
@@ -524,7 +544,9 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 	/* fetch vendor, product, and model name */
 	ioctl(local->fd, EVIOCGID, sID);
+#ifndef sun	/* !sun */
 	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
+#endif
 
 	/* vendor is wacom */
 	if (sID[1] == 0x056A)
@@ -603,6 +625,9 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 		if (ISBITSET (keys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
 
+#ifdef sun
+	if (ISBITSET (keys, BTN_EXTRA))
+#else	/* !sun */
 	if (ISBITSET (keys, BTN_TASK))
 		common->nbuttons = 10;
 	else if (ISBITSET (keys, BTN_BACK))
@@ -610,6 +635,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	else if (ISBITSET (keys, BTN_FORWARD))
 		common->nbuttons = 8;
 	else if (ISBITSET (keys, BTN_EXTRA))
+#endif	/* sun */
 		common->nbuttons = 7;
 	else if (ISBITSET (keys, BTN_SIDE))
 		common->nbuttons = 6;
@@ -1042,8 +1068,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial)
 			else if (event->code == ABS_WHEEL || 
 				    event->code == ABS_Z)
 				ds->abswheel = event->value;
+#ifndef sun	/* !sun */
 			else if (event->code == ABS_THROTTLE)
 				ds->throttle = event->value;
+#endif
 			else if (event->code == ABS_MISC && event->value)
 				ds->device_id = event->value;
 		}
@@ -1054,7 +1082,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial)
 			else
 				ErrorF("wacom: rel event recv'd (%d)!\n", event->code);
 		}
-
 		else if (event->type == EV_KEY)
 		{
 			if ((event->code == BTN_TOOL_PEN) ||
@@ -1099,6 +1126,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial)
 				ds->device_id = PAD_DEVICE_ID;
 				ds->proximity = (event->value != 0);
 			}
+#ifndef	sun	/* !sun */
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
 				DBG(6, common->debugLevel, ErrorF(
@@ -1114,6 +1142,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial)
 				if (common->wcmCapacityDefault < 0)
 					MOD_BUTTONS (0, event->value);
 			}
+#endif
 			else if ((event->code == BTN_STYLUS) ||
 				(event->code == BTN_MIDDLE))
 			{

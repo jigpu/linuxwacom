@@ -2,6 +2,7 @@
 <!-- this is probably a bit imprecise -->
 <deviceinfo version="0.2">
   <device>
+  <match key="/org/freedesktop/Hal/devices/computer:system.kernel.name" string="Linux">
     <match key="info.category" contains="input">
       <match key="info.product" contains_outof="Wacom">
 	<merge key="input.x11_driver" type="string">wacom</merge>
@@ -27,9 +28,11 @@
 	</match>
       </match>
     </match>
+  </match>
   </device>
   <!-- Match the Wacom Bluetooth A5 pen tablet -->
   <device>
+  <match key="/org/freedesktop/Hal/devices/computer:system.kernel.name" string="Linux">
     <match key="info.capabilities" contains="input.mouse">
       <match key="info.product" contains="WACOM">
         <match key="info.product" contains="Tablet">
@@ -41,6 +44,28 @@
         </match>
       </match>
     </match>
+  </match>
+  </device>
+
+  <device>
+  <match key="/org/freedesktop/Hal/devices/computer:system.kernel.name" string="SunOS">
+    <match key="info.capabilities" contains="input.mouse">
+    <match key="@info.parent:usb.vendor_id" int="0x56a">
+      <merge key="info.product" type="string">Wacom_Tablet</merge>
+      <append key="info.callouts.add" type="strlist">hal-setup-wacom</append>
+
+      <merge key="input.x11_driver" type="string">wacom</merge>
+      <merge key="input.x11_options.Type" type="string">eraser</merge>
+      <merge key="input.x11_options.USB" type="bool">true</merge>
+
+      <remove key="input.x11_options.StreamsModule" type="string"></remove>
+      <remove key="input.x11_options.Protocol" type="string"></remove>
+
+      <append key="wacom.types" type="strlist">stylus</append>
+      <append key="wacom.types" type="strlist">pad</append>
+    </match>
+    </match>
+  </match>
   </device>
 </deviceinfo>
 

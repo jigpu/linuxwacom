@@ -75,12 +75,23 @@ if echo $WCM_KERNEL | grep -i linux >/dev/null; then
 fi
 AC_MSG_RESULT($WCM_ISLINUX)
 
+dnl =======================================================
+dnl Check if we should be compiling for Solaris
+AC_MSG_CHECKING(for Solaris kernel)
+WCM_ISSOLARIS=no
+if echo $WCM_KERNEL | grep -i SunOS >/dev/null; then
+	WCM_ISSOLARIS=yes
+	CFLAGS="$CFLAGS -Dsun"
+fi
+AC_MSG_RESULT($WCM_ISSOLARIS)
+AM_CONDITIONAL(WCM_ENV_SOLARIS, [test "$WCM_ISSOLARIS" = yes])
+
 dnl Check for 64bit XServer
 WCM_OPTION_XSERVER64=no
 AC_ARG_ENABLE(xserver64,
 	AC_HELP_STRING([--enable-xserver64], [Use 64bit XServer [[default=usually]]]),
 	[ WCM_OPTION_XSERVER64=$enableval ],
-	[ echo $WCM_ARCHITECTURE | grep "64" >/dev/null && WCM_OPTION_XSERVER64=yes ])
+	[ echo $WCM_ARCHITECTURE | egrep "64|sparc" >/dev/null && WCM_OPTION_XSERVER64=yes ])
 
 dnl Check for linux kernel override
 AC_ARG_WITH(linux,
@@ -278,8 +289,10 @@ else
 fi
 if test "$WCM_ENV_XLIB" = yes; then
 	if test "$WCM_OPTION_XSERVER64" = "yes"; then
-		CFLAGS="$CFLAGS -D__amd64__"
-		WCM_XSERVER64="-D_XSERVER64"
+		WCM_XSERVER64="-D_XSERVER64 -m64"
+		if test "$WCM_ARCH" != sparc; then
+			WCM_XSERVER64="$WCM_XSERVER64 -D__amd64__"
+		fi
 	fi
 fi
 
@@ -704,6 +717,7 @@ WCM_ENV_NCURSES=no
 AC_CHECK_HEADER(ncurses.h, [WCM_ENV_NCURSES=yes])
 if test "$WCM_ENV_NCURSES" != yes; then
 	AC_CHECK_HEADER(ncurses/ncurses.h, [WCM_ENV_NCURSES=yes])
+	CFLAGS="$CFLAGS -I/usr/include/ncurses"
 fi
 if test "$WCM_ENV_NCURSES" != yes; then
 	AC_MSG_WARN([ncurses not available, ncurses UI disabled])
@@ -712,6 +726,9 @@ if test "$WCM_ENV_NCURSES" != yes; then
 else
 	AC_DEFINE(WCM_ENABLE_NCURSES,1,[ncurses header files available])
 	AM_CONDITIONAL(WCM_ENV_NCURSES, true)
+	if test "$WCM_ISSOLARIS" = yes; then
+		LDFLAGS="$LDFLAGS -L/usr/gnu/lib -R/usr/gnu/lib"
+	fi
 fi
 
 dnl =======================================================
@@ -842,6 +859,9 @@ if test -z "$WCM_MODDIR"; then
         elif test -d $WCM_XLIB_DIR/modules/input; then
                WCM_MODDIR=$WCM_XLIB_DIR/modules/input
         fi
+	if test "$WCM_ISSOLARIS" = yes -a "$WCM_ARCH" != sparc -a "$WCM_OPTION_XSERVER64" = yes; then
+		WCM_MODDIR=$WCM_MODDIR/amd64
+	fi
 fi
 AC_MSG_RESULT($WCM_MODDIR)
 

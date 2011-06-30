@@ -20,7 +20,13 @@ AM_CFLAGS = -Wall -pedantic $(WACOMCFG_INCLUDES)
 EXTRA_PROGRAMS = wacdump xidump xsetwacom 
 if WCM_HAVE_HAL
 libexec_PROGRAMS = hal-setup-wacom
+
+if WCM_ENV_SOLARIS
+fdidir = /etc/hal/fdi/policy/20thirdparty
+else
 fdidir = $(prefix)/share/hal/fdi/policy/20thirdparty
+endif
+
 fdi_SCRIPTS = 10-linuxwacom.fdi
 endif
 

@@ -1,0 +1,39 @@
+OpenSolaris/SXCE:
+
+1. install required packages
+
+if you're using OpenSolaris, please make sure you have below
+packages installed:
+
+SUNWaconf
+SUNWgnu-automake-110
+SUNWlibtool
+SUNWgmake
+SUNWgcc
+SUNWgnome-common-devel
+SUNWxorg-headers
+SUNWusbu
+
+2. setup build enviorment
+ln -s /usr/bin/aclocal-1.10 /usr/bin/aclocal
+ln -s /usr/bin/automake-1.10 /usr/bin/automake
+export PATH=$PATH:/usr/gnu/bin:/usr/sfw/bin
+
+3. run configure scripts
+autoreconf
+
+for 64-bit systems, run
+./configure --with-linux=yes --enable-xserver64 --libexecdir=/usr/lib/hal
+
+for 32-bit systems, run
+./configure --with-linux=yes --libexecdir=/usr/lib/hal
+
+4. build
+gmake all
+
+5. install the binaries (as a privileged user)
+gmake install
+
+6. restart HAL and Xorg (as a privileged user)
+svcadm restart hal
+logout the graphical desktop and login again

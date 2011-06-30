@@ -63,7 +63,7 @@ depend: .depend
 
 .depend: Makefile
 	@rm -f .depend
-	$(CC) -MM $(CFLAGS) $(DEPFLAGS) $(DRIVER_INCLUDES) $(XF86OBJS:%.o=$(srcdir)/%.c) > .depend
+	$(CC) -MM $(CFLAGS) $(DEPFLAGS) $(DRIVER_INCLUDES) $(XSERVER_CFLAGS) $(XF86OBJS:%.o=$(srcdir)/%.c) > .depend
 
 -include .depend
 
