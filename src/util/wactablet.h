@@ -53,6 +53,7 @@
 #define WACOMDEVICE_INTUOS3     0x0011
 #define WACOMDEVICE_CINTIQV5    0x0012
 #define WACOMDEVICE_MO          0x0013
+#define WACOMDEVICE_DTU         0x0014
 
 typedef struct _WACOMMODEL WACOMMODEL;
 struct _WACOMMODEL

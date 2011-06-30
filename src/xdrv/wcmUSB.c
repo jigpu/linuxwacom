@@ -381,6 +381,22 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial);
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
+	static WacomModel usbDTU =
+	{
+		"USB DTU",
+		usbInitProtocol4,
+		NULL,                 /* resolution not queried */
+		usbWcmGetRanges,
+		NULL,                 /* reset not supported */
+		NULL,                 /* tilt automatically enabled */
+		NULL,                 /* suppress implemented in software */
+		NULL,                 /* link speed unsupported */
+		NULL,                 /* start not supported */
+		usbParse,
+		xf86WcmFilterCoord,   /* input filtering */
+		usbDetectConfig,      /* detect hardware buttons etc */
+	};
+
 /*****************************************************************************
  * usbDetect --
  *   Test if the attached device is USB.
@@ -528,7 +544,9 @@ static struct
 
 	{ 0x90, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x90 */ 
 	{ 0x93, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x93 */
-	{ 0x9A, 2540, 2540, &usbTabletPC   }  /* TabletPC 0x9A */
+	{ 0x9A, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x9A */
+
+	{ 0xCE, 2540, 2540, &usbDTU        }  /* DTU 0xCE */
 };
 
 Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)

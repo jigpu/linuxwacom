@@ -322,6 +322,12 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ NULL }
 	};
 
+	static USBSUBTYPE xDTU[] =
+	{
+		{ "DTU-2231", "Wacom DTU-2231", 1, 0xCE },
+		{ NULL }
+	};
+
 	static USBDEVICE xWacomDevices[] =
 	{
 		{ "pp", "PenPartner", WACOMDEVICE_PENPARTNER, xPenPartner, 1 },
@@ -340,6 +346,7 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "vol2", "Volito2", WACOMDEVICE_VOLITO2, xVolito2, 1 },
 		{ "mo", "Bamboo", WACOMDEVICE_MO, xBamboo, 2 },
 		{ "tpc", "Tablet PC", WACOMDEVICE_TPC, xTabletPC, 1 },
+		{ "dtu", "DTU", WACOMDEVICE_DTU, xDTU, 1 },
 		{ NULL }
 	};
 
