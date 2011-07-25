@@ -143,8 +143,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 
 	/* Default button and expresskey values */
 	for (i=0; i<MAX_BUTTONS; i++)
-		priv->button[i] = IsPad (priv) ?
-			(AC_BUTTON | (MAX_MOUSE_BUTTONS/2 + i + 1)) : (AC_BUTTON | (i + 1));
+		priv->button[i] = (AC_BUTTON | (i+1));
 /*	for (i=MAX_MOUSE_BUTTONS/2; i<MAX_BUTTONS; i++)
 		priv->button[i] = IsPad (priv) ?
 			(AC_KEY | (XK_F1 + i)) : (AC_BUTTON | (i + 1));
