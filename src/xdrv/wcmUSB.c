@@ -410,7 +410,7 @@ static Bool usbDetect(LocalDevicePtr local)
 #endif
 
 #ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(sizeof(long) * 8)
+#define BITS_PER_LONG	(sizeof(uint32_t) * 8)
 #endif
 
 #ifndef NBITS
@@ -524,7 +524,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 {
 	int i;
 	short sID[4];
-	unsigned long keys[NBITS(KEY_MAX)];
+	uint32_t keys[NBITS(KEY_MAX)];
 
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
@@ -711,8 +711,8 @@ int usbWcmGetRanges(LocalDevicePtr local)
 {
 	int nValues[5];
 
-	unsigned long ev[NBITS(EV_MAX)];
-	unsigned long abs[NBITS(ABS_MAX)];
+	uint32_t ev[NBITS(EV_MAX)];
+	uint32_t abs[NBITS(ABS_MAX)];
 
 #ifdef WCM_ENABLE_SOLARISINPUT
 	struct strioctl str;

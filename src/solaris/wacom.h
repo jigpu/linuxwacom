@@ -17,9 +17,9 @@ extern "C" {
 #define ERASER_DEVICE_ID	0x0A
 #define PAD_DEVICE_ID		0x0F
 
-#define BITS_PER_LONG		(sizeof(long)*8)
+#define BITS_PER_LONG		(sizeof(uint32_t)*8)
 #define BIT_WORD(n)		((n)/BITS_PER_LONG)
-#define BIT_MASK(n)		(((unsigned long)1) << ((n) % BITS_PER_LONG)) 
+#define BIT_MASK(n)		(((uint32_t)1) << ((n) % BITS_PER_LONG)) 
 
 enum {
 	PENPARTNER = 0,
@@ -64,11 +64,11 @@ struct wacom_drv {
         int tool[2];
         int id[2];
         uint32_t serial[2];
-	unsigned int keybit[NBITS(KEY_MAX)]; 
-	unsigned int evbit[NBITS(EV_MAX)];
-	unsigned int mscbit[NBITS(MSC_MAX)];
-	unsigned int relbit[NBITS(REL_MAX)];
-	unsigned int absbit[NBITS(ABS_MAX)];
+	uint32_t keybit[NBITS(KEY_MAX)]; 
+	uint32_t evbit[NBITS(EV_MAX)];
+	uint32_t mscbit[NBITS(MSC_MAX)];
+	uint32_t relbit[NBITS(REL_MAX)];
+	uint32_t absbit[NBITS(ABS_MAX)];
 	int abs_x;
 	int abs_y;
 	int abs_pressure;
