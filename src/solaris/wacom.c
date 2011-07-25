@@ -1164,7 +1164,7 @@ static int wacom_intuos_pkt_process(wacom_state_t *wcp, queue_t *q, mblk_t *mp)
 	idx = data[1] & 0x01;
 
 	if (data[0] == 12) {
-
+		int prox=0;
 		if (wcp->wacom_drv->tool[1] != BTN_TOOL_FINGER)
 			wcp->wacom_drv->tool[1] = BTN_TOOL_FINGER;
 		if (wcp->wacom_parms->wacom_parms_type >= INTUOS4S && wcp->wacom_parms->wacom_parms_type <= INTUOS4L) {
@@ -1179,11 +1179,7 @@ static int wacom_intuos_pkt_process(wacom_state_t *wcp, queue_t *q, mblk_t *mp)
 			wacom_set_event(EV_KEY, BTN_8, data[3] & 0x80, evp++);
 			wacom_set_event(EV_KEY, BTN_9, data[4] & 0x01, evp++);
 
-			if ((data[2] & 0x01) | data[3] | (data[4] & 0x01)) {
-				wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 1, evp++);
-			} else {
-				wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 0, evp++);
-			}
+			prox |= (data[2] & 0x01) | data[3] | (data[4] & 0x01);
 		} else {
 			if (wcp->wacom_parms->wacom_parms_type == WACOM_21UX2) {
 				wacom_set_event(EV_KEY, BTN_0, data[5] & 0x01, evp++);
@@ -1205,11 +1201,7 @@ static int wacom_intuos_pkt_process(wacom_state_t *wcp, queue_t *q, mblk_t *mp)
 				wacom_set_event(EV_KEY, BTN_BASE, data[8] & 0x40, evp++);
 				wacom_set_event(EV_KEY, BTN_BASE2, data[8] & 0x80, evp++);
 
-				if ((data[5] & 0x01) | data[6]| (data[7] & 0x01) | data[8]) {
-					wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 1, evp++);
-				} else {
-					wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 0, evp++);
-				}
+				prox |= (data[5] & 0x01) | data[6] | (data[7] & 0x01) | data[8];
 			}
 			else {
 				wacom_set_event(EV_KEY, BTN_0, data[5] & 0x01, evp++); //5&1
@@ -1222,18 +1214,17 @@ static int wacom_intuos_pkt_process(wacom_state_t *wcp, queue_t *q, mblk_t *mp)
 				wacom_set_event(EV_KEY, BTN_7, data[6] & 0x08, evp++); //6&8
 				wacom_set_event(EV_KEY, BTN_8, data[5] & 0x10, evp++); //6&8
 				wacom_set_event(EV_KEY, BTN_9, data[6] & 0x10, evp++); //6&8
-				wacom_set_event(EV_ABS, ABS_RX, ((data[1] & 0x1f) << 8) | data[2], evp++);
-				wacom_set_event(EV_ABS, ABS_RY, ((data[3] & 0x1f) << 8) | data[4], evp++);
 
-				if ((data[5] & 0x1f) | (data[6] & 0x1f) | (data[1] & 0x1f) |
-				    data[2] | (data[3] & 0x1f) | data[4]) {
-					wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 1, evp++);
-				} else {
-					wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], 0, evp++);
-				}
+				prox |= (data[5] & 0x1f) | (data[6] & 0x1f);
 			}
+
+			wacom_set_event(EV_ABS, ABS_RX, ((data[1] & 0x1f) << 8) | data[2], evp++);
+			wacom_set_event(EV_ABS, ABS_RY, ((data[3] & 0x1f) << 8) | data[4], evp++);
+
+			prox |= (data[1] & 0x1f) | data[2] | (data[3] & 0x1f) | data[4];
 		}
 
+		wacom_set_event(EV_KEY, wcp->wacom_drv->tool[1], prox ? 1 : 0, evp++);
 		wacom_set_event(EV_ABS, ABS_MISC, PAD_DEVICE_ID, evp++);
 		wacom_set_event(EV_MSC, MSC_SERIAL, 0xffffffff, evp++);
 		
