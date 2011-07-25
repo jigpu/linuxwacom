@@ -242,7 +242,7 @@ void wacom_init_dev_i3(wacom_state_t *wcp)
 void wacom_init_dev_i21ux2(wacom_state_t *wcp)
 {
 	struct wacom_drv *wdcp = wcp->wacom_drv;
-	wdcp->keybit[BIT_WORD(BTN_LEFT)] |=
+	wdcp->keybit[BIT_WORD(BTN_A)] |= //NOTE BTN_A instead of BTN_LEFT!
 		BIT_MASK(BTN_A) | BIT_MASK(BTN_B) | BIT_MASK(BTN_C)
 		| BIT_MASK(BTN_X) | BIT_MASK(BTN_Y) | BIT_MASK(BTN_Z)
 		| BIT_MASK(BTN_BASE) | BIT_MASK(BTN_BASE2);
