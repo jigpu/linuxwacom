@@ -20,8 +20,13 @@
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
 
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 
+#ifdef WCM_ENABLE_SOLARISINPUT
+#include <sys/stropts.h>
+#include "input.h"
+#include "wcmSolaris.h"
+#endif
 #include <sys/utsname.h>
 
 /* support for compiling module on kernels older than 2.6 */
@@ -345,6 +350,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial);
 
 static Bool usbDetect(LocalDevicePtr local)
 {
+#ifdef NOTNOW  /* for now, just return yes */
 	int version;
 	int err;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
@@ -368,18 +374,29 @@ static Bool usbDetect(LocalDevicePtr local)
 	else 
 		ErrorF("%s Wacom X driver grabbed event device\n", local->name);
 #endif
+#endif /*NOTNOW*/
 	return 1;
 }
 
 /*****************************************************************************
  * wcmusbInit --
  ****************************************************************************/
+#ifndef BIT
 #define BIT(x)		(1<<((x) & (BITS_PER_LONG - 1)))
+#endif
+
+#ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(sizeof(long) * 8)
+#endif
+
+#ifndef NBITS
 #define NBITS(x)	((((x)-1)/BITS_PER_LONG)+1)
+#endif
 #define ISBITSET(x,y)	((x)[LONG(y)] & BIT(y))
 #define OFF(x)		((x)%BITS_PER_LONG)
+#ifndef LONG
 #define LONG(x)		((x)/BITS_PER_LONG)
+#endif
 
 /* Key codes used to mark tablet buttons -- must be in sync
  * with the keycode array in wacom.c kernel driver.
@@ -460,7 +477,8 @@ static struct
 
 	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */ 
 	{ 0xC5, 5080, 5080, &usbCintiqV5   }, /* Cintiq 20WSX */ 
-	{ 0xC6, 5080, 5080, &usbCintiqV5   }  /* Cintiq 12WX */ 
+	{ 0xC6, 5080, 5080, &usbCintiqV5   },  /* Cintiq 12WX */ 
+	{ 0xCC, 5080, 5080, &usbCintiqV5   } /* Cintiq 21UX2 */ 
 };
 
 Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
@@ -468,15 +486,46 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	int i;
 	short sID[4];
 	unsigned long keys[NBITS(KEY_MAX)];
+
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
+#ifdef WCM_ENABLE_SOLARISINPUT
+	struct strioctl str;
+#endif
 
 	DBG(1, priv->debugLevel, ErrorF("initializing USB tablet\n"));
 	*version = 0.0;
 
 	/* fetch vendor, product, and model name */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	ioctl(local->fd, EVIOCGID, sID);
 	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
+#else
+	/* first, check for "wacom" module pushed */
+	if (ioctl(local->fd, I_FIND, "wacom") == 0) {
+		/* and push it if it's not already there */
+		if (ioctl(local->fd, I_PUSH, "wacom") < 0) {
+			ErrorF("WACOM: unable to I_PUSH wacom module.\n");
+			return FALSE;
+		}
+	}
+
+	str.ic_cmd = WCM_GET_VID_PID;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(sID);
+	str.ic_dp = (char *)sID;
+	if (ioctl(local->fd, I_STR, &str) < 0) {
+		ErrorF("WACOM: cannot get vendor/device id.\n");
+		return FALSE;
+	}
+
+	str.ic_cmd = WCM_GET_NAME;
+	str.ic_timout = -1;
+	str.ic_len = BUFFER_SIZE;
+	str.ic_dp = id;
+	
+	(void)ioctl(local->fd, I_STR, &str); /* don't care, really */
+#endif
 
 	/* vendor is wacom */
 	if (sID[1] == 0x056A)
@@ -499,11 +548,23 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	}
 
 	/* Determine max number of buttons */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGBIT(EV_KEY,sizeof(keys)),keys) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl key bits.\n");
 		return FALSE;
 	}
+#else
+	str.ic_cmd = WCM_GET_EVENT_KEYS;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(keys);
+	DBG(1, priv->debugLevel, ErrorF("sizeof keys = %d\n", sizeof(keys)));
+	str.ic_dp = (char *)keys;
+	if (ioctl(local->fd, I_STR, &str) < 0) {
+		ErrorF("WACOM: cannot get event keys.\n");
+		return FALSE;
+	}
+#endif
 
 	/* Find out supported button codes - except mouse button codes
 	 * BTN_LEFT and BTN_RIGHT, which are always fixed. */
@@ -511,6 +572,12 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
 		if (ISBITSET (keys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
+
+	for (i = 0; i < common->npadkeys; i++) {
+		DBG(10, common->debugLevel, ErrorF("common->padkey_code[%d] = %x\n",
+						 i, common->padkey_code[i]));
+	}
+
 
 	if (ISBITSET (keys, BTN_TASK))
 		common->nbuttons = 10;
@@ -554,12 +621,26 @@ static void usbInitProtocol4(WacomCommonPtr common, const char* id,
 int usbWcmGetRanges(LocalDevicePtr local)
 {
 	int nValues[5];
+
 	unsigned long ev[NBITS(EV_MAX)];
 	unsigned long abs[NBITS(ABS_MAX)];
+
+#ifdef WCM_ENABLE_SOLARISINPUT
+	struct strioctl str;
+#endif
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common =	priv->common;
 
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGBIT(0 /*EV*/, sizeof(ev)), ev) < 0)
+#else
+	str.ic_cmd = WCM_GET_EVENT_BITS;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(ev);
+	str.ic_dp = (char *)ev;
+	ErrorF("Wacom: WCM_GET_EVENT_BITS len = %x\n", sizeof(ev));
+	if (ioctl(local->fd, I_STR, &str) < 0)
+#endif
 	{
 		ErrorF("WACOM: unable to ioctl event bits.\n");
 		return !Success;
@@ -577,7 +658,15 @@ int usbWcmGetRanges(LocalDevicePtr local)
 		common->wcmFlags &= ~USE_SYN_REPORTS_FLAG;
 	}
 
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGBIT(EV_ABS,sizeof(abs)),abs) < 0)
+#else
+	str.ic_cmd = WCM_GET_ABS_BITS;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(abs);
+	str.ic_dp = (char *)abs;
+	if (ioctl(local->fd, I_STR, &str) < 0)
+#endif
 	{
 		ErrorF("WACOM: unable to ioctl abs bits.\n");
 		return !Success;
@@ -591,25 +680,50 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	}
 
 	/* max x */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_X), nValues) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl xmax value.\n");
 		return !Success;
 	}
 	common->wcmMaxX = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_X;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) < 0)
+	{
+		ErrorF("WACOM: unable to ioctl xmax value.\n");
+		return !Success;
+	}
+	common->wcmMaxX = nValues[0];
+#endif
 	if (common->wcmMaxX <= 0)
 	{
 		ErrorF("WACOM: xmax value is wrong.\n");
 		return !Success;
 	}
-
 	/* max y */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_Y), nValues) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl ymax value.\n");
 		return !Success;
 	}
 	common->wcmMaxY = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_Y;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) < 0)
+	{
+		ErrorF("WACOM: unable to ioctl ymax value.\n");
+		return !Success;
+	}
+	common->wcmMaxY = nValues[0];
+#endif
 	if (common->wcmMaxY <= 0)
 	{
 		ErrorF("WACOM: ymax value is wrong.\n");
@@ -617,12 +731,25 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	}
 
 	/* max z cannot be configured */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_PRESSURE), nValues) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl press max value.\n");
 		return !Success;
 	}
 	common->wcmMaxZ = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_PRESSURE;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) < 0)
+	{
+		ErrorF("WACOM: unable to ioctl press max value.\n");
+		return !Success;
+	}
+	common->wcmMaxZ = nValues[0];
+#endif
 	if (common->wcmMaxZ <= 0)
 	{
 		ErrorF("WACOM: press max value is wrong.\n");
@@ -630,12 +757,25 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	}
 
 	/* max distance */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_DISTANCE), nValues) < 0)
 	{
 		ErrorF("WACOM: unable to ioctl press max distance.\n");
 		return !Success;
 	}
 	common->wcmMaxDist = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_DISTANCE;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) < 0)
+	{
+		ErrorF("WACOM: unable to ioctl press max distance.\n");
+		return !Success;
+	}
+	common->wcmMaxDist = nValues[0];
+#endif
 	if (common->wcmMaxDist < 0)
 	{
 		ErrorF("WACOM: max distance value is wrong.\n");
@@ -643,10 +783,30 @@ int usbWcmGetRanges(LocalDevicePtr local)
 	}
 
 	/* max fingerstrip X */
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_RX), nValues) == 0)
 		common->wcmMaxStripX = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_RX;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) == 0)
+		common->wcmMaxStripX = nValues[0];
+#endif
+
+#ifndef WCM_ENABLE_SOLARISINPUT
 	if (ioctl(local->fd, EVIOCGABS(ABS_RY), nValues) == 0)
 		common->wcmMaxStripY = nValues[2];
+#else
+	str.ic_cmd = WCM_GABS_RY;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(nValues);
+	str.ic_dp = (char *)nValues;
+	if (ioctl(local->fd, I_STR, &str) == 0)
+		common->wcmMaxStripY = nValues[0];
+#endif
+
 
 	return Success;
 }
@@ -655,6 +815,11 @@ static int usbDetectConfig(LocalDevicePtr local)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
+/* uncomment this when code just below is uncommented...
+#ifdef WCM_ENABLE_SOLARISINPUT
+	struct strioctl str;
+#endif
+*/
 
 	DBG(10, common->debugLevel, ErrorF("usbDetectConfig \n"));
 	if (IsPad (priv))
@@ -668,7 +833,15 @@ static int usbDetectConfig(LocalDevicePtr local)
  * This will need some time. We put it in the to-do list for now.  Ping 
 		unsigned long abs[NBITS(ABS_MAX)];
 		priv->naxes = 0;
+#ifndef WCM_ENABLE_SOLARISINPUT
 		if (ioctl(local->fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs) >= 0)
+#else
+		str.ic_cmd = WCM_GABS;
+		str.ic_timout = -1;
+		str.ic_len = sizeof(abs);
+		str.ic_dp = (char *)abs;
+		if (ioctl(local->fd, I_STR, &str) >= 0)
+#endif
 		{
 			if (ISBITSET (abs, ABS_RX))
 				priv->naxes++;
@@ -707,6 +880,9 @@ static void usbParseEvent(LocalDevicePtr local,
 	/* store events until we receive the MSC_SERIAL containing
 	 * the serial number; without it we cannot determine the
 	 * correct channel. */
+
+	DBG(10, common->debugLevel, ErrorF("type = %x, code = %x, value = %x, sizeof input_event = %d\n",
+					   event->type, event->code, event->value, sizeof(struct input_event)));
 
 	/* space left? bail if not. */
 	if (common->wcmEventCnt >=
@@ -976,4 +1152,4 @@ static void usbParseChannel(LocalDevicePtr local, int channel, int serial)
 	xf86WcmEvent(common, channel, ds);
 }
 
-#endif /* WCM_ENABLE_LINUXINPUT */
+#endif /* WCM_ENABLE_LINUXINPUT || WCM_ENABLE_SOLARISINPUT */

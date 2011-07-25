@@ -865,12 +865,13 @@ void xf86WcmReadPacket(LocalDevicePtr local)
 		 * disconnected. So we close it and iterate over all
 		 * wcmDevices to actually close associated devices. */
 		WacomDevicePtr wDev = common->wcmDevices;
+		ErrorF("Error reading wacom device : %s\n", strerror(errno));
 		for(; wDev; wDev = wDev->next)
 		{
 			if (wDev->local->fd >= 0)
 				xf86WcmDevProc(wDev->local->dev, DEVICE_OFF);
 		}
-		ErrorF("Error reading wacom device : %s\n", strerror(errno));
+
 		return;
 	}
 

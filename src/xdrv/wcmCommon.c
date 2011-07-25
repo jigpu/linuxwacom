@@ -19,6 +19,7 @@
 
 #include "xf86Wacom.h"
 #include "../include/Xwacom.h"
+#include "pthread.h"
 
 /*
 #if XF86_VERSION_MAJOR < 4
@@ -34,7 +35,7 @@
 
 WacomDeviceClass* wcmDeviceClasses[] =
 {
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	&gWacomUSBDevice,
 #endif
 	&gWacomISDV4Device,
@@ -1120,6 +1121,56 @@ static int xf86WcmSuppress(WacomCommonPtr common, const WacomDeviceState* dsOrig
  * xf86WcmOpen --
  ****************************************************************************/
 
+pthread_t tid;
+int pipefd[2];
+
+void *
+find_wacom_thread(void *arg)
+{
+	LocalDevicePtr local = arg;
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
+	int newfd;
+	WacomDeviceClass** ppDevCls;
+	char id[BUFFER_SIZE];
+	float version;
+	int fd;
+
+	while (1) {
+		fd = xf86OpenSerial(local->options);
+		if (fd >= 0)
+		{
+			close(pipefd[0]);
+			newfd = dup(local->fd);
+			close(pipefd[1]);
+			close(local->fd);
+			local->fd = newfd;
+
+			/* Detect device class; default is serial device */
+			for (ppDevCls=wcmDeviceClasses; *ppDevCls!=NULL; ++ppDevCls)
+			{
+				if ((*ppDevCls)->Detect(local))
+				{
+					common->wcmDevCls = *ppDevCls;
+					break;
+				}
+			}
+			break;
+		}
+		sleep(2);
+	}
+
+	/* Initialize the tablet */
+	if(common->wcmDevCls->Init(local, id, &version) != Success ||
+		xf86WcmInitTablet(local, id, version) != Success)
+	{
+		xf86CloseSerial(local->fd);
+		local->fd = -1;
+		pthread_exit(1);
+	}
+	pthread_exit(0);
+}
+
 Bool xf86WcmOpen(LocalDevicePtr local)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
@@ -1133,10 +1184,43 @@ Bool xf86WcmOpen(LocalDevicePtr local)
 	local->fd = xf86OpenSerial(local->options);
 	if (local->fd < 0)
 	{
-		ErrorF("Error opening %s : %s\n", common->wcmDevice,
-			strerror(errno));
-		return !Success;
+#ifndef XXX
+	  	pipe(pipefd);
+		local->fd = pipefd[0];
+		if (pthread_create(&tid, NULL, find_wacom_thread, (void *)local)) {
+			ErrorF("Error creating find_wacom_thread, %s\n", strerror(errno));
+			return !Success;
+		} else
+			return Success;
+#else
+	while (1) {
+		local->fd = xf86OpenSerial(local->options);
+		if (local->fd >= 0)
+		{
+			/* Detect device class; default is serial device */
+			for (ppDevCls=wcmDeviceClasses; *ppDevCls!=NULL; ++ppDevCls)
+			{
+				if ((*ppDevCls)->Detect(local))
+				{
+					common->wcmDevCls = *ppDevCls;
+					break;
+				}
+			}
+			/* Initialize the tablet */
+			if(common->wcmDevCls->Init(local, id, &version) != Success ||
+			   xf86WcmInitTablet(local, id, version) != Success)
+			  {
+			    xf86CloseSerial(local->fd);
+			    local->fd = -1;
+			    return !Success;
+			  }
+			break;
+		}
+		sleep(2);
 	}
+
+#endif /*XXX*/
+	} else {
 
 	/* Detect device class; default is serial device */
 	for (ppDevCls=wcmDeviceClasses; *ppDevCls!=NULL; ++ppDevCls)
@@ -1155,6 +1239,7 @@ Bool xf86WcmOpen(LocalDevicePtr local)
 		xf86CloseSerial(local->fd);
 		local->fd = -1;
 		return !Success;
+	}
 	}
 	return Success;
 }
@@ -1215,7 +1300,7 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 		ds.discard_first, ds.proximity, ds.sample,
 		pChannel->nSamples));
 
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	/* Discard the first 2 USB packages due to events delay */
 	if ( (pChannel->nSamples < 2) && (common->wcmDevCls == &gWacomUSBDevice) && ds.device_type != PAD_ID )
 	{
