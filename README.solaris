@@ -1,0 +1,17 @@
+SOLARIS INSTALLATION
+======================
+
+To compile this package under Solaris, run the following commands:
+
+export CFLAGS="-DWCM_ENABLE_SOLARISINPUT"
+./configure --with-linux
+make
+
+If "make" fails with an "unexpected end of line" error for the Makefile, run the make
+command a second time -- it should continue and finish compiling. Once done, you will
+also need to compile the kernel module. The following commands will do this:
+
+cd src/solaris
+make
+
+The resulting 'wacom' kernel module can be installed with Solaris' add_drv command.
