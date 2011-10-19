@@ -1,6 +1,4 @@
 /*
- * drivers/input/tablet/wacom.h
- *
  *  USB Wacom tablet support
  *
  *  Copyright (c) 2000-2004 Vojtech Pavlik	<vojtech@ucw.cz>
@@ -85,18 +83,22 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/mod_devicetable.h>
 #include <linux/init.h>
-#include <linux/usb.h>
-#include <linux/usb_input.h>
-#include <linux/input.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
+	#include <linux/mod_devicetable.h>
+	#include <linux/usb.h>
+	#include <linux/usb_input.h>
+	#include <linux/input.h>
+	#include <asm/byteorder.h>
+#else
+	#include <linux/usb/input.h>
+#endif
 #include <asm/unaligned.h>
-#include <asm/byteorder.h>
-
+	
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.52-pc-0.2"
+#define DRIVER_VERSION "v1.52-pc-0.3"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB Wacom tablet driver"
 #define DRIVER_LICENSE "GPL"
@@ -126,6 +128,12 @@ struct wacom {
 	struct mutex lock;
 	int open;
 	char phys[32];
+	struct wacom_led {
+		u8 select[2]; /* status led selector (0...3) */
+		u8 llv;       /* status led brightness no button */
+		u8 hlv;       /* status led brightness button pressed */
+ 		u8 img_lum;   /* OLED matrix display brightness */
+ 	} led;
 };
 
 extern const struct usb_device_id wacom_ids[];

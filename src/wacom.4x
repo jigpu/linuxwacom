@@ -1,7 +1,6 @@
-.\" $XFree86: xc/programs/Xserver/hw/xfree86/input/wacom/wacom.man,v 1.1 2001/01/24 00:06:39 dawes Exp $ 
 .\" shorthand for double quote that works everywhere.
 .ds q \N'34'
-.TH WACOM 4x "linuxwacom 0.8.7" "X Version 11"
+.TH WACOM 4x "linuxwacom 0.9.1" "X Version 11"
 .SH NAME
 wacom \- Wacom input driver
 .SH SYNOPSIS
@@ -196,6 +195,12 @@ The default is "on".
 rotates the tablet orientation counterclockwise (CCW) or clockwise (CW) or 180 degrees (HALF). 
 If you have specific tablet mappings, i.e. TopX/Y or BottomX/Y were set, the mapping will be 
 applied before rotation. The default is "NONE".
+.TP 4
+.B Option \fI"SysNode"\fP \fI"path"\fP
+sets the path to the sysfs node that wacom_led files are based. It can be defined in any 
+one of the subsection of the same tablet. Connecting and disconnecting the tablet while 
+checking the path /sys/bus/usb/devices shows which <busnum>-<devnum>:<cfg>.<intf> the 
+wacom_led is in. A typical path would look something like this: /sys/bus/usb/devices/2-2:1.0. 
 .TP 4
 .B Option \fI"PressCurve"\fP \fI"x1,y1,x2,y2"\fP
 sets pressure curve by control points x1, y1, x2, and y2.  Their values are in range 

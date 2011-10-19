@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2010 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2007-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -521,6 +521,52 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		if (common->wcmRotate != value)
 			xf86WcmRotateTablet(local, value);
 		break;
+	   case XWACOM_PARAM_LED0:
+		if ((value < 0) || (value > 3))
+			return BadValue;
+		else if (common->fd_sysfs0 >= 0)
+		{
+			char buf[10];
+			int err = -1;
+			sprintf(buf, "%d", value);
+			err = write(common->fd_sysfs0, buf, strlen(buf));
+			if (err < -1)
+			{
+				DBG(10, priv->debugLevel,
+				    ErrorF("xf86WcmSetParam can not set led0 (%d) \n", err));
+				return BadValue;
+			}
+			common->led0_status = value;
+		}
+		else
+		{
+			DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam can not access led0\n"));
+			return BadValue;
+		}
+		break;
+	    case XWACOM_PARAM_LED1:
+		if ((value < 0) || (value > 3))
+			return BadValue;
+		else if (common->fd_sysfs1 >= 0)
+		{
+			char buf[10];
+			int err = -1;
+			sprintf(buf, "%d", value);
+			err = write(common->fd_sysfs1, buf, strlen(buf));
+			if (err < -1)
+			{
+				DBG(10, priv->debugLevel,
+				    ErrorF("xf86WcmSetParam can not set led1 (%d) \n", err));
+				return BadValue;
+			}
+			common->led1_status = value;
+		}
+		else
+		{
+			DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam can not access led1\n"));
+			return BadValue;
+		}
+		break;
 	   default:
 		DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam invalid param %d\n",param));
 		return BadMatch;
@@ -798,6 +844,18 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return common->debugLevel;
 	    case XWACOM_PARAM_ROTATE:
 		return common->wcmRotate;
+	    case XWACOM_PARAM_LED0:
+		if (common->fd_sysfs0 >= 0)
+			return common->led0_status;
+		else
+			return -1;
+		break;
+	    case XWACOM_PARAM_LED1:
+		if (common->fd_sysfs1 >= 0)
+			return common->led1_status;
+		else
+			return -1;
+		break;
 	    case XWACOM_PARAM_SUPPRESS:
 		return common->wcmSuppress;
 	    case XWACOM_PARAM_RAWFILTER:

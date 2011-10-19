@@ -2,7 +2,7 @@
 ** xsetwacom.c
 **
 ** Copyright (C) 2003 - John E. Joganic
-** Copyright (C) 2004-2010 - Ping Cheng
+** Copyright (C) 2004-2011 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@
 **
 ****************************************************************************/
 
-#define XSETWACOM_VERSION "0.2.5"
+#define XSETWACOM_VERSION "0.2.6"
 
 #include "../include/util-config.h"
 
@@ -405,6 +405,17 @@ static PARAMINFO gParamInfo[] =
 		"be based on the new tablet orientation. ",
 		XWACOM_PARAM_ROTATE, VALUE_OPTIONAL, RANGE, 
 		ROTATE_NONE, ROTATE_HALF, SINGLE_VALUE, ROTATE_NONE },
+
+	{ "LED0",
+		"Sets/gets the LED status of Intuos 4 or Cintiq 21UX2 "
+		"(on the right side). ",
+		XWACOM_PARAM_LED0, VALUE_OPTIONAL, RANGE, 
+		0, 3, SINGLE_VALUE, 0 },
+
+	{ "LED1",
+		"Sets/gets the LED status of Cintiq 21UX2 (on the left side). ",
+		XWACOM_PARAM_LED1, VALUE_OPTIONAL, RANGE, 
+		0, 3, SINGLE_VALUE, 0 },
 
 	{ "RelWUp", 
 		"X11 event to which relative wheel up should be mapped. ",

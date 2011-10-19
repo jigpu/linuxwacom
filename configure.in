@@ -1,5 +1,5 @@
 AC_PREREQ(2.58)
-AC_INIT(linuxwacom, 0.9.0)
+AC_INIT(linuxwacom, 0.9.1)
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
@@ -181,10 +181,7 @@ else
 			elif echo $MODUTS | grep "^2.6" >/dev/null; then
 				if test $MINOR -ge 16; then
 					case $MINOR in
-						16|17) WCM_KERNEL_VER="2.6.16";;
-						18|19|20|21|22|23)
-WCM_KERNEL_VER="2.6.18";;
-						24|25) WCM_KERNEL_VER="2.6.24";;
+						16|17|18|19|20|21|22|23) WCM_KERNEL_VER="2.6.16";;
 						*) WCM_KERNEL_VER="2.6.30";;
 					esac
 				else
@@ -1056,8 +1053,6 @@ AC_OUTPUT(Makefile
 	src/util/Makefile
 	src/xdrv/Makefile
 	src/2.6.16/Makefile
-	src/2.6.18/Makefile
-	src/2.6.24/Makefile
 	src/2.6.30/Makefile
 	src/wacomxi/Makefile
 	src/wacomxi/wacomcpl)

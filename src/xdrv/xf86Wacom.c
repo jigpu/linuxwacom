@@ -635,6 +635,20 @@ char *xf86WcmEventAutoDevProbe (LocalDevicePtr local)
 #endif  /* LINUX_INPUT */
 #endif  /* WCM_XORG_XSERVER_1_4 */
 
+static void xf86WcmCloseSysfs(WacomCommonPtr common)
+{
+	if (common->fd_sysfs0 >= 0)
+	{
+		xf86CloseSerial(common->fd_sysfs0);
+		common->fd_sysfs0 = -1;
+	}
+	if (common->fd_sysfs1 >= 0)
+	{
+		xf86CloseSerial(common->fd_sysfs1);
+		common->fd_sysfs1 = -1;
+	}
+}
+
 /*****************************************************************************
  * xf86WcmOpen --
  ****************************************************************************/
@@ -673,6 +687,7 @@ Bool xf86WcmOpen(LocalDevicePtr local)
 	{
 		xf86CloseSerial(local->fd);
 		local->fd = -1;
+		xf86WcmCloseSysfs(common);
 		return !Success;
 	}
 	return Success;
@@ -723,6 +738,7 @@ static int xf86WcmDevOpen(DeviceIntPtr pWcm)
 				xf86WcmClose(local->fd);
 			}
 			local->fd = -1;
+			
 			return FALSE;
 		}
 #ifdef WCM_XORG_XSERVER_1_4
@@ -763,6 +779,7 @@ static int xf86WcmDevOpen(DeviceIntPtr pWcm)
 		{
 			xf86CloseSerial(common->fd);
 			common->fd = -1;
+			xf86WcmCloseSysfs(common);
 		}
 		return FALSE;
 	}
@@ -915,6 +932,7 @@ static void xf86WcmDevClose(LocalDevicePtr local)
 		{
 			DBG(1, common->debugLevel, ErrorF("Closing device; uninitializing.\n"));
 	    		xf86WcmClose (common->fd);
+			xf86WcmCloseSysfs(common);
 		}
 	}
 }

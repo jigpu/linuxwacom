@@ -363,11 +363,16 @@ struct _WacomDeviceClass
 struct _WacomCommonRec 
 {
 	char* wcmDevice;             /* device file name */
+	char* wcmSysNode;	     /* sysfs path */
 	unsigned char wcmFlags;      /* various flags (handle tilt) */
 	int debugLevel;
 	int tablet_id;		     /* USB tablet ID */
 	Bool is_display;             /* is the tablet a display tablet? */
 	int fd;                      /* file descriptor to tablet */
+	int fd_sysfs0;		     /* file descriptor to sysfs led0 */
+	int fd_sysfs1;		     /* file descriptor to sysfs led1 */
+	unsigned char led0_status;   /* Right LED status */
+	unsigned char led1_status;   /* Left LED status */
 	int fd_refs;                 /* number of references to fd; if =0, fd is invalid */
 	dev_t min_maj;               /* minor/major number */
 	unsigned long wcmKeys[NBITS(KEY_MAX)]; /* supported tool types for the device */

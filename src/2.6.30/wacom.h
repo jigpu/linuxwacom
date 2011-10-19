@@ -93,7 +93,7 @@
 /*
  * Version Information
  */
-#define DRIVER_VERSION "v1.52-pc-0.4"
+#define DRIVER_VERSION "v1.52-pc-0.5"
 #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
 #define DRIVER_DESC "USB Wacom tablet driver"
 #define DRIVER_LICENSE "GPL"
@@ -104,10 +104,17 @@ MODULE_LICENSE(DRIVER_LICENSE);
 
 #define USB_VENDOR_ID_WACOM	0x056a
 
-/* defines to get/set USB message */
-#define USB_REQ_GET_REPORT	0x01
-#define USB_REQ_SET_REPORT	0x09
-#define WAC_HID_FEATURE_REPORT	0x03
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,26)
+static inline __u16 get_unaligned_le16(const void *p)
+{
+	return (__u16)le16_to_cpu(*(__le16 *) p);
+}
+
+static inline __u16 get_unaligned_be16(const void *p)
+{
+	return (__u16)be16_to_cpu(*(__be16 *) p);
+}
+#endif
 
 struct wacom {
 	dma_addr_t data_dma;
@@ -118,15 +125,15 @@ struct wacom {
 	struct mutex lock;
 	bool open;
 	char phys[32];
+	struct wacom_led {
+		u8 select[2]; /* status led selector (0...3) */
+		u8 llv;       /* status led brightness no button */
+		u8 hlv;       /* status led brightness button pressed */
+ 		u8 img_lum;   /* OLED matrix display brightness */
+ 	} led;
 };
 
 extern const struct usb_device_id wacom_ids[];
-
-int usb_get_report(struct usb_interface *intf, unsigned char type,
-	unsigned char id, void *buf, int size);
-int usb_set_report(struct usb_interface *intf, unsigned char type,
-	unsigned char id, void *buf, int size);
-int wacom_ioctl(struct usb_interface *intf, unsigned int code, void *buf);
 
 void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len);
 void wacom_setup_input_capabilities(struct input_dev *input_dev,

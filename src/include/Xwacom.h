@@ -1,6 +1,6 @@
 /*
  * Copyright 2003 by John Joganic <john@joganic.com>
- * Copyright 2003 - 2010 by Ping Cheng <pingc@wacom.com> 
+ * Copyright 2003 - 2011 by Ping Cheng <pingc@wacom.com> 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -44,6 +44,8 @@
 #define XWACOM_PARAM_ZOOMDISTANCE	20
 #define XWACOM_PARAM_SCROLLDISTANCE	21
 #define XWACOM_PARAM_TAPTIME		22
+#define XWACOM_PARAM_LED0		23
+#define XWACOM_PARAM_LED1		24
 
 /* The followings are defined together */
 #define XWACOM_PARAM_BUTTON1    	101

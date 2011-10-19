@@ -181,6 +181,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->throttleLimit = -1;
 	
 	common->wcmDevice = "";                  /* device file name */
+	common->fd_sysfs0 = -1;			 /* file descriptor to sysfs led0 */
+	common->fd_sysfs1 = -1;			 /* file descriptor to sysfs led1 */
 	common->min_maj = 0;			 /* device major and minor */
 	common->wcmFlags = RAW_FILTERING_FLAG;   /* various flags */
 	common->wcmDevices = priv;
@@ -624,6 +626,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	WacomToolAreaPtr area = NULL;
 	int		tablet_id = 0;
 	unsigned long	keys[NBITS(KEY_MAX)];
+	char		sysFile[128];
 
 	gWacomModule.wcmDrv = drv;
 
@@ -696,6 +699,55 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	xfree(fakeLocal);
     
 	common->wcmDevice = xf86FindOptionValue(local->options, "Device");
+
+	if (!common->wcmSysNode || !strlen(common->wcmSysNode))
+		common->wcmSysNode = xf86FindOptionValue(local->options, "sysnode");
+	if (common->wcmSysNode && strlen(common->wcmSysNode))
+	{
+		sprintf(sysFile, "%s/wacom_led/status_led0_select", common->wcmSysNode);
+
+		SYSCALL(common->fd_sysfs0 = open(sysFile, O_RDWR));
+
+		if (common->fd_sysfs0 < 0)
+			xf86Msg(X_WARNING, "%s: failed to open %s in "
+				"wcmInit. Device may not support led0.\n",
+				 local->name, sysFile);
+		else
+		{
+			char buf[10];
+			int err = -1;
+			SYSCALL(err = read(common->fd_sysfs0, buf, 1));
+			if (err < -1)
+			{
+				xf86Msg(X_WARNING, "%s: failed to get led0 status in "
+				"wcmInit.\n", local->name);
+			}
+			else
+				common->led0_status = buf[0] - '0';
+		}
+
+		sprintf(sysFile, "%s/wacom_led/status_led1_select", common->wcmSysNode);
+
+		SYSCALL(common->fd_sysfs1 = open(sysFile, O_RDWR));
+
+		if (common->fd_sysfs1 < 0)
+			xf86Msg(X_WARNING, "%s: failed to open %s in "
+				"wcmInit. Device may not support led1.\n",
+				 local->name, sysFile);
+		else
+		{
+			char buf[10];
+			int err = -1;
+			SYSCALL(err = read(common->fd_sysfs1, buf, 1));
+			if (err < -1)
+			{
+				xf86Msg(X_WARNING, "%s: failed to get led1 status in "
+				"wcmInit.\n", local->name);
+			}
+			else
+				common->led1_status = buf[0] - '0';
+		}
+	}
 
 	/* reassign the keys back */
 	for (i=0; i<NBITS(KEY_MAX); i++)

@@ -1,3 +1,7 @@
+2011-10-12  Ping Cheng <pingc@wacom.com>
+	* Add LED support for Intuos4 and Cinitq 21UX2
+	* Label 0.9.1
+
 2011-06-20  Ping Cheng <pingc@wacom.com>
 	* Add "-lc" to Makefile.am (Daniel Grafe)
 	* Add "ignore first USB motion events" back. Otherwise cursor jumps when first in prox
