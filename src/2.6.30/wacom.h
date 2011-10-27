@@ -89,6 +89,9 @@
 #include <linux/init.h>
 #include <linux/usb/input.h>
 #include <asm/unaligned.h>
+# ifndef LINUX_VERSION_CODE
+# include <linux/version.h>
+# endif 
 
 /*
  * Version Information
