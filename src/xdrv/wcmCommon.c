@@ -1090,7 +1090,7 @@ void xf86WcmEvent(WacomCommonPtr common, unsigned int channel,
 		}
 	}
 
-	if (strstr(common->wcmModel->name, "Intuos4"))
+	if (strstr(common->wcmModel->name, "Intuos4") && ds.device_type == CURSOR_ID)
 	{
 		/* convert Intuos4 mouse tilt to rotation */
 		xf86WcmTilt2R(&ds);
