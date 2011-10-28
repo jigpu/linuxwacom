@@ -402,9 +402,8 @@ static int wacom_led_control(struct wacom *wacom)
 
 	buf[0] = WAC_CMD_LED_CONTROL;
 	buf[1] = led;
- 	buf[2] = wacom->led.llv;
- 	buf[3] = wacom->led.hlv;
- 	buf[4] = wacom->led.img_lum;
+	buf[2] = wacom->led.llv;
+	buf[3] = wacom->led.hlv;
 
 	retval = usb_set_report(wacom->intf, WAC_HID_FEATURE_REPORT,
 				  WAC_CMD_LED_CONTROL, buf, 9);
@@ -479,14 +478,12 @@ static int wacom_initialize_leds(struct wacom *wacom)
 
 	/* Initialize default values */
 	switch (wacom->wacom_wac.features.type) {
-	case INTUOS4:
-	case INTUOS4L:
+	case INTUOS4S...INTUOS4L:
 		wacom->led.select[0] = 0;
  		wacom->led.select[1] = 0;
 		wacom->led.llv = 10;
  		wacom->led.hlv = 20;
- 		wacom->led.img_lum = 10;
-		error = sysfs_create_group(&wacom->intf->dev.kobj,
+ 		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &intuos4_led_attr_group);
 		break;
 
@@ -495,7 +492,6 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 0;
  		wacom->led.hlv = 0;
- 		wacom->led.img_lum = 0;
 		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
 		break;
