@@ -1134,6 +1134,12 @@ static void DisplayValue (WACOMDEVICE *hDev, const char *devname, PARAMINFO *p,
 			 devname, p->pszParam);
 		return;
 	}
+	if (value < 0)
+	{
+		fprintf (stderr, "GetRawParam: Less than zero values for '%s'\n",
+			p->pszParam);
+		return;
+	}
 
 	switch (p->nType)
 	{
@@ -1144,7 +1150,6 @@ static void DisplayValue (WACOMDEVICE *hDev, const char *devname, PARAMINFO *p,
 			const char ** option_char = rt_char;
 			if (p->nParamID == XWACOM_PARAM_TWINVIEW)
 				option_char = tv_char;
-		
 				snprintf (strval, sizeof (strval), 
 					"%s", option_char[value] );
 		}

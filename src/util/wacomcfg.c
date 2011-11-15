@@ -444,7 +444,7 @@ error:		return CfgError(hDevice->pCfg, EINVAL,
 	if (!ds)
 		goto error;
 
-	*nValue = ds->resolutions [ds->num_valuators-1];
+	*nValue = ds->resolutions [ds->num_valuators-2];
 
 	if (nParam >= XWACOM_PARAM_BUTTON1 && nParam <= XWACOM_PARAM_STRIPRDN)
 	{
