@@ -21,18 +21,22 @@ packages will need to be installed from the Blastwave software archive:
  * autoconf
  * automake
  * pkgconfig
+ * tcl
+ * tk
 
 In addition to these packages, you will also require a copy of the 'usbwcm'
-kernel headers and the X11 development headers. Both should have been
-distributed alongside this driver.
+kernel headers, the X11 development headers, and a copy of the pkgconfig
+files for x11 and xorg-server. All of these should have been distributed
+alongside this driver.
 
 
 ENVIRONMENT SETUP
 ====================
-Before building the driver, you will need to configure the build environment
-so that all programs and headers can be located. Alongside the 'linuxwacom'
-directory this README file is in, also extract the 'usbwcm' and 'X11R7.2'
-archives. The resulting directory structure should look like the following:
+Before building the driver, the build environment must be set up so that
+all programs and source files can be located. The kernel sources, X11
+headers, and pkgconfig files should reside alongside the 'linuxwacom'
+directory this README file is in. The directory structure should look
+like the following:
 
  ./
  ./linuxwacom
@@ -52,12 +56,12 @@ archives. The resulting directory structure should look like the following:
  ./x11.pc
  ./xorg-server.pc
 
-From this parent directory, run the following commands:
+From the parent directory, run the following commands:
 
 	$ export PATH="$PATH:/opt/csw/bin:/opt/csw/gcc4/bin:/usr/ccs/bin"
 	$ export PKG_CONFIG_PATH=$(pwd)
 	$ export PKG_CONFIG_TOP_BUILD_DIR=$(pwd)
-	$ export CFLAGS="-I$(pwd)/usbwcm/headers -I$(pwd)/X11R7.2/include -I$(pwd)/X11R7.2/include/xorg"
+	$ export CFLAGS="-I$(pwd)/usbwcm/headers -I$(pwd)/X11R7.2/include -I$(pwd)/X11R7.2/include/xorg -I."
 	$ export LDFLAGS="-L/opt/csw/lib -R/opt/csw/lib"
 
 
@@ -67,7 +71,7 @@ Once the build environment has been set up, cd into the 'linuxwacom' directory
 and begin the build as follows:
 
 	$ ./bootstrap
-	$ ./configure --with-linux MAKE=gmake
+	$ ./configure --with-linux --with-tcl=/opt/csw/include --with-tk=/opt/csw/include --prefix=/usr --libdir=/usr/lib MAKE=gmake
 	$ gmake
 
 
