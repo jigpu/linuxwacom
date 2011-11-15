@@ -55,7 +55,7 @@ set doubleClickB 35
 set displayToggleB 36
 set screenToggleB 37
 set keystrokeB 38
-set maxNumTablets 199
+set maxNumTablets 206
 
 proc updateCurrentScreenInfo {} {
     global device numScreens currentScreen 
@@ -1862,6 +1862,9 @@ proc updateModelInfo { } {
     # Cintiq 20WSX
     set numPadButtons(197) 10
     set numPadStrips(197) 2
+
+    # DTU-2231
+    set isLCD(206) 1
 
     # Hummingbird (Cintiq 12WX)
     set numPadButtons(198) 10
