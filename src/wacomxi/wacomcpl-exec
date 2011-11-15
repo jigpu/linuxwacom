@@ -2088,6 +2088,9 @@ proc updateModelInfo { } {
     set numPadButtons(197) 10
     set numPadStrips(197) 2
 
+    # DTU-2231
+    set isLCD(206) 1
+
     # Hummingbird (Cintiq 12WX)
     set numPadButtons(198) 10
     set numPadStrips(198) 2
