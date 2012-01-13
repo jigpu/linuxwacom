@@ -6,7 +6,7 @@ exec wish -f "$0" ${1+"$@"}
 #
 # Author	: Ping Cheng <pinglinux@gmail.com>
 # Creation date	: 04/05/2003
-# Updated       : 2003 - 2010
+# Updated       : 2003 - 2012
 #
 # Based on calibrate 1998-99 Patrick Lecoanet --
 #
@@ -69,7 +69,7 @@ set screenToggleB 37
 set keystrokeB 38
 # application defined button number
 set originalButton 39
-set maxNumTablets 227
+set maxNumTablets 244
 set numControls 0
 set maxNumButtons 18
 set maxNumStripEvents 4
@@ -1037,16 +1037,18 @@ proc setspName {} {
 	set spName($i) Button$i
     }
 
-    set spName([expr ($numButton + 1) ]) "RelWUp"
-    set spName([expr ($numButton + 2) ]) "RelWDn"
-    set spName([expr ($numButton + 3) ]) "AbsWUp"
-    set spName([expr ($numButton + 4) ]) "AbsWDn"
-    set spName([expr ($numButton + 5) ]) "StripLUp"
-    set spName([expr ($numButton + 6) ]) "StripLDn"
-    set spName([expr ($numButton + 7) ]) "StripRUp"
-    set spName([expr ($numButton + 8) ]) "StripRDn"
+    set spName([expr ($numButton + 1) ])  "RelWUp"
+    set spName([expr ($numButton + 2) ])  "RelWDn"
+    set spName([expr ($numButton + 3) ])  "AbsWUp"
+    set spName([expr ($numButton + 4) ])  "AbsWDn"
+    set spName([expr ($numButton + 5) ])  "AbsW2Up"
+    set spName([expr ($numButton + 6) ])  "AbsW2Dn"
+    set spName([expr ($numButton + 7) ])  "StripLUp"
+    set spName([expr ($numButton + 8) ])  "StripLDn"
+    set spName([expr ($numButton + 9) ])  "StripRUp"
+    set spName([expr ($numButton + 10)])  "StripRDn"
 
-    set numControls [expr ($numButton+8)]
+    set numControls [expr ($numButton+10)]
     for { set i 1 } { $i <= $numControls } { incr i 1 } {
 	set Option($i) $spName($i)
     }
@@ -1059,18 +1061,21 @@ proc setspName {} {
 
     getDeviceOptionProc $device $numControls
 
-    set s1 5
-    set s2 8
+    set s1 7
+    set s2 10
     set model $getDeviceModel($device,model)
     if { $numPadRelW($model) } { # G4
 	set s1 1
 	set s2 2
     } elseif { $numPadStrips($model) == 1 } { # I3 4x5
-	set s1 5
-	set s2 6
-    } elseif { $numPadRings($model) } { # Bamboo
+	set s1 7
+	set s2 8
+    } elseif { $numPadRings($model) == 1 } { # Bamboo
 	set s1 3
 	set s2 4
+    } elseif { $numPadRings($model) == 2 } { # Cintiq 24HD
+	set s1 3
+	set s2 6
     }
     set startS $s1
     set numStrips [expr ($s2 - $s1) + 1]
@@ -1160,7 +1165,7 @@ proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
     set rowN 6
     if { $deF != 0 } {
 	set columnN 2
-	set rowN 8
+	set rowN 11
 	set model $getDeviceModel($device,model)
 
 	if { [ expr ($numPadButtons($model)/2) ] > $rowN } {
@@ -1231,14 +1236,16 @@ proc expressKeys { } {
     global displayToggleB ignoreButton keystrokeB screenToggleB
     global numPadRings numPadStrips numPadAbsW numPadRelW
 
-    set name(1) "Wheel Up"
-    set name(2) "Wheel Down"
-    set name(3) "Ring Anticlockwise"
-    set name(4) "Ring Clockwise"
-    set name(5) "Left Strip Up"
-    set name(6) "Left Strip Down"
-    set name(7) "Right Strip Up"
-    set name(8) "Right Strip Down"
+    set name(1)  "Wheel Up"
+    set name(2)  "Wheel Down"
+    set name(3)  "Ring Anticlockwise"
+    set name(4)  "Ring Clockwise"
+    set name(5)  "Ring Anticlockwise"
+    set name(6)  "Ring Clockwise"
+    set name(7)  "Left Strip Up"
+    set name(8)  "Left Strip Down"
+    set name(9)  "Right Strip Up"
+    set name(10) "Right Strip Down"
 
     set s2 [expr ($startS + $numStrips) - 1]
     for { set i $startS } { $i <= $s2 } { incr i 1 } {
@@ -2022,6 +2029,11 @@ proc updateModelInfo { } {
 	set isLCD($i) 1 
     }
 
+    #CintiqV5
+     for { set i 240 } { $i <= 244 } { incr i 1 } {
+	set isLCD($i) 1 
+    }
+
     # G4
     set numPadButtons(21) 2
     set numPadButtons(22) 2
@@ -2078,6 +2090,10 @@ proc updateModelInfo { } {
 	set numPadButtons($i) 9
 	set numPadRings($i) 1
     }
+
+   # Cintiq 24HD
+    set numPadButtons(244) 16
+    set numPadRings(244) 2
 
     for { set i 0 } { $i <= $maxNumTablets } { incr i 1 } {
 	if { $numPadButtons($i) || $numPadRings($i) 

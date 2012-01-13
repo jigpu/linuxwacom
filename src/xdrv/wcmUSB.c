@@ -410,12 +410,10 @@ static Bool usbDetect(LocalDevicePtr local)
  * with the keycode array in wacom.c kernel driver.
  */
 static unsigned short padkey_codes [] = {
-	BTN_0, BTN_1, BTN_2, BTN_3, BTN_4,
-	BTN_5, BTN_6, BTN_7, BTN_8, BTN_9,
-	BTN_A, BTN_B, BTN_C, BTN_X, BTN_Y, BTN_Z,
-	BTN_BASE, BTN_BASE2, BTN_BASE3,
-	BTN_BASE4, BTN_BASE5, BTN_BASE6,
-	BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT
+	BTN_0, BTN_1, BTN_2, BTN_3, BTN_4, BTN_5, BTN_6, BTN_7, BTN_8, BTN_9,
+	BTN_A, BTN_B, BTN_C, BTN_X, BTN_Y, BTN_Z, BTN_BASE, BTN_BASE2,
+	BTN_BASE3, BTN_BASE4, BTN_BASE5, BTN_BASE6, BTN_TL, BTN_TR, BTN_TL2,
+	BTN_TR2, BTN_SELECT, KEY_PROG1, KEY_PROG2, KEY_PROG3
 };
 
 static struct
@@ -500,7 +498,8 @@ static struct
 	{ 0xBC, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL USB Endpoint */
 	{ 0xBD, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL Bluetooth Endpoint */
 
-	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */ 
+	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */
+	{ 0xF4, 5080, 5080, &usbCintiqV5   }, /* Cintiq 24HD */
 	{ 0xC5, 5080, 5080, &usbCintiqV5   }, /* Cintiq 20WSX */ 
 	{ 0xC6, 5080, 5080, &usbCintiqV5   }, /* Cintiq 12WX */ 
 	{ 0xCC, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX2 */ 
@@ -525,7 +524,6 @@ static void usbRetrieveKeys(WacomCommonPtr common)
 	for (i = 0; i < sizeof (padkey_codes) / sizeof (padkey_codes [0]); i++)
 		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
-
 	/* set default nbuttons */
 	if (ISBITSET (common->wcmKeys, BTN_TASK))
 		common->nbuttons = 10;
@@ -744,7 +742,6 @@ static int usbDetectConfig(LocalDevicePtr local)
 		priv->nbuttons = common->npadkeys;
 	else
 		priv->nbuttons = common->nbuttons;
-
 	if (!common->wcmCursorProxoutDist)
 		common->wcmCursorProxoutDist
 			= common->wcmCursorProxoutDistDefault;
@@ -1079,9 +1076,18 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->abswheel *= FILTER_PRESSURE_RES;
 				ds->abswheel /= (MAX_ROTATION - MIN_ROTATION);
 			} else if (event->code == ABS_THROTTLE) {
-				ds->throttle = event->value + MAX_ABS_WHEEL;
-				ds->throttle *= FILTER_PRESSURE_RES;
-				ds->throttle /= (2 * MAX_ABS_WHEEL);
+				if (common->tablet_id == 0xF4)
+				{
+					ds->abswheel2 = event->value;
+					ds->abswheel2 *= FILTER_PRESSURE_RES;
+					ds->abswheel2 /= MAX_ABS_WHEEL;
+				}
+				else
+				{
+					ds->throttle = event->value + MAX_ABS_WHEEL;
+					ds->throttle *= FILTER_PRESSURE_RES;
+					ds->throttle /= (2 * MAX_ABS_WHEEL);
+				}
 			} else if (event->code == ABS_MISC && event->value)
 				ds->device_id = event->value;
 		}

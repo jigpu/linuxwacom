@@ -475,7 +475,8 @@ static int wacom_led_control(struct wacom *wacom)
 	if (!buf)
 		return -ENOMEM;
 
-	if (wacom->wacom_wac.features.type == WACOM_21UX2)
+	if (wacom->wacom_wac.features.type == WACOM_21UX2 ||
+	    wacom->wacom_wac.features.type == WACOM_24HD)
 		led |= (wacom->led.select[1] << 4) | 0x40;
 
 	buf[0] = WAC_CMD_LED_CONTROL;
@@ -566,6 +567,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		break;
 
 	case WACOM_21UX2:
+	case WACOM_24HD:
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 0;
@@ -598,6 +600,7 @@ static void wacom_destroy_leds(struct wacom *wacom)
 		break;
 
 	case WACOM_21UX2:
+	case WACOM_24HD:
 		sysfs_remove_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
 		break;

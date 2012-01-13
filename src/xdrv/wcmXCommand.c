@@ -626,6 +626,14 @@ static int xf86WcmSetButtonParam(LocalDevicePtr local, int param, int value)
 		setVal = &(priv->wheeldn);
 		keyP = priv->wdnk;
 		break;
+	   case XWACOM_PARAM_ABSW2UP:
+		setVal = &(priv->wheel2up);
+		keyP = priv->w2upk;
+		break;
+	   case XWACOM_PARAM_ABSW2DN:
+		setVal = &(priv->wheel2dn);
+		keyP = priv->w2dnk;
+		break;
 	   case XWACOM_PARAM_STRIPLUP:
 		setVal = &(priv->striplup);
 		keyP = priv->slupk;
@@ -713,6 +721,14 @@ static int xf86WcmGetButtonParam(LocalDevicePtr local, int param)
 	   case XWACOM_PARAM_ABSWDN:
 		retVal = priv->wheeldn;
 		keyP = priv->wdnk;
+		break;
+	   case XWACOM_PARAM_ABSW2UP:
+		retVal = priv->wheel2up;
+		keyP = priv->w2upk;
+		break;
+	   case XWACOM_PARAM_ABSW2DN:
+		retVal = priv->wheel2dn;
+		keyP = priv->w2dnk;
 		break;
 	   case XWACOM_PARAM_STRIPLUP:
 		retVal = priv->striplup;

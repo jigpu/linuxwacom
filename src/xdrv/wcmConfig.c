@@ -100,7 +100,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 
 	priv->next = NULL;
 	priv->local = local;
-	priv->flags = flag;          /* various flags (device type, absolute, first touch...) */
+	priv->flags = flag;         /* various flags (device type, absolute, first touch...) */
 	priv->oldX = 0;             /* previous X position */
 	priv->oldY = 0;             /* previous Y position */
 	priv->oldZ = 0;             /* previous pressure */
@@ -110,12 +110,13 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->oldStripY = 0;	    /* previous right strip value */
 	priv->oldButtons = 0;       /* previous buttons state */
 	priv->oldWheel = 0;         /* previous wheel */
+	priv->oldWheel2 = 0;        /* previous wheel2 */
 	priv->topX = 0;             /* X top */
 	priv->topY = 0;             /* Y top */
 	priv->bottomX = 0;          /* X bottom */
 	priv->bottomY = 0;          /* Y bottom */
-	priv->resolX = 0;            /* X resolution */
-	priv->resolY = 0;            /* Y resolution */
+	priv->resolX = 0;           /* X resolution */
+	priv->resolY = 0;           /* Y resolution */
 	priv->sizeX = 0;	    /* active X size */
 	priv->sizeY = 0;	    /* active Y size */
 	priv->factorX = 0.0;        /* X factor */
@@ -155,6 +156,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	
 	priv->wheelup = IsPad (priv) ? SCROLL_DOWN : 0;	/* Default absolute wheel up event */
 	priv->wheeldn = IsPad (priv) ? SCROLL_UP : 0;	/* Default absolute wheel down event */
+	priv->wheel2up = IsPad (priv) ? SCROLL_DOWN : 0;/* Default absolute wheel2 up event */
+	priv->wheel2dn = IsPad (priv) ? SCROLL_UP : 0;	/* Default absolute wheel2 down event */
 	priv->striplup = SCROLL_DOWN;			/* Default left strip up event */
 	priv->stripldn = SCROLL_UP;		/* Default left strip down event */
 	priv->striprup = SCROLL_DOWN;		/* Default right strip up event */

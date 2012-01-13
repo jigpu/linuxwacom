@@ -2,7 +2,7 @@
 ** xsetwacom.c
 **
 ** Copyright (C) 2003 - John E. Joganic
-** Copyright (C) 2004-2011 - Ping Cheng
+** Copyright (C) 2004-2012 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@
 **
 ****************************************************************************/
 
-#define XSETWACOM_VERSION "0.2.6"
+#define XSETWACOM_VERSION "0.2.8"
 
 #include "../include/util-config.h"
 
@@ -407,13 +407,13 @@ static PARAMINFO gParamInfo[] =
 		ROTATE_NONE, ROTATE_HALF, SINGLE_VALUE, ROTATE_NONE },
 
 	{ "LED0",
-		"Sets/gets the LED status of Intuos 4 or Cintiq 21UX2 "
+		"Sets/gets the LED status of Intuos 4 or Cintiq 21UX2/24HD "
 		"(on the right side). ",
 		XWACOM_PARAM_LED0, VALUE_OPTIONAL, RANGE, 
 		0, 3, SINGLE_VALUE, 0 },
 
 	{ "LED1",
-		"Sets/gets the LED status of Cintiq 21UX2 (on the left side). ",
+		"Sets/gets the LED status of Cintiq 21UX2/24HD (on the left side). ",
 		XWACOM_PARAM_LED1, VALUE_OPTIONAL, RANGE, 
 		0, 3, SINGLE_VALUE, 0 },
 
@@ -435,6 +435,16 @@ static PARAMINFO gParamInfo[] =
 	{ "AbsWDn", 
 		"X11 event to which absolute wheel down should be mapped. ",
 		XWACOM_PARAM_ABSWDN, VALUE_OPTIONAL, 0, 0, 0, 
+		ACTION_VALUE, 5 },
+
+	{ "AbsW2Up", 
+		"X11 event to which absolute wheel2 up should be mapped. ",
+		XWACOM_PARAM_ABSW2UP, VALUE_OPTIONAL, 0, 0, 0, 
+		ACTION_VALUE, 4 },
+
+	{ "AbsW2Dn", 
+		"X11 event to which absolute wheel2 down should be mapped. ",
+		XWACOM_PARAM_ABSW2DN, VALUE_OPTIONAL, 0, 0, 0, 
 		ACTION_VALUE, 5 },
 
 	{ "StripLUp", 

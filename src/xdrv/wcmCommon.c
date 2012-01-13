@@ -468,7 +468,6 @@ static void sendWheelStripEvents(LocalDevicePtr local, const WacomDeviceState* d
 	int is_core = local->flags & (XI86_ALWAYS_CORE | XI86_CORE_POINTER);
 #endif
 	DBG(10, priv->debugLevel, ErrorF("sendWheelStripEvents for %s \n", local->name));
-
 	/* emulate events for relative wheel */
 	if ( ds->relwheel )
 	{
@@ -490,7 +489,8 @@ static void sendWheelStripEvents(LocalDevicePtr local, const WacomDeviceState* d
 	{
 		value = priv->oldWheel - ds->abswheel;
 		if ((strstr(common->wcmModel->name, "Bamboo") ||
-		strstr(common->wcmModel->name, "Intuos4"))
+		strstr(common->wcmModel->name, "Intuos4") ||
+		strstr(common->wcmModel->name, "CintiqV5"))
 			&& IsPad(priv))
 		{
 			/* deal with MAX_FINGER_WHEEL to 0 and 0 to MAX_FINGER_WHEEL switching */
@@ -511,6 +511,33 @@ static void sendWheelStripEvents(LocalDevicePtr local, const WacomDeviceState* d
 		{
 			fakeButton = priv->wheeldn;
 			keyP = priv->wdnk;
+		}
+	}
+
+	/* emulate events for absolute wheel2 when needed */
+	if ( ds->abswheel2 != priv->oldWheel2 )
+	{
+		value = priv->oldWheel2 - ds->abswheel2;
+		if (strstr(common->wcmModel->name, "CintiqV5") && IsPad(priv))
+		{
+			/* deal with MAX_FINGER_WHEEL to 0 and 0 to MAX_FINGER_WHEEL switching */
+			if (abs(priv->oldWheel2 - ds->abswheel2) > (MAX_FINGER_WHEEL/2))
+			{
+				if (priv->oldWheel2 > ds->abswheel2)
+					value -= MAX_FINGER_WHEEL;
+				else
+					value += MAX_FINGER_WHEEL;
+			}
+		}
+		if ( value > 0 )
+		{
+			fakeButton = priv->wheel2up;
+			keyP = priv->w2upk;
+		}
+		else
+		{
+			fakeButton = priv->wheel2dn;
+			keyP = priv->w2dnk;
 		}
 	}
 
@@ -568,11 +595,10 @@ static void sendWheelStripEvents(LocalDevicePtr local, const WacomDeviceState* d
 		}
 	}
 
-	if (!fakeButton) return;
-
 	DBG(10, priv->debugLevel, ErrorF("sendWheelStripEvents "
 		"send fakeButton %x with value = %d \n", 
 		fakeButton, value));
+	if (!fakeButton) return;
 
 #if WCM_XINPUTABI_MAJOR == 0
 	/* Switch the device to core mode, if required */
@@ -622,7 +648,7 @@ static void sendCommonEvents(LocalDevicePtr local, const WacomDeviceState* ds, i
 		xf86WcmSendButtons(local,buttons,x,y,z,v3,v4,v5);
 
 	/* emulate wheel/strip events when defined */
-	if ( ds->relwheel || ds->abswheel || 
+	if ( ds->relwheel || ds->abswheel || ds->abswheel2 || 
 		( (ds->stripx - priv->oldStripX) && ds->stripx && priv->oldStripX) || 
 			((ds->stripy - priv->oldStripY) && ds->stripy && priv->oldStripY) )
 		sendWheelStripEvents(local, ds, x, y, z, v3, v4, v5);
@@ -706,14 +732,14 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 	}
 
 	DBG(7, priv->debugLevel, ErrorF("[%s] o_prox=%s x=%d y=%d z=%d "
-		"b=%s b=%d tx=%d ty=%d wl=%d rot=%d th=%d\n",
+		"b=%s b=%d tx=%d ty=%d wl=%d wl2=%d rot=%d th=%d\n",
 		(type == STYLUS_ID) ? "stylus" :
 			(type == CURSOR_ID) ? "cursor" : 
 			(type == ERASER_ID) ? "eraser" :
 			(type == TOUCH_ID) ? "touch" : "pad",
 		priv->oldProximity ? "true" : "false",
 		x, y, z, is_button ? "true" : "false", buttons,
-		tx, ty, wheel, rot, throttle));
+		tx, ty, wheel, ds->abswheel2, rot, throttle));
 
 	if (ds->proximity)
 		xf86WcmRotateCoordinates(local, &x, &y);
@@ -745,6 +771,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 	if(!priv->oldProximity)
 	{
 		priv->oldWheel = wheel;
+		priv->oldWheel2 = ds->abswheel2;
 		priv->oldX = x;
 		priv->oldY = y;
 		priv->oldZ = z;
@@ -888,7 +915,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 	else
 	{
 
-		if (v3 || v4 || v5 || buttons || ds->relwheel)
+		if (v3 || v4 || v5 || buttons || ds->relwheel || ds->abswheel2)
 		{
 			x = 0;
 			y = 0;
@@ -926,6 +953,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 	{
 		priv->oldButtons = buttons;
 		priv->oldWheel = wheel;
+		priv->oldWheel2 = ds->abswheel2;
 		priv->oldX = priv->currentX;
 		priv->oldY = priv->currentY;
 		priv->oldZ = z;
@@ -940,6 +968,7 @@ void xf86WcmSendEvents(LocalDevicePtr local, const WacomDeviceState* ds)
 	{
 		priv->oldButtons = 0;
 		priv->oldWheel = 0;
+		priv->oldWheel2 = 0;
 		priv->oldX = 0;
 		priv->oldY = 0;
 		priv->oldZ = 0;
@@ -980,7 +1009,8 @@ static int xf86WcmSuppress(WacomCommonPtr common, WacomDeviceState* dsOrig,
 	/* look for change in absolute wheel position 
 	 * or any relative wheel movement
 	 */
-	if ((ABS(dsOrig->abswheel - dsNew->abswheel) > suppress) 
+	if ((ABS(dsOrig->abswheel - dsNew->abswheel) > suppress) ||
+		(ABS(dsOrig->abswheel2 - dsNew->abswheel2) > suppress)
 		|| (dsNew->relwheel != 0)) returnV = 1;
 
 	/* cursor moves or not? */

@@ -1,3 +1,7 @@
+2012-01-14  Ping Cheng <pingc@wacom.com>
+	* Add Cinitq 24HD support
+	* Label 0.9.3
+
 2011-10-12  Ping Cheng <pingc@wacom.com>
 	* Add LED support for Intuos4 and Cinitq 21UX2
 	* Label 0.9.1

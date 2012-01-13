@@ -186,6 +186,10 @@ struct _WacomDeviceRec
 	unsigned wupk[256];     /* keystrokes assigned to absolute wheel/throttle up event (default is button 4) */
 	int wheeldn;
 	unsigned wdnk[256];     /* keystrokes assigned to absolute wheel/throttle down event (default is button 5) */
+	int wheel2up;
+	unsigned w2upk[256];    /* keystrokes assigned to absolute wheel2 up event (default is button 4) */
+	int wheel2dn;
+	unsigned w2dnk[256];    /* keystrokes assigned to absolute wheel2 down event (default is button 5) */
 	int striplup;
 	unsigned slupk[256];    /* keystrokes assigned to left strip up event (default is button 4) */
 	int stripldn;
@@ -210,6 +214,7 @@ struct _WacomDeviceRec
 	int oldTiltX;           /* previous tilt in x direction */
 	int oldTiltY;           /* previous tilt in y direction */    
 	int oldWheel;           /* previous wheel value */    
+	int oldWheel2;          /* previous wheel2 value */    
 	int oldRot;             /* previous rotation value */
 	int oldStripX;          /* previous left strip value */
 	int oldStripY;          /* previous right strip value */
@@ -282,6 +287,7 @@ struct _WacomDeviceState
 	int stripy;
 	int rotation;
 	int abswheel;
+	int abswheel2;
 	int relwheel;
 	int distance;
 	int throttle;
