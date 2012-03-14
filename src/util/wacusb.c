@@ -317,6 +317,16 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ NULL }
 	};
 
+	static USBSUBTYPE xIntuos5[] =
+	{
+		{ "PTH-450",   "Wacom Intuos5 touch S",   1, 0x26 },
+		{ "PTH-650",   "Wacom Intuos5 touch M",   2, 0x27 },
+		{ "PTH-850",   "Wacom Intuos5 touch L",   3, 0x28 },
+		{ "PTK-450",   "Wacom Intuos5 S",         4, 0x29 },
+		{ "PTK-650",   "Wacom Intuos5 M",         5, 0x2A },
+		{ NULL }
+	};
+
 	static USBDEVICE xWacomDevices[] =
 	{
 		{ "pp", "PenPartner", WACOMDEVICE_PENPARTNER, xPenPartner, 1 },
@@ -328,6 +338,7 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "int2", "Intuos2", WACOMDEVICE_INTUOS2, xIntuos2, 2 },
 		{ "int3", "Intuos3", WACOMDEVICE_INTUOS3, xIntuos3, 2 },
 		{ "int4", "Intuos4", WACOMDEVICE_INTUOS3, xIntuos4, 2 },
+		{ "int5", "Intuos5", WACOMDEVICE_INTUOS3, xIntuos5, 2 },
 		{ "ctq", "Cintiq (V5)", WACOMDEVICE_CINTIQV5, xCintiqV5, 2 },
 		{ "pl", "Cintiq (PL)", WACOMDEVICE_CINTIQ, xCintiq, 1 },
 		{ "ptu", "Cintiq Partner (PTU)", WACOMDEVICE_PTU, xCintiqPartner, 1 },

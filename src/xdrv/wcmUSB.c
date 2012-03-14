@@ -307,6 +307,22 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
+	static WacomModel usbIntuos5 =
+	{
+		"USB Intuos5",
+		usbInitProtocol5,
+		NULL,                 /* resolution not queried */
+		usbWcmGetRanges,
+		NULL,                 /* reset not supported */
+		NULL,                 /* tilt automatically enabled */
+		NULL,                 /* suppress implemented in software */
+		NULL,                 /* link speed unsupported */
+		NULL,                 /* start not supported */
+		usbParse,
+		xf86WcmFilterIntuos,  /* input filtering recommended */
+		usbDetectConfig,      /* detect hardware buttons etc */
+	};
+
 	static WacomModel usbVolito =
 	{
 		"USB Volito",
@@ -497,6 +513,12 @@ static struct
 	{ 0xBB, 5080, 5080, &usbIntuos4    }, /* Intuos4 12x19*/
 	{ 0xBC, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL USB Endpoint */
 	{ 0xBD, 5080, 5080, &usbIntuos4    }, /* Intuos4 WL Bluetooth Endpoint */
+
+	{ 0x26, 5080, 5080, &usbIntuos5    }, /* Intuos5 touch S */
+	{ 0x27, 5080, 5080, &usbIntuos5    }, /* Intuos5 touch M */
+	{ 0x28, 5080, 5080, &usbIntuos5    }, /* Intuos5 touch L */
+	{ 0x29, 5080, 5080, &usbIntuos5    }, /* Intuos5 S */
+	{ 0x2A, 5080, 5080, &usbIntuos5    }, /* Intuos5 M */
 
 	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */
 	{ 0xF4, 5080, 5080, &usbCintiqV5   }, /* Cintiq 24HD */

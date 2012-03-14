@@ -490,7 +490,8 @@ static void sendWheelStripEvents(LocalDevicePtr local, const WacomDeviceState* d
 		value = priv->oldWheel - ds->abswheel;
 		if ((strstr(common->wcmModel->name, "Bamboo") ||
 		strstr(common->wcmModel->name, "Intuos4") ||
-		strstr(common->wcmModel->name, "CintiqV5"))
+		strstr(common->wcmModel->name, "CintiqV5") ||
+		strstr(common->wcmModel->name, "Intuos5"))
 			&& IsPad(priv))
 		{
 			/* deal with MAX_FINGER_WHEEL to 0 and 0 to MAX_FINGER_WHEEL switching */

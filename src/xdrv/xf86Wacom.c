@@ -535,12 +535,14 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 
 	if ((strstr(common->wcmModel->name, "Intuos3") || 
 		strstr(common->wcmModel->name, "CintiqV5") ||
-		strstr(common->wcmModel->name, "Intuos4")) 
+		strstr(common->wcmModel->name, "Intuos4") ||
+		strstr(common->wcmModel->name, "Intuos5"))
 			&& IsStylus(priv))
 		/* Art Marker Pen rotation */
 		InitValuatorAxisStruct(local->dev, 5, 0, FILTER_PRESSURE_RES, 1, 1, 1);
 	else if ((strstr(common->wcmModel->name, "Bamboo") ||
-		strstr(common->wcmModel->name, "Intuos4"))
+		strstr(common->wcmModel->name, "Intuos4") ||
+		strstr(common->wcmModel->name, "Intuos5"))
 			&& IsPad(priv))
 		/* Touch ring */
 		InitValuatorAxisStruct(local->dev, 5, 0, MAX_FINGER_WHEEL, 1, 1, 1);
