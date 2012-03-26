@@ -334,7 +334,7 @@ static int wacom_query_tablet_data(struct usb_interface *intf, struct wacom_feat
 			if (error >= 0)
 				error = usb_get_report(intf,
 					WAC_HID_FEATURE_REPORT, report_id,
-					rep_data, 3);
+					rep_data, 2);
 		} while ((error < 0 || rep_data[1] != 4) && limit++ < 5);
 	} else if (features->type != TABLETPC && features->type != TABLETPC2FG) {
 		do {
