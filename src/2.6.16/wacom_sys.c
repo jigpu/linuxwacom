@@ -483,8 +483,8 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.select[0] = 0;
  		wacom->led.select[1] = 0;
 		wacom->led.llv = 10;
- 		wacom->led.hlv = 20;
- 		error = sysfs_create_group(&wacom->intf->dev.kobj,
+		wacom->led.hlv = 20;
+		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &intuos4_led_attr_group);
 		break;
 
@@ -493,7 +493,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 0;
- 		wacom->led.hlv = 0;
+		wacom->led.hlv = 0;
 		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
 		break;

@@ -559,7 +559,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
 	switch (wacom->wacom_wac.features.type) {
 	case INTUOS4S...INTUOS4L:
 		wacom->led.select[0] = 0;
- 		wacom->led.select[1] = 0;
+		wacom->led.select[1] = 0;
 		wacom->led.llv = 10;
 		wacom->led.hlv = 20;
 		error = sysfs_create_group(&wacom->intf->dev.kobj,
