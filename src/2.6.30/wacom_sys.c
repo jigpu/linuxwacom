@@ -569,6 +569,16 @@ static struct attribute_group intuos4_led_attr_group = {
 	.attrs = intuos4_led_attrs,
 };
 
+static struct attribute *intuos5_led_attrs[] = {
+	&dev_attr_status_led0_select.attr,
+	NULL
+};
+
+static struct attribute_group intuos5_led_attr_group = {
+	.name = "wacom_led",
+	.attrs = intuos5_led_attrs,
+};
+
 static int wacom_initialize_leds(struct wacom *wacom)
 {
 	int error;
@@ -592,6 +602,18 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.hlv = 0;
 		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
+		break;
+
+	case INTUOS5S:
+	case INTUOS5:
+	case INTUOS5L:
+		wacom->led.select[0] = 0;
+		wacom->led.select[1] = 0;
+		wacom->led.llv = 32;
+		wacom->led.hlv = 0;
+
+		error = sysfs_create_group(&wacom->intf->dev.kobj,
+					   &intuos5_led_attr_group);
 		break;
 
 	default:
@@ -621,6 +643,13 @@ static void wacom_destroy_leds(struct wacom *wacom)
 	case WACOM_24HD:
 		sysfs_remove_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
+		break;
+
+	case INTUOS5S:
+	case INTUOS5:
+	case INTUOS5L:
+		sysfs_remove_group(&wacom->intf->dev.kobj,
+				   &intuos5_led_attr_group);
 		break;
 	}
 }
