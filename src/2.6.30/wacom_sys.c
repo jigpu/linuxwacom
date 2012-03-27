@@ -51,25 +51,43 @@ struct hid_descriptor {
 #define WAC_HID_FEATURE_REPORT	0x03
 
 #define WAC_CMD_LED_CONTROL    0x20
+#define WAC_CMD_RETRIES           10
 
-static int usb_get_report(struct usb_interface *intf, unsigned char type,
-				unsigned char id, void *buf, int size)
+static int wacom_get_report(struct usb_interface *intf, u8 type, u8 id,
+			    void *buf, size_t size, unsigned int retries)
 {
-	return usb_control_msg(interface_to_usbdev(intf),
-		usb_rcvctrlpipe(interface_to_usbdev(intf), 0),
-		USB_REQ_GET_REPORT, USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-		(type << 8) + id, intf->altsetting[0].desc.bInterfaceNumber,
-		buf, size, 100);
+	struct usb_device *dev = interface_to_usbdev(intf);
+	int retval;
+
+	do {
+		retval = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+				USB_REQ_GET_REPORT,
+				USB_DIR_IN | USB_TYPE_CLASS |
+				USB_RECIP_INTERFACE,
+				(type << 8) + id,
+				intf->altsetting[0].desc.bInterfaceNumber,
+				buf, size, 100);
+	} while ((retval == -ETIMEDOUT || retval == -EPIPE) && --retries);
+
+	return retval;
 }
 
-static int usb_set_report(struct usb_interface *intf, unsigned char type,
-				unsigned char id, void *buf, int size)
+static int wacom_set_report(struct usb_interface *intf, u8 type, u8 id,
+			    void *buf, size_t size, unsigned int retries)
 {
-	return usb_control_msg(interface_to_usbdev(intf),
-		usb_sndctrlpipe(interface_to_usbdev(intf), 0),
-                USB_REQ_SET_REPORT, USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-                (type << 8) + id, intf->altsetting[0].desc.bInterfaceNumber,
-		buf, size, 1000);
+	struct usb_device *dev = interface_to_usbdev(intf);
+	int retval;
+
+	do {
+		retval = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+				USB_REQ_SET_REPORT,
+				USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+				(type << 8) + id,
+				intf->altsetting[0].desc.bInterfaceNumber,
+				buf, size, 1000);
+	} while ((retval == -ETIMEDOUT || retval == -EPIPE) && --retries);
+
+	return retval;
 }
 
 static void wacom_sys_irq(struct urb *urb)
@@ -329,23 +347,23 @@ static int wacom_query_tablet_data(struct usb_interface *intf, struct wacom_feat
 			rep_data[0] = 3;
 			rep_data[1] = 4;
 			report_id = 3;
-			error = usb_set_report(intf, WAC_HID_FEATURE_REPORT,
-				report_id, rep_data, 2);
+			error = wacom_set_report(intf, WAC_HID_FEATURE_REPORT,
+				report_id, rep_data, 2, 1);
 			if (error >= 0)
-				error = usb_get_report(intf,
+				error = wacom_get_report(intf,
 					WAC_HID_FEATURE_REPORT, report_id,
-					rep_data, 3);
+					rep_data, 3, 1);
 		} while ((error < 0 || rep_data[1] != 4) && limit++ < 5);
 	} else if (features->type != TABLETPC && features->type != TABLETPC2FG) {
 		do {
 			rep_data[0] = 2;
 			rep_data[1] = 2;
-			error = usb_set_report(intf, WAC_HID_FEATURE_REPORT,
-				report_id, rep_data, 2);
+			error = wacom_set_report(intf, WAC_HID_FEATURE_REPORT,
+				report_id, rep_data, 2, 1);
 			if (error >= 0)
-				error = usb_get_report(intf,
+				error = wacom_get_report(intf,
 					WAC_HID_FEATURE_REPORT, report_id,
-					rep_data, 2);
+					rep_data, 2, 1);
 		} while ((error < 0 || rep_data[1] != 2) && limit++ < 5);
 	}
 
@@ -484,8 +502,8 @@ static int wacom_led_control(struct wacom *wacom)
  	buf[2] = wacom->led.llv;
  	buf[3] = wacom->led.hlv;
 
-	retval = usb_set_report(wacom->intf, WAC_HID_FEATURE_REPORT,
-				  WAC_CMD_LED_CONTROL, buf, 9);
+	retval = wacom_set_report(wacom->intf, WAC_HID_FEATURE_REPORT,
+				  WAC_CMD_LED_CONTROL, buf, 9, WAC_CMD_RETRIES);
 	kfree(buf);
 
 	return retval;
