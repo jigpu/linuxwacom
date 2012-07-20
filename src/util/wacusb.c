@@ -291,6 +291,7 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "DTZ-20wsx", "Wacom Cintiq 20WSX", 2, 0xC5 },
 		{ "DTZ-12wx",  "Wacom Cintiq 12WX",  3, 0xC6 },
 		{ "DTZ-21ux2", "Wacom Cintiq 21UX2", 4, 0xCC },
+		{ "DTK-22hd",  "Wacom Cintiq 22HD",  5, 0xFA },
 		{ NULL }
 	};
 

@@ -525,6 +525,7 @@ static struct
 	{ 0xC5, 5080, 5080, &usbCintiqV5   }, /* Cintiq 20WSX */ 
 	{ 0xC6, 5080, 5080, &usbCintiqV5   }, /* Cintiq 12WX */ 
 	{ 0xCC, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX2 */ 
+	{ 0xFA, 5080, 5080, &usbCintiqV5   }, /* Cintiq 22HD */
 
 	{ 0x90, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x90 */ 
 	{ 0x93, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x93 */
