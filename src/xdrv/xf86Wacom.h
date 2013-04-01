@@ -36,9 +36,10 @@
  ****************************************************************************/
 
 #ifdef WCM_ENABLE_LINUXINPUT
+#ifndef __sun__
 #include <asm/types.h>
 #include <linux/input.h>
-
+#endif
 /* keithp - a hack to avoid redefinitions of these in xf86str.h */
 #ifdef BUS_PCI
 #undef BUS_PCI
@@ -49,7 +50,9 @@
 
 #define MAX_USB_EVENTS 32
 
-#endif /* WCM_ENABLE_LINUXINPUT */
+#else /* WCM_ENABLE_LINUXINPUT */
+#include <input.h>
+#endif
 
 /* max number of input events to read in one read call */
 #define MAX_EVENTS 50
@@ -70,13 +73,16 @@
 #if !defined(DGUX)
 # include <xisb.h>
 /* X.org recently kicked out the libc-wrapper */
-# ifdef WCM_NO_LIBCWRAPPER
+/*# ifdef WCM_NO_LIBCWRAPPER
 #  include <string.h>
 #  include <errno.h>
 # else
 #  include <xf86_ansic.h>
 # endif
+*/
 #endif
+#  include <string.h>
+#  include <errno.h>
 #include <xf86_OSproc.h>
 #include <xf86Xinput.h>
 #include <exevents.h>           /* Needed for InitValuator/Proximity stuff */

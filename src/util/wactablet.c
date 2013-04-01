@@ -34,9 +34,18 @@
 #include <unistd.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <string.h>
 
 #ifdef WCM_ENABLE_LINUXINPUT
+#ifndef __sun__
 #include <linux/input.h>
+#endif
+#endif
+
+#ifdef WCM_ENABLE_SOLARISINPUT
+#include <sys/stropts.h>
+#include "input.h"
+#include "wcmSolaris.h"
 #endif
 
 typedef void (*FREEFUNC)(void* pv);
@@ -142,7 +151,7 @@ int WacomGetSupportedClassList(WACOMCLASSREC** ppList, int* pnSize)
 	++nCnt;
 
 	/* USB */
-	#ifdef WCM_ENABLE_LINUXINPUT
+	#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	++nCnt;
 	#endif
 
@@ -160,7 +169,7 @@ int WacomGetSupportedClassList(WACOMCLASSREC** ppList, int* pnSize)
 	++nIndex;
 
 	/* USB */
-	#ifdef WCM_ENABLE_LINUXINPUT
+	#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	pRec[nIndex].pszName = "usb";
 	pRec[nIndex].pszDesc = "Linux USB event interface";
 	pRec[nIndex].uDeviceClass = WACOMCLASS_USB;
@@ -273,9 +282,29 @@ static int WacomIsSerial(int fd)
 static int WacomIsUSB(int fd)
 {
 #ifdef WCM_ENABLE_LINUXINPUT
+#ifndef WCM_ENABLE_SOLARISINPUT
 	short sID[4];
 	if (ioctl(fd,EVIOCGID,sID) < 0) return 0;
 	return 1;
+#else
+	short sID[4];
+	struct strioctl str;
+	
+	/* first, check for "wacom" module pushed */
+	if (ioctl(fd, I_FIND, "wacom") == 0) {
+		/* and push it if it's not already there */
+		if (ioctl(fd, I_PUSH, "wacom") < 0) {
+			return 0;
+		}
+	}
+
+	str.ic_cmd = WCM_GET_VID_PID;
+	str.ic_timout = -1;
+	str.ic_len = sizeof(sID);
+	str.ic_dp = (char *)sID;
+	if (ioctl(fd, I_STR, &str) < 0) return 0;
+	return 1;
+#endif
 #else
 	return 0;
 #endif

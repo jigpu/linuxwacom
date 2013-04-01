@@ -24,10 +24,17 @@
  * General Defines
  ****************************************************************************/
 #ifdef WCM_ENABLE_LINUXINPUT
+#ifndef WCM_ENABLE_SOLARISINPUT
 #include <asm/types.h>
 #include <linux/input.h>
+#endif
 #define MAX_USB_EVENTS 32
 #endif /* WCM_ENABLE_LINUXINPUT */
+
+#ifdef WCM_ENABLE_SOLARISINPUT
+#include "wcmSolaris.h"
+#define MAX_USB_EVENTS 32
+#endif
 
 #define DEFAULT_SPEED 1.0       /* default relative cursor speed */
 #define MAX_ACCEL 7             /* number of acceleration levels */
@@ -110,12 +117,14 @@ struct _WacomModel
 #define CURSOR_DEVICE_ID	0x06
 #define ERASER_DEVICE_ID	0x0A
 #define PAD_DEVICE_ID		0x0F
+#define MOUSE_DEVICE_ID		0x10
 
 #define STYLUS_ID		0x00000001
 #define TOUCH_ID		0x00000002
 #define CURSOR_ID		0x00000004
 #define ERASER_ID		0x00000008
 #define PAD_ID			0x00000010
+#define MOUSE_ID		0x00000020
 
 #define ABSOLUTE_FLAG		0x00000100
 #define KEEP_SHAPE_FLAG		0x00000200
@@ -331,10 +340,9 @@ struct _WacomDeviceClass
 	void (*Read)(LocalDevicePtr local);   /* reads device */
 };
 
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	extern WacomDeviceClass gWacomUSBDevice;
 #endif
-
 	extern WacomDeviceClass gWacomISDV4Device;
 	extern WacomDeviceClass gWacomSerialDevice;
 
@@ -345,7 +353,7 @@ struct _WacomDeviceClass
 #define TILT_REQUEST_FLAG       1
 #define TILT_ENABLED_FLAG       2
 #define RAW_FILTERING_FLAG      4
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 /* set if the /dev/input driver should wait for SYN_REPORT events as the
    end of record indicator */
 #define USE_SYN_REPORTS_FLAG	8
@@ -427,7 +435,7 @@ struct _WacomCommonRec
 	int bufpos;                        /* position with buffer */
 	unsigned char buffer[BUFFER_SIZE]; /* data read from device */
 
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 	int wcmLastToolSerial;
 	int wcmEventCnt;
 	struct input_event wcmEvents[MAX_USB_EVENTS];  /* events for current change */
@@ -438,7 +446,7 @@ struct _WacomCommonRec
 
 #define HANDLE_TILT(comm) ((comm)->wcmFlags & TILT_ENABLED_FLAG)
 #define RAW_FILTERING(comm) ((comm)->wcmFlags & RAW_FILTERING_FLAG)
-#ifdef WCM_ENABLE_LINUXINPUT
+#if defined(WCM_ENABLE_LINUXINPUT) || defined(WCM_ENABLE_SOLARISINPUT)
 #define USE_SYN_REPORTS(comm) ((comm)->wcmFlags & USE_SYN_REPORTS_FLAG)
 #endif
 

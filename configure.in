@@ -957,20 +957,6 @@ AC_OUTPUT(Makefile
 	src/Makefile
 	src/util/Makefile
 	src/xdrv/Makefile
-	src/2.6.9/Makefile
-	src/2.6.10/Makefile
-	src/2.6.11/Makefile
-	src/2.6.13/Makefile
-	src/2.6.14/Makefile
-	src/2.6.15/Makefile
-	src/2.6.16/Makefile
-	src/2.6.18/Makefile
-	src/2.6.19/Makefile
-	src/2.6.22/Makefile
-	src/2.6.24/Makefile
-	src/2.6.26/Makefile
-	src/2.6.27/Makefile
-	src/2.6.28/Makefile
 	src/wacomxi/Makefile
 	src/wacomxi/wacomcpl)
 

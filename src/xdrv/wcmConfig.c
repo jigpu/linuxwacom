@@ -17,8 +17,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+/*
+ * Version for Solaris Copyright 2008 Max Bruning, Bruning Systems, LLC
+ */
+
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+
 
 /*****************************************************************************
  * xf86WcmAllocate --
@@ -33,6 +38,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	WacomToolPtr     tool;
 	WacomToolAreaPtr area;
 
+	DBG(1, 1, ErrorF("xf86WcmAllocate: name = %s, flag = %x\n", name, flag));
 	priv = (WacomDevicePtr) xcalloc(1, sizeof(WacomDeviceRec));
 	if (!priv)
 		return NULL;
@@ -519,6 +525,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 
 	WacomToolPtr tool = NULL;
 	WacomToolAreaPtr area = NULL;
+	DBG(1, 1, ErrorF("drv = %x, dev = %x, flags = %x\n", drv, dev, flags));
 
 	gWacomModule.wcmDrv = drv;
 
@@ -745,11 +752,27 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		xf86Msg(X_CONFIG, "%s: reading USB link\n", dev->identifier);
 	}
 #else
+#ifdef WCM_ENABLE_SOLARISINPUT
+	if (xf86SetBoolOption(local->options, "USB",
+			(common->wcmDevCls == &gWacomUSBDevice)))
+	{
+		static int already_tried_it = 0;
+		/* best effort attempt at loading the wacom
+		 * kernel module. try it just once */
+		if (!already_tried_it) {
+			already_tried_it = 1;
+			(void)xf86LoadKernelModule("wacom");
+    		}
+		common->wcmDevCls = &gWacomUSBDevice;
+		xf86Msg(X_CONFIG, "%s: reading USB link\n", dev->identifier);
+	}
+#else
 	if (xf86SetBoolOption(local->options, "USB", 0))
 	{
 		ErrorF("The USB version of the driver isn't "
 			"available for your platform\n");
 	}
+#endif
 #endif
 
 	/* pressure curve takes control points x1,y1,x2,y2
