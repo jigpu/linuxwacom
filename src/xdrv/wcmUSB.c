@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2011 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2002-2013 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -525,7 +525,10 @@ static struct
 	{ 0xC5, 5080, 5080, &usbCintiqV5   }, /* Cintiq 20WSX */ 
 	{ 0xC6, 5080, 5080, &usbCintiqV5   }, /* Cintiq 12WX */ 
 	{ 0xCC, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX2 */ 
+	{ 0x5B, 5080, 5080, &usbCintiqV5   }, /* Cintiq 22HDT */
 	{ 0xFA, 5080, 5080, &usbCintiqV5   }, /* Cintiq 22HD */
+	{ 0x57, 5080, 5080, &usbCintiqV5   }, /* DTK 2241 */ 
+	{ 0x304,5080, 5080, &usbCintiqV5   }, /* Cintiq 13HD */ 
 
 	{ 0x90, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x90 */ 
 	{ 0x93, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x93 */

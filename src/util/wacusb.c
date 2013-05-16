@@ -2,7 +2,7 @@
 ** wacusb.c
 **
 ** Copyright (C) 2002 - 2004 - John E. Joganic
-** Copyright (C) 2003 - 2009 - Ping Cheng
+** Copyright (C) 2003 - 2013 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -292,6 +292,8 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "DTZ-12wx",  "Wacom Cintiq 12WX",  3, 0xC6 },
 		{ "DTZ-21ux2", "Wacom Cintiq 21UX2", 4, 0xCC },
 		{ "DTK-22hd",  "Wacom Cintiq 22HD",  5, 0xFA },
+		{ "DTK-2241",  "Wacom DTK 2241",     6, 0x57 },
+		{ "DTK-13HD",  "Wacom Cintiq 13HD",  7, 0x304 },
 		{ NULL }
 	};
 
