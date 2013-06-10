@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>		
+ * Copyright 2002-2013 by Ping Cheng, Wacom. <pingc@wacom.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1252,6 +1252,20 @@ static int idtotype(int id)
 	return type;
 }
 
+static int
+rebasePressure(const WacomDevicePtr priv, const WacomDeviceState *ds)
+{
+	int min_pressure;
+
+	/* set the minimum pressure when in prox */
+	if (!priv->oldProximity)
+		min_pressure = ds->pressure;
+	else
+		min_pressure = min(priv->minPressure, ds->pressure);
+
+	return min_pressure;
+}
+
 static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 	const WacomChannelPtr pChannel, int suppress)
 {
@@ -1422,9 +1436,7 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 			double tmpP = 0;
 			int pRate = 0, tol = FILTER_PRESSURE_RES / 75, tol_more = 0;
 
-			/* set the minimum pressure when in prox */
-			if (!priv->oldProximity)
-				priv->minPressure = filtered.pressure;
+			priv->minPressure = rebasePressure(priv, &filtered);
 
 			/* increase the tolerance for worn out pen */
 			if (priv->minPressure)
