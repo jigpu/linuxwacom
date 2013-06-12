@@ -1213,42 +1213,23 @@ ret:
 	resetSampleCounter(pChannel);
 }
 
+#define ERASER_BIT      0x008
+#define PUCK_BITS	0xf00
+#define PUCK_EXCEPTION  0x806
+
 static int idtotype(int id)
 {
-	int type = CURSOR_ID;
+	int type = STYLUS_ID;
 
-	/* tools with id, such as Intuos series and Cintiq 21UX */
-	switch (id)
-	{
-		case 0x812: /* Inking pen */
-		case 0x801: /* Intuos3 Inking pen */
-		case 0x012: 
-		case 0x822: /* Pen */
-		case 0x842:
-		case 0x852:
-		case 0x823: /* Intuos3 Grip Pen */
-		case 0x813: /* Intuos3 Classic Pen */
-		case 0x885: /* Intuos3 Marker Pen */
-		case 0x022: 
-		case 0x832: /* Stroke pen */
-		case 0x032: 
-		case 0xd12: /* Airbrush */
-		case 0x912:
-		case 0x112: 
-		case 0x913: /* Intuos3 Airbrush */
-			type = STYLUS_ID;
-			break;
-		case 0x82a: /* Eraser */
-		case 0x85a:
-		case 0x91a:
-		case 0xd1a:
-		case 0x0fa: 
-		case 0x82b: /* Intuos3 Grip Pen Eraser */
-		case 0x81b: /* Intuos3 Classic Pen Eraser */
-		case 0x91b: /* Intuos3 Airbrush Eraser */
-			type = ERASER_ID;
-			break;
-	}
+	/* The existing tool ids have the following patten: all pucks, except
+	 * one, have the third byte set to zero; all erasers have the fourth
+	 * bit set. The rest are styli.
+	 */
+	if (id & ERASER_BIT)
+		type = ERASER_ID;
+	else if (!(id & PUCK_BITS) || (id == PUCK_EXCEPTION))
+		type = CURSOR_ID;
+
 	return type;
 }
 
