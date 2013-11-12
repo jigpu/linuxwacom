@@ -39,7 +39,7 @@ extern void xf86WcmGestureFilter(WacomDevicePtr priv, int channel);
 extern void xf86WcmSetScreen(LocalDevicePtr local, int v0, int v1);
 
 #ifdef WCM_CUSTOM_DEBUG
-	extern char * timestr();
+	extern const char * timestr();
 	extern Bool xf86WcmDevConvert(LocalDevicePtr local, int first, int num,
 		int v0, int v1, int v2, int v3, int v4, int v5, int* x, int* y);
 #endif

@@ -37,7 +37,7 @@ static const int limitHighPressureCounter = 3;
 static const int limitLowPressure = 400;
 
 
-char * timestr()
+const char * timestr()
 {
 	time_t t;
 	struct tm tm;
@@ -48,7 +48,7 @@ char * timestr()
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 	};
-	static char result[26];
+	static char result[27];
 
 	struct timeval tv;
 
@@ -56,7 +56,7 @@ char * timestr()
 	localtime_r(&t, &tm);
 	gettimeofday(&tv, NULL);
 	
-	sprintf(result, "%.3s %.3s%3d %.2d:%.2d:%.2d.%.6d",
+	snprintf(result, sizeof(result), "%.3s %.3s%3d %.2d:%.2d:%.2d.%.6d",
 		wday_name[tm.tm_wday],
 		mon_name[tm.tm_mon],
 		tm.tm_mday, tm.tm_hour,

@@ -40,7 +40,7 @@
 	extern void detectChannelChange(LocalDevicePtr local, int channel);
 	extern void dumpEventRing(LocalDevicePtr local);
 	extern void dumpChannels(LocalDevicePtr local);
-	extern char* timestr();
+	extern const char* timestr();
 	extern void logEvent(const struct input_event* event);
 #endif
 
