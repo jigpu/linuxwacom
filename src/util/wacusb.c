@@ -327,6 +327,9 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "PTH-850",   "Wacom Intuos5 touch L",   3, 0x28 },
 		{ "PTK-450",   "Wacom Intuos5 S",         4, 0x29 },
 		{ "PTK-650",   "Wacom Intuos5 M",         5, 0x2A },
+		{ "PTH-451",   "Wacom Intuos Pro S",      6, 0x314 },
+		{ "PTH-651",   "Wacom Intuos Pro M",      7, 0x315 },
+		{ "PTH-851",   "Wacom Intuos Pro L",      8, 0x317 },
 		{ NULL }
 	};
 

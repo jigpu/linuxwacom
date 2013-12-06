@@ -452,6 +452,11 @@ static int wacom_add_shared_data(struct wacom_wac *wacom,
 		kref_init(&data->kref);
 		data->dev = dev;
 		list_add_tail(&data->list, &wacom_udev_list);
+
+	} else if (wacom->features.type >= INTUOSPS && wacom->features.type <= INTUOSPL) {
+		/* ignore extra interfaces */
+		retval = -ENODEV;
+		goto out;
 	}
 
 	wacom->shared = &data->shared;
@@ -494,7 +499,7 @@ static int wacom_led_control(struct wacom *wacom)
 		return -ENOMEM;
 
 	if (wacom->wacom_wac.features.type >= INTUOS5S &&
-	    wacom->wacom_wac.features.type <= INTUOS5L)	{
+	    wacom->wacom_wac.features.type <= INTUOSPL)	{
 		/* Touch Ring and crop mark LED luminance may take on
 		 * one of four values:
 		 *    0 = Low; 1 = Medium; 2 = High; 3 = Off
@@ -623,6 +628,9 @@ static int wacom_initialize_leds(struct wacom *wacom)
 	case INTUOS5S:
 	case INTUOS5:
 	case INTUOS5L:
+	case INTUOSPS:
+	case INTUOSPM:
+	case INTUOSPL:
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 32;
@@ -664,6 +672,9 @@ static void wacom_destroy_leds(struct wacom *wacom)
 	case INTUOS5S:
 	case INTUOS5:
 	case INTUOS5L:
+	case INTUOSPS:
+	case INTUOSPM:
+	case INTUOSPL:
 		sysfs_remove_group(&wacom->intf->dev.kobj,
 				   &intuos5_led_attr_group);
 		break;
@@ -732,7 +743,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 		goto fail3;
 
 	/* Ignore Intuos5 touch interface until BPT3 touch support backported */
-	if (features->type >= INTUOS5S && features->type <= INTUOS5L) {
+	if (features->type >= INTUOS5S && features->type <= INTUOSPL) {
 		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
 			error = -ENODEV;
 			goto fail2;
@@ -744,7 +755,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	strlcpy(wacom_wac->name, features->name, sizeof(wacom_wac->name));
 
 	if (features->type == TABLETPC || features->type == TABLETPC2FG ||
-	    features->type == BAMBOO_PT || (features->type >= INTUOS5S && features->type <= INTUOS5L)) {
+	    features->type == BAMBOO_PT || (features->type >= INTUOS5S && features->type <= INTUOSPL)) {
 		/* Append the device type to the name */
 		strlcat(wacom_wac->name,
 			features->device_type == BTN_TOOL_PEN ?

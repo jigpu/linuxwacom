@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org> 
- * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2013 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -75,7 +75,7 @@
  * 2010-07-12 47-pc0.8.8-5 - Use default nbuttons and npadkeys to back support k2.6.24-
  */
 
-static const char identification[] = "$Identification: 47-0.9.7 $";
+static const char identification[] = "$Identification: 47-0.9.8 $";
 
 /****************************************************************************/
 
@@ -536,13 +536,15 @@ static int xf86WcmRegisterX11Devices (LocalDevicePtr local)
 	if ((strstr(common->wcmModel->name, "Intuos3") || 
 		strstr(common->wcmModel->name, "CintiqV5") ||
 		strstr(common->wcmModel->name, "Intuos4") ||
-		strstr(common->wcmModel->name, "Intuos5"))
+		strstr(common->wcmModel->name, "Intuos5") ||
+		strstr(common->wcmModel->name, "Intuos Pro"))
 			&& IsStylus(priv))
 		/* Art Marker Pen rotation */
 		InitValuatorAxisStruct(local->dev, 5, 0, FILTER_PRESSURE_RES, 1, 1, 1);
 	else if ((strstr(common->wcmModel->name, "Bamboo") ||
 		strstr(common->wcmModel->name, "Intuos4") ||
-		strstr(common->wcmModel->name, "Intuos5"))
+		strstr(common->wcmModel->name, "Intuos5") ||
+		strstr(common->wcmModel->name, "Intuos Pro"))
 			&& IsPad(priv))
 		/* Touch ring */
 		InitValuatorAxisStruct(local->dev, 5, 0, MAX_FINGER_WHEEL, 1, 1, 1);

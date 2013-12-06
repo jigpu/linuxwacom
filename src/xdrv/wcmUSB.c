@@ -323,6 +323,22 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
+	static WacomModel usbIntuosPro =
+	{
+		"USB Intuos Pro",
+		usbInitProtocol5,
+		NULL,                 /* resolution not queried */
+		usbWcmGetRanges,
+		NULL,                 /* reset not supported */
+		NULL,                 /* tilt automatically enabled */
+		NULL,                 /* suppress implemented in software */
+		NULL,                 /* link speed unsupported */
+		NULL,                 /* start not supported */
+		usbParse,
+		xf86WcmFilterIntuos,  /* input filtering recommended */
+		usbDetectConfig,      /* detect hardware buttons etc */
+	};
+
 	static WacomModel usbVolito =
 	{
 		"USB Volito",
@@ -434,7 +450,7 @@ static unsigned short padkey_codes [] = {
 
 static struct
 {
-	unsigned char model_id;
+	const unsigned int model_id;
 	int yRes; /* tablet Y resolution in points/inch */
 	int xRes; /* tablet X resolution in points/inch */
 	WacomModelPtr model;
@@ -519,6 +535,10 @@ static struct
 	{ 0x28, 5080, 5080, &usbIntuos5    }, /* Intuos5 touch L */
 	{ 0x29, 5080, 5080, &usbIntuos5    }, /* Intuos5 S */
 	{ 0x2A, 5080, 5080, &usbIntuos5    }, /* Intuos5 M */
+
+	{ 0x314,5080, 5080, &usbIntuosPro  }, /* Intuos Pro S */
+	{ 0x315,5080, 5080, &usbIntuosPro  }, /* Intuos Pro M */
+	{ 0x317,5080, 5080, &usbIntuosPro  }, /* Intuos Pro L */
 
 	{ 0x3F, 5080, 5080, &usbCintiqV5   }, /* Cintiq 21UX */
 	{ 0xF4, 5080, 5080, &usbCintiqV5   }, /* Cintiq 24HD */

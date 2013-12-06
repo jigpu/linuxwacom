@@ -69,7 +69,7 @@ set screenToggleB 37
 set keystrokeB 38
 # application defined button number
 set originalButton 39
-set maxNumTablets 388
+set maxNumTablets 791
 set numControls 0
 set maxNumButtons 18
 set maxNumStripEvents 4
@@ -1165,12 +1165,13 @@ proc displaySubWindow { okF deF initial winID cbutton kcurrent} {
     set rowN 6
     if { $deF != 0 } {
 	set columnN 2
-	set rowN 11
 	set model $getDeviceModel($device,model)
 
-	if { [ expr ($numPadButtons($model)/2) ] > $rowN } {
-		set rowN [ expr ($numPadButtons($model)/2 + 4) ]
+	set rowN [ expr ($numPadButtons($model)/2 + 4) ]
+	if { $rowN < 11 } {
+	    set rowN 11
 	}
+
 	button $currentW.f.default -text "Default" -command $deF
 	grid $currentW.f.default -row $rowN -column 0 -columnspan 3 -padx 10 -pady 10
 	#
@@ -2039,7 +2040,7 @@ proc updateModelInfo { } {
     }
 
     #Cintiq13HD
-    set isLCD(388) 1
+    set isLCD(772) 1
 
     # G4
     set numPadButtons(21) 2
@@ -2103,6 +2104,26 @@ proc updateModelInfo { } {
 	set numPadRings($i) 1
     }
 
+    # I5
+    set numPadButtons(38) 7
+    set numPadRings(38) 1
+    for { set i 39 } { $i <= 40 } { incr i 1 } {
+	set numPadButtons($i) 9
+	set numPadRings($i) 1
+    }
+    set numPadButtons(41) 7
+    set numPadRings(41) 1
+    set numPadButtons(42) 9
+    set numPadRings(42) 1
+
+    # I pro
+    set numPadButtons(788) 7
+    set numPadRings(788) 1
+    set numPadButtons(789) 9
+    set numPadRings(789) 1
+    set numPadButtons(791) 9
+    set numPadRings(791) 1
+
    # Cintiq 24HD
     set numPadButtons(244) 16
     set numPadRings(244) 2
@@ -2112,7 +2133,7 @@ proc updateModelInfo { } {
     set numPadRings(250) 2
 
     # Cintiq 13HD
-    set numPadButtons(388) 9
+    set numPadButtons(772) 9
 
     for { set i 0 } { $i <= $maxNumTablets } { incr i 1 } {
 	if { $numPadButtons($i) || $numPadRings($i) 
