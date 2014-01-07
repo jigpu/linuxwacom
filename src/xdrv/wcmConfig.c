@@ -19,6 +19,7 @@
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+#include <fcntl.h>
 
 extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
 extern void wcmIsDisplay(WacomCommonPtr common);
