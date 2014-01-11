@@ -127,7 +127,7 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 
 	DBG(2, common->debugLevel, ErrorF(
 		    "%s - usbParse: prox in for %d, channel %d\n",
-		    timestr(), common->wcmChannel[channel].work.serial_num, channel));
+		    timestr(), common->wcmLastToolSerial, channel));
 
 	noPressureEventSinceProxIn = 1;
 

@@ -1051,6 +1051,84 @@ static struct
 	{ PAD_ID,    BTN_TOOL_FINGER    }
 };
 
+#define ERASER_BIT      0x008
+#define PUCK_BITS	0xf00
+#define PUCK_EXCEPTION  0x806
+/**
+ * Decide the tool type by its id for protocol 5 devices
+ *
+ * @param id The tool id received from the kernel.
+ * @return The tool type associated with the tool id.
+ */
+static int usbIdToType(int id)
+{
+	int type = STYLUS_ID;
+
+	/* The existing tool ids have the following patten: all pucks, except
+	 * one, have the third byte set to zero; all erasers have the fourth
+	 * bit set. The rest are styli.
+	 */
+	if (id & ERASER_BIT)
+		type = ERASER_ID;
+	else if (!(id & PUCK_BITS) || (id == PUCK_EXCEPTION))
+		type = CURSOR_ID;
+
+	return type;
+}
+
+/**
+ * Find the tool type (STYLUS_ID, etc.) based on the device_id or the
+ *  current tool serial number if the device_id is unknown (0).
+ *
+ * Protocol 5 devices report different IDs for different styli and pucks,
+ * Protocol 4 devices simply report STYLUS_DEVICE_ID, etc.
+ *
+ * @param ds The current device state received from the kernel.
+ * @return The tool type associated with the tool id or the current
+ * tool serial number.
+ */
+static int usbFindDeviceType(const WacomCommonPtr common,
+			  const WacomDeviceState *ds)
+{
+	WacomToolPtr tool = NULL;
+	int device_type = 0;
+
+	if (!ds->device_id && ds->serial_num)
+	{
+		for (tool = common->wcmTool; tool; tool = tool->next)
+			if (ds->serial_num == tool->serial)
+			{
+				device_type = tool->typeid;
+				break;
+			}
+	}
+
+	if (device_type || !ds->device_id) return device_type;
+
+	switch (ds->device_id)
+	{
+		case STYLUS_DEVICE_ID:
+			device_type = STYLUS_ID;
+			break;
+		case ERASER_DEVICE_ID:
+			device_type = ERASER_ID;
+			break;
+		case CURSOR_DEVICE_ID:
+			device_type = CURSOR_ID;
+			break;
+		case TOUCH_DEVICE_ID:
+			device_type = TOUCH_ID;
+			break;
+		case PAD_DEVICE_ID:
+			device_type = PAD_ID;
+			break;
+		default: /* protocol 5 */
+			device_type = usbIdToType(ds->device_id);
+	}
+
+	return device_type;
+}
+
 static void usbParseChannel(LocalDevicePtr local, int channel)
 {
 	int i, shift, nkeys;
@@ -1134,8 +1212,20 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					ds->throttle *= FILTER_PRESSURE_RES;
 					ds->throttle /= (2 * MAX_ABS_WHEEL);
 				}
-			} else if (event->code == ABS_MISC && event->value)
-				ds->device_id = event->value;
+			} else if (event->code == ABS_MISC) {
+#ifdef WCM_CUSTOM_DEBUG
+				int oldProx = ds->proximity;
+#endif
+				ds->proximity = (event->value != 0);
+				if (event->value) {
+					ds->device_id = event->value;
+					ds->device_type = usbFindDeviceType(common, ds);
+				}
+#ifdef WCM_CUSTOM_DEBUG
+				if (oldProx)
+					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PAD\n", timestr()));
+#endif
+			}
 		}
 		else if (event->type == EV_REL)
 		{
@@ -1210,6 +1300,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->device_type = PAD_ID;
 				ds->device_id = PAD_DEVICE_ID;
 				ds->proximity = (event->value != 0);
+#ifdef WCM_CUSTOM_DEBUG
+				if (oldProx)
+					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PAD\n", timestr()));
+#endif
 			}
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
