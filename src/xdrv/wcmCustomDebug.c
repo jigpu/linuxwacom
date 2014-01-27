@@ -59,20 +59,6 @@ const char * timestr()
 	return result;
 }
 
-void dumpChannels(LocalDevicePtr local)
-{
-	int i;
-	WacomDevicePtr priv = (WacomDevicePtr)local->private;
-	WacomCommonPtr common = priv->common;
-	
-	DBG(2, common->debugLevel, ErrorF("%s - dumpChannels:\n", timestr()));
-	for (i=0; i<MAX_CHANNELS; ++i)
-	{
-		DBG(2, common->debugLevel, ErrorF("    c=%d:p=%d:s=%d\n", i, 
-			common->wcmChannel[i].work.proximity, 
-			common->wcmChannel[i].work.serial_num));
-	}
-}
 #ifdef WCM_CUSTOM_DEBUG
 
 /*
@@ -137,6 +123,21 @@ void logEvent(const struct input_event* event)
 
 	ringPos = (ringPos + 1) % RINGSIZE;
 	ringCount = MIN(RINGSIZE, ringCount + 1);
+}
+
+void dumpChannels(LocalDevicePtr local)
+{
+	int i;
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
+
+	ErrorF("%s" "dumpChannels:\n", timestr());
+	for (i=0; i<MAX_CHANNELS; ++i)
+	{
+		ErrorF("    c=%d:p=%d:s=%d\n", i,
+		       common->wcmChannel[i].work.proximity,
+		       common->wcmChannel[i].work.serial_num);
+	}
 }
 
 void detectChannelChange(LocalDevicePtr local, int channel)

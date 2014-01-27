@@ -841,7 +841,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 			if (channel < 0)
 			{
 #ifdef WCM_CUSTOM_DEBUG
-			        dumpChannels(local);
+				DBG(2, common->debugLevel, dumpChannels(local));
 #endif
 				for (i=0; i<MAX_CHANNELS; ++i)
 				{
