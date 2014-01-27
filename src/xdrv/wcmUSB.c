@@ -870,6 +870,13 @@ static int usbChooseChannel(LocalDevicePtr local)
 		static BOOL tool_on_tablet = FALSE;
 		BOOL has_tool = FALSE;
 
+		DBG(1, common->debugLevel,
+		    ErrorF("usbParse: (%s with serial number: %u):"
+			   " Exceeded channel count; ignoring the events.\n",
+			   local->name, serial));
+#ifdef WCM_CUSTOM_DEBUG
+		DBG(2, common->debugLevel, dumpEventRing(local));
+#endif
 		/* This should never happen in normal use.
 		 * Let's start over again. Force prox-out for all channels.
 		 */
@@ -882,17 +889,18 @@ static int usbChooseChannel(LocalDevicePtr local)
 				/* dispatch event */
 				xf86WcmEvent(common, i, &common->wcmChannel[i].work);
 				has_tool = TRUE;
-#ifdef WCM_CUSTOM_DEBUG
-				DBG(2, common->debugLevel, ErrorF("%s - usbParse: dropping %d\n", 
-					timestr(), common->wcmChannel[i].work.serial_num));
-#endif
+				DBG(2, common->debugLevel,
+				    ErrorF("usbParse: free channels: "
+					   "dropping %u\n",
+					   common->wcmChannel[i].work.serial_num));
 			}
 		}
 
 		if (has_tool)
 		{
-			DBG(1, common->debugLevel, ErrorF("%s: Looks like more than one tool are"
-			" on the tablet. Please bring only one tool in at a time.\n", local->name));
+			xf86Msg(X_WARNING, "%s: Looks like more than one tool "
+				"are  on the tablet. Please bring only one "
+				"tool in at a time.\n", local->name);
 			has_tool = TRUE;
 		}
 		else if (!tool_on_tablet)
