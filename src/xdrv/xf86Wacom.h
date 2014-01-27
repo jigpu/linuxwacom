@@ -183,7 +183,6 @@ extern const char* timestr();
 extern void logEvent(const struct input_event* event);
 #endif
 
-
 /*****************************************************************************
  * XFree86 V4 Inlined Functions and Prototypes
  ****************************************************************************/

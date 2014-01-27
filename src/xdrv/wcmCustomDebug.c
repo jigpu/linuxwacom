@@ -48,15 +48,15 @@ const char * timestr()
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 	};
-	static char result[27];
+	static char result[30];
 
 	struct timeval tv;
 
 	time(&t);
 	localtime_r(&t, &tm);
 	gettimeofday(&tv, NULL);
-	
-	snprintf(result, sizeof(result), "%.3s %.3s%3d %.2d:%.2d:%.2d.%.6d",
+
+	snprintf(result, sizeof(result), "%.3s %.3s%3d %.2d:%.2d:%.2d.%.6d - ",
 		wday_name[tm.tm_wday],
 		mon_name[tm.tm_mon],
 		tm.tm_mday, tm.tm_hour,
@@ -106,11 +106,11 @@ void dumpEventRing(LocalDevicePtr local)
 	priv = (WacomDevicePtr)local->private;;
 	common = priv->common;
 
-	ErrorF("%s - dumpEventRing: last %d events:\n", timestr(), ringCount);
+	ErrorF("%s" "dumpEventRing: last %d events:\n", timestr(), ringCount);
 	for (i = ringCount; i > 0; --i) {
 		struct EventRingItem* item = &debugEventRing[(RINGSIZE + ringPos - i) % RINGSIZE];
 		struct input_event* ev = &item->event;
-		ErrorF("           %.2d:%.2d:%.2d.%06d - type=%1d code=%3d value=%10d\n", 
+		ErrorF("           %.2d:%.2d:%.2d.%06d - type=%1d code=%3d value=%10d\n",
 			item->hour, item->min, item->sec, item->usec,
 			ev->type, ev->code, ev->value);
 	}
