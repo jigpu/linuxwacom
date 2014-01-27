@@ -1242,6 +1242,66 @@ rebasePressure(const WacomDevicePtr priv, const WacomDeviceState *ds)
 	return min_pressure;
 }
 
+/* 
+ * Broken pen with a broken tip might give high pressure values
+ * all the time. The following counter count the number of time a high prox-in
+ * pressure is detected. As soon as a low pressure event is received, the
+ * value is reset to 0.
+ */
+static int highProxInPressureCounter = 0;
+#define LIMIT_HIGH_PRESSURE_COUNTER 3
+#define  LIMIT_LOW_PRESSURE 40 /* percentage of max value */
+
+
+static void detectPressureIssue(LocalDevicePtr pDev, WacomCommonPtr common, WacomDeviceStatePtr ds)
+{
+	int serial = ds->serial_num;
+	int pressureThreshold = common->wcmMaxZ * LIMIT_LOW_PRESSURE / 100;
+	WacomDevicePtr priv = pDev->private;
+	
+	/* detect broken pens which always have high tip pressure */
+	if (!priv->oldProximity)
+	{
+		DBG(4, common->debugLevel, ErrorF(
+			"%s" "usbParseChannel: prox-in pressure %d\n",
+			timestr(), ds->pressure));
+
+		/* high pressure? */
+		if (ds->pressure > pressureThreshold)
+		{
+			LOG(LOG_PRESSURE, common->logMask,
+			    ErrorF("%s" "WARN: %s(%u) initial pressure %d > 0\n",
+				   timestr(),  pDev->name, serial, ds->pressure));
+			highProxInPressureCounter++;
+
+			/* seen enough high prox-in pressure events? */
+			if (highProxInPressureCounter == LIMIT_HIGH_PRESSURE_COUNTER)
+			{
+				ErrorF("%s" "%s(%u) has seen an initial pressure (%d) "
+				       "%d times which is too close to the maximum value (%d). "
+				       "Time to change your tool. \n",
+				       timestr(), pDev->name, serial,
+				       ds->pressure, highProxInPressureCounter, common->wcmMaxZ);
+			}
+		}
+	} else {
+		DBG(7, common->debugLevel, ErrorF("%s" "usbParseChannel: pressure %d\n", 
+			timestr(), ds->pressure));
+	}
+
+	/* got a low pressure event? Then the pen is maybe not broken, in fact. */
+	if (ds->pressure < pressureThreshold && ds->pressure != 0) {
+		/* printed a "broken pen" warning before? */
+		if (highProxInPressureCounter >= LIMIT_HIGH_PRESSURE_COUNTER)
+			ErrorF("%s" "Tool %s(%u) "
+			       "maybe not broken, even after %d times high prox-in pressure.\n",
+			       timestr(), pDev->name, serial, highProxInPressureCounter);
+
+		/* restart counter game */
+		highProxInPressureCounter = 0;
+	}
+}
+
 static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 	const WacomChannelPtr pChannel, int suppress)
 {
@@ -1410,7 +1470,7 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 		if (IsStylus(priv) || IsEraser(priv))
 		{
 			double tmpP = 0;
-			int pRate = 0, tol = FILTER_PRESSURE_RES / 75, tol_more = 0;
+			int tol = FILTER_PRESSURE_RES / 75, tol_more = 0;
 
 			priv->minPressure = rebasePressure(priv, &filtered);
 
@@ -1421,14 +1481,7 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 			/* log the percentage of the initial pressure so we know
 			 * if the tool is worn out or not
 			 */
-			pRate = 100 - (priv->minPressure * 100) / 
-					(double)common->wcmMaxZ;
-
-			if (pRate < 10)
-				ErrorF("%s has an initial pressure(%d) which is "
-					"too close to the maximum value(%d). "
-					"Time to change your tool. \n", pDev->name,
-					priv->minPressure, common->wcmMaxZ);
+                        detectPressureIssue(pDev, common, &filtered);
 
 			/* normalize pressure to FILTER_PRESSURE_RES */
 			if (filtered.pressure > priv->minPressure)

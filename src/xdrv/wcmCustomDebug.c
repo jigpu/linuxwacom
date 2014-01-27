@@ -20,18 +20,6 @@
 #include <time.h>
 
 
-/* 
- * Broken pen with a broken tip might give high pressure values
- * all the time. The following counter count the number of time a high prox-in
- * pressure is detected. As soon as a low pressure event is received, the
- * value is reset to 0.
- */
-static int highProxInPressureCounter = 0;
-static int noPressureEventSinceProxIn = 1;
-static const int limitHighPressureCounter = 3;
-static const int limitLowPressure = 400;
-
-
 const char * timestr()
 {
 	time_t t;
@@ -151,7 +139,6 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 		    "%s - usbParse: prox in for %d, channel %d\n",
 		    timestr(), common->wcmLastToolSerial, channel));
 
-	noPressureEventSinceProxIn = 1;
 
 	/* count currently used channels */
 	for (i=0; i<MAX_CHANNELS; ++i)
@@ -174,49 +161,3 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 }
 
 #endif
-void detectPressureIssue(struct input_event* event, WacomCommonPtr common, int channel)
-{
-	int serial = common->wcmChannel[channel].work.serial_num;
-
-	/* detect broken pens which always have high tip pressure */
-	if (noPressureEventSinceProxIn)
-	{
-		DBG(3, common->debugLevel, ErrorF(
-			"%s - usbParseChannel: prox-in pressure %d\n",
-			timestr(), event->value));
-
-		/* ignore follow-up events until next prox-in */
-		noPressureEventSinceProxIn = 0;
-
-		/* high pressure? */
-		if (event->value > limitLowPressure)
-		{
-			highProxInPressureCounter++;
-
-			/* seen enough high prox-in pressure events? */
-			if (highProxInPressureCounter == limitHighPressureCounter)
-			{
-				DBG(2, common->debugLevel, ErrorF("%s - usbParseChannel: "
-					"%d times high prox-in pressure. Pen %u broken?\n", 
-					timestr(), highProxInPressureCounter, serial));
-			}
-		}
-	} else {
-		DBG(7, common->debugLevel, ErrorF("%s - usbParseChannel: pressure %d\n", 
-			timestr(), event->value));
-	}
-
-	/* got a low pressure event? Then the pen is maybe not broken, in fact. */
-	if (event->value < limitLowPressure && event->value != 0) {
-		/* printed a "broken pen" warning before? */
-		if (highProxInPressureCounter >= limitHighPressureCounter)
-		{
-			DBG(2, common->debugLevel, ErrorF("%s - usbParseChannel: Pen %u "
-				"maybe not broken, even after %d times high prox-in pressure.\n",
-				timestr(), serial, highProxInPressureCounter));
-	   	 }
-
-		/* restart counter game */
-		highProxInPressureCounter = 0;
-	}
-}

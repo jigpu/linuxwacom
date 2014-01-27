@@ -1163,9 +1163,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->tilty = event->value - common->wcmMaxtiltY/2;
 			else if (event->code == ABS_PRESSURE) {
 				ds->pressure = event->value;
-#ifdef WCM_CUSTOM_DEBUG
-				detectPressureIssue(event, common, channel);
-#endif
 
 			} else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
