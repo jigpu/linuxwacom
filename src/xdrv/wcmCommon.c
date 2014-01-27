@@ -325,23 +325,26 @@ static void sendAButton(LocalDevicePtr local, int button, int mask,
 		xf86XInputSetSendCoreEvents (local, TRUE);
 #endif
 
-#ifdef WCM_CUSTOM_DEBUG
-	int x = -1, y = -1;
-
-	gWacomModule.DevConvert(local, 0, 6, rx, ry, rz, v3, v4, v5, &x, &y); 
-	ErrorF("%s - sendAButton TPCButton(%s) button=%d state=%d " 
-		"code=%08x x=%d y=%d, for %s coreEvent=%s \n", 
-		timestr(), common->wcmTPCButton ? "on" : "off", 
-		button, mask, priv->button[button], x, y,
-		local->name, (priv->button[button] & AC_CORE) ? "yes" : "no");
-#else
-	DBG(4, priv->debugLevel, ErrorF(
-		"sendAButton TPCButton(%s) button=%d state=%d " 
-		"code=%08x, for %s coreEvent=%s \n", 
-		common->wcmTPCButton ? "on" : "off", 
-		button, mask, priv->button[button], 
-		local->name, (priv->button[button] & AC_CORE) ? "yes" : "no"));
-#endif
+	LOG(LOG_BUTTON, common->logMask,
+	    do {
+		int x = -1;
+		int y = -1;
+		gWacomModule.DevConvert(local, 0, 6, rx, ry, rz, v3, v4, v5, &x, &y);
+		ErrorF("%s" "sendAButton TPCButton(%s) button=%d state=%d "
+		       "code=%08x x=%d y=%d, for %s coreEvent=%s \n",
+		       timestr(), common->wcmTPCButton ? "on" : "off",
+		       button, mask, priv->button[button], x, y,
+		       local->name, (priv->button[button] & AC_CORE) ? "yes" : "no");
+	    } while (0)
+	    );
+	DBG(4, common->debugLevel,
+	    if (!DO_LOG(LOG_BUTTON, common->logMask))
+		    ErrorF("sendAButton TPCButton(%s) button=%d state=%d "
+			   "code=%08x , for %s coreEvent=%s \n",
+			   common->wcmTPCButton ? "on" : "off",
+			   button, mask, priv->button[button],
+			   local->name, (priv->button[button] & AC_CORE) ? "yes" : "no")
+	    );
 
 	switch (priv->button[button] & AC_TYPE)
 	{
