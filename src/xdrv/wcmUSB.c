@@ -34,14 +34,7 @@
 #endif
 
 #ifdef WCM_CUSTOM_DEBUG
-	static int lastPenSerial = 0;
-	extern void detectPressureIssue(struct input_event* event,
-		    WacomCommonPtr common, int channel);
-	extern void detectChannelChange(LocalDevicePtr local, int channel);
-	extern void dumpEventRing(LocalDevicePtr local);
-	extern void dumpChannels(LocalDevicePtr local);
-	extern const char* timestr();
-	extern void logEvent(const struct input_event* event);
+static int lastPenSerial = 0;
 #endif
 
 extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
