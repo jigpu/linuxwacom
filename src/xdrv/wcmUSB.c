@@ -34,7 +34,7 @@
 #endif
 
 #ifdef WCM_CUSTOM_DEBUG
-static int lastPenSerial = 0;
+static int lastToolSerial = 0;
 #endif
 
 extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
@@ -981,12 +981,12 @@ static void usbParseEvent(LocalDevicePtr local,
 
 #ifdef WCM_CUSTOM_DEBUG
 	/* detect tool change */
-	if (lastPenSerial != common->wcmLastToolSerial) 
-	{	   
-		DBG(2, common->debugLevel, ErrorF("%s - usbParse: oldPen %d, newPen %d\n", 
-			timestr(), lastPenSerial, common->wcmLastToolSerial));
-		lastPenSerial = common->wcmLastToolSerial;
-	}
+	if (lastToolSerial != common->wcmLastToolSerial)
+		DBG(2, common->debugLevel,
+		    ErrorF("%s" "usbParse: oldTool %d, newTool %d\n",
+			   timestr(), lastToolSerial,
+			   common->wcmLastToolSerial));
+		lastToolSerial = common->wcmLastToolSerial;
 #endif
 	channel = usbChooseChannel(local);
 
