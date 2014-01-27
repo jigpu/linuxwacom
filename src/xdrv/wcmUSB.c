@@ -1187,8 +1187,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->tilty = event->value - common->wcmMaxtiltY/2;
 			else if (event->code == ABS_PRESSURE) {
 				ds->pressure = event->value;
-
-			} else if (event->code == ABS_DISTANCE)
+				LOG(LOG_PRESSURE, common->logMask,
+		                ErrorF("%s" "Device %d got pressure %d\n",
+				       timestr(), common->wcmLastToolSerial, ds->pressure));
+                        } else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
 			else if (event->code == ABS_WHEEL) {
 				ds->abswheel = event->value * FILTER_PRESSURE_RES;
@@ -1390,7 +1392,8 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 		}
 	}
 	if (dslast.proximity == 0 && ds->proximity != 0) {
-	        LOG(LOG_PROXIMITY,common->logMask, ErrorF("Device %d is %s\n",
+	        LOG(LOG_PROXIMITY,common->logMask,
+		    ErrorF("                             Device %d is %s\n",
 		ds->serial_num, usbGetDeviceTypeName(ds->device_type)));
         }
 
