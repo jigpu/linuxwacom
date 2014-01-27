@@ -71,6 +71,31 @@ static int set_value(WACOMDEVICE *dev, int param, int val)
 	return WacomConfigSetRawParam(dev, param, val, keys);
 }
 
+static int (*xerror_saved)(Display *, XErrorEvent *);
+static int xerror_code;
+
+static int xerror_ignore(Display *dpy, XErrorEvent *err)
+{
+	xerror_code = err->error_code;
+	return 0;
+}
+
+extern int (*_XErrorFunction)(Display *, XErrorEvent *);
+extern int _XDefaultError(Display *dpy, XErrorEvent *event);
+
+static void xerror_save(void)
+{
+	xerror_code = 0;
+	xerror_saved = _XErrorFunction;
+	_XErrorFunction = xerror_ignore;
+}
+
+static int xerror_restore(void)
+{
+	_XErrorFunction = xerror_saved;
+	return xerror_code;
+}
+
 #define SWAP(a,b) do { int tmp = (a); (a) = (b); (b) = tmp; } while (0)
 
 static void get_orig_position(WACOMDEVICE *dev, int type)
@@ -192,12 +217,14 @@ static void wacom_daemon(Display *dpy, Window root, WACOMDEVICE *dev)
 		XEvent event;
 
 		XNextEvent(dpy, &event);
+		xerror_save();
 		XRRUpdateConfiguration(&event);
 		switch (event.type - event_base) {
 		case RRScreenChangeNotify:
 			update_screen(dpy, root, dev);
 			break;
 		}
+		xerror_restore();
 	}
 }
 
