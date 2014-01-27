@@ -841,7 +841,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 			if (channel < 0)
 			{
 #ifdef WCM_CUSTOM_DEBUG
-				DBG(2, common->debugLevel, dumpChannels(local));
+				DBG(2, common->debugLevel, wcm_dumpChannels(local));
 #endif
 				for (i=0; i<MAX_CHANNELS; ++i)
 				{
@@ -875,7 +875,7 @@ static int usbChooseChannel(LocalDevicePtr local)
 			   " Exceeded channel count; ignoring the events.\n",
 			   local->name, serial));
 #ifdef WCM_CUSTOM_DEBUG
-		DBG(2, common->debugLevel, dumpEventRing(local));
+		DBG(2, common->debugLevel, wcm_dumpEventRing(local));
 #endif
 		/* This should never happen in normal use.
 		 * Let's start over again. Force prox-out for all channels.
@@ -931,7 +931,7 @@ static void usbParseEvent(LocalDevicePtr local,
 
 #ifdef WCM_CUSTOM_DEBUG
 	/* save event in ring buffer for debug output later */
-	logEvent(event);
+	wcm_logEvent(event);
 #endif
 	/* space left? bail if not. */
 	if (common->wcmEventCnt >=
@@ -992,7 +992,7 @@ static void usbParseEvent(LocalDevicePtr local,
 	if (lastToolSerial != common->wcmLastToolSerial)
 		DBG(2, common->debugLevel,
 		    ErrorF("%s" "usbParse: oldTool %d, newTool %d\n",
-			   timestr(), lastToolSerial,
+			   wcm_timestr(), lastToolSerial,
 			   common->wcmLastToolSerial));
 		lastToolSerial = common->wcmLastToolSerial;
 #endif
@@ -1008,12 +1008,12 @@ static void usbParseEvent(LocalDevicePtr local,
 		common->wcmChannel[channel].work.proximity = 1;
 		LOG(LOG_PROXIMITY, common->logMask,
 		    ErrorF( "%s" "usbParse: prox in for %d, channel %d\n",
-					    timestr(),
+					    wcm_timestr(),
 					    common->wcmLastToolSerial,
 					    channel));
 
 #ifdef WCM_CUSTOM_DEBUG
-		detectChannelChange(local, channel);
+		wcm_detectChannelChange(local, channel);
 #endif
  	}
 	/* dispatch event */
@@ -1197,7 +1197,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->pressure = event->value;
 				LOG(LOG_PRESSURE, common->logMask,
 		                ErrorF("%s" "Device %d got pressure %d\n",
-				       timestr(), common->wcmLastToolSerial, ds->pressure));
+				       wcm_timestr(), common->wcmLastToolSerial, ds->pressure));
                         } else if (event->code == ABS_DISTANCE)
 				ds->distance = event->value;
 			else if (event->code == ABS_WHEEL) {
@@ -1229,7 +1229,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				if (log_proximity && ds->proximity == 0) {
 	                            LOG(LOG_PROXIMITY, common->logMask,
 				    ErrorF("%s" "usbParseChannel: prox out"
-					   " for %s %d, channel %d\n", timestr(),
+					   " for %s %d, channel %d\n", wcm_timestr(),
 					   usbGetDeviceTypeName(ds->device_type),
 					   ds->serial_num, channel));
 				    log_proximity = 0;
@@ -1361,7 +1361,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			if (log_proximity && ds->proximity == 0) {
 	                            LOG(LOG_PROXIMITY, common->logMask,
 				    ErrorF("%s" "usbParseChannel: prox out"
-					   " for %s %d, channel %d\n", timestr(),
+					   " for %s %d, channel %d\n", wcm_timestr(),
 					   usbGetDeviceTypeName(ds->device_type),
 					   ds->serial_num, channel));
 				    log_proximity = 0;

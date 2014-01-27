@@ -332,7 +332,7 @@ static void sendAButton(LocalDevicePtr local, int button, int mask,
 		gWacomModule.DevConvert(local, 0, 6, rx, ry, rz, v3, v4, v5, &x, &y);
 		ErrorF("%s" "sendAButton TPCButton(%s) button=%d state=%d "
 		       "code=%08x x=%d y=%d, for %s coreEvent=%s \n",
-		       timestr(), common->wcmTPCButton ? "on" : "off",
+		       wcm_timestr(), common->wcmTPCButton ? "on" : "off",
 		       button, mask, priv->button[button], x, y,
 		       local->name, (priv->button[button] & AC_CORE) ? "yes" : "no");
 	    } while (0)
@@ -1267,14 +1267,14 @@ static void detectPressureIssue(LocalDevicePtr pDev, WacomCommonPtr common, Waco
 	{
 		DBG(4, common->debugLevel, ErrorF(
 			"%s" "usbParseChannel: prox-in pressure %d\n",
-			timestr(), ds->pressure));
+			wcm_timestr(), ds->pressure));
 
 		/* high pressure? */
 		if (ds->pressure > pressureThreshold)
 		{
 			LOG(LOG_PRESSURE, common->logMask,
 			    ErrorF("%s" "WARN: %s(%u) initial pressure %d > 0\n",
-				   timestr(),  pDev->name, serial, ds->pressure));
+				   wcm_timestr(),  pDev->name, serial, ds->pressure));
 			highProxInPressureCounter++;
 
 			/* seen enough high prox-in pressure events? */
@@ -1283,13 +1283,13 @@ static void detectPressureIssue(LocalDevicePtr pDev, WacomCommonPtr common, Waco
 				ErrorF("%s" "%s(%u) has seen an initial pressure (%d) "
 				       "%d times which is too close to the maximum value (%d). "
 				       "Time to change your tool. \n",
-				       timestr(), pDev->name, serial,
+				       wcm_timestr(), pDev->name, serial,
 				       ds->pressure, highProxInPressureCounter, common->wcmMaxZ);
 			}
 		}
 	} else {
 		DBG(7, common->debugLevel, ErrorF("%s" "usbParseChannel: pressure %d\n", 
-			timestr(), ds->pressure));
+			wcm_timestr(), ds->pressure));
 	}
 
 	/* got a low pressure event? Then the pen is maybe not broken, in fact. */
@@ -1298,7 +1298,7 @@ static void detectPressureIssue(LocalDevicePtr pDev, WacomCommonPtr common, Waco
 		if (highProxInPressureCounter >= LIMIT_HIGH_PRESSURE_COUNTER)
 			ErrorF("%s" "Tool %s(%u) "
 			       "maybe not broken, even after %d times high prox-in pressure.\n",
-			       timestr(), pDev->name, serial, highProxInPressureCounter);
+			       wcm_timestr(), pDev->name, serial, highProxInPressureCounter);
 
 		/* restart counter game */
 		highProxInPressureCounter = 0;

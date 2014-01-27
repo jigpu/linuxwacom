@@ -175,12 +175,12 @@ struct _WacomModule
 /* The rest are defined in a separate .h-file */
 #include "xf86WacomDefs.h"
 
-extern const char* timestr();
+extern const char* wcm_timestr();
 #ifdef WCM_CUSTOM_DEBUG
-extern void detectChannelChange(LocalDevicePtr local, int channel);
-extern void dumpEventRing(LocalDevicePtr local);
-extern void dumpChannels(LocalDevicePtr local);
-extern void logEvent(const struct input_event* event);
+extern void wcm_detectChannelChange(LocalDevicePtr local, int channel);
+extern void wcm_dumpEventRing(LocalDevicePtr local);
+extern void wcm_dumpChannels(LocalDevicePtr local);
+extern void wcm_logEvent(const struct input_event* event);
 #endif
 
 /*****************************************************************************

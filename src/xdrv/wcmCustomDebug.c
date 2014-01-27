@@ -20,7 +20,7 @@
 #include <time.h>
 
 
-const char * timestr()
+const char * wcm_timestr()
 {
 	time_t t;
 	struct tm tm;
@@ -72,7 +72,7 @@ static unsigned int ringCount = 0;
 #define MIN(x,y) ((x>y) ? y : x)
 #endif
 
-void dumpEventRing(LocalDevicePtr local)
+void wcm_dumpEventRing(LocalDevicePtr local)
 {
 	int i;
 	WacomDevicePtr priv;
@@ -81,7 +81,7 @@ void dumpEventRing(LocalDevicePtr local)
 	priv = (WacomDevicePtr)local->private;;
 	common = priv->common;
 
-	ErrorF("%s" "dumpEventRing: last %d events:\n", timestr(), ringCount);
+	ErrorF("%s" "dumpEventRing: last %d events:\n", wcm_timestr(), ringCount);
 	for (i = ringCount; i > 0; --i) {
 		struct EventRingItem* item = &debugEventRing[(RINGSIZE + ringPos - i) % RINGSIZE];
 		struct input_event* ev = &item->event;
@@ -93,7 +93,7 @@ void dumpEventRing(LocalDevicePtr local)
 	ringCount = 0;
 }
 
-void logEvent(const struct input_event* event)
+void wcm_logEvent(const struct input_event* event)
 {
 	struct timeval tv;
 	struct tm tm;
@@ -113,13 +113,13 @@ void logEvent(const struct input_event* event)
 	ringCount = MIN(RINGSIZE, ringCount + 1);
 }
 
-void dumpChannels(LocalDevicePtr local)
+void wcm_dumpChannels(LocalDevicePtr local)
 {
 	int i;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 
-	ErrorF("%s" "dumpChannels:\n", timestr());
+	ErrorF("%s" "dumpChannels:\n", wcm_timestr());
 	for (i=0; i<MAX_CHANNELS; ++i)
 	{
 		ErrorF("    c=%d:p=%d:s=%d\n", i,
@@ -128,7 +128,7 @@ void dumpChannels(LocalDevicePtr local)
 	}
 }
 
-void detectChannelChange(LocalDevicePtr local, int channel)
+void wcm_detectChannelChange(LocalDevicePtr local, int channel)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
@@ -146,12 +146,12 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	{
 		DBG(2, common->debugLevel, ErrorF(
 			"%s" "usbParse: usedChannels %d -> %d\n",
-			timestr(), usedChannels, nowUsedChannels));
+			wcm_timestr(), usedChannels, nowUsedChannels));
 		if (nowUsedChannels > usedChannels)
 		    dbg_level = 2;
 		usedChannels = nowUsedChannels;
 	}
-	DBG(dbg_level, common->debugLevel, dumpEventRing(local));
+	DBG(dbg_level, common->debugLevel, wcm_dumpEventRing(local));
 }
 
 #endif
