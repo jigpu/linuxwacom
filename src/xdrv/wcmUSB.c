@@ -911,12 +911,6 @@ static int usbChooseChannel(LocalDevicePtr local)
 			tool_on_tablet = TRUE;
 		}
 
-#ifdef WCM_CUSTOM_DEBUG
-		DBG(1, common->debugLevel, ErrorF("%s - usbParse (%s with serial number: %u):"
-			" Exceeded channel count; ignoring the events.\n", 
-			timestr(), local->name, serial));
-		DBG(2, common->debugLevel, dumpEventRing(local));
-#endif
 	}
 
 	return channel;
@@ -942,13 +936,8 @@ static void usbParseEvent(LocalDevicePtr local,
 	if (common->wcmEventCnt >=
 		(sizeof(common->wcmEvents)/sizeof(*common->wcmEvents)))
 	{
-#ifdef WCM_CUSTOM_DEBUG
-		ErrorF("%s - usbParse: Exceeded event queue (%d) \n",
-				timestr(), common->wcmEventCnt);
-#else
 		ErrorF("usbParse: Exceeded event queue (%d) \n",
-				common->wcmEventCnt);
-#endif
+		       common->wcmEventCnt);
 		goto skipEvent;
 	}
 
@@ -992,13 +981,8 @@ static void usbParseEvent(LocalDevicePtr local,
 	 */
 	if (common->wcmEventCnt <= 2 && common->wcmLastToolSerial) 
 	{
-#ifdef WCM_CUSTOM_DEBUG
-		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty %s event for serial %d\n", 
-			timestr(), local->name, common->wcmLastToolSerial));
-#else
 		DBG(3, common->debugLevel, ErrorF("%s - usbParse: dropping empty event for serial %d\n", 
 			local->name, common->wcmLastToolSerial));
-#endif
 		goto skipEvent;
 	}
 
