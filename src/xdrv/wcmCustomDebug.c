@@ -134,11 +134,7 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	WacomCommonPtr common = priv->common;
 	int nowUsedChannels = 0;
 	int i = 0;
-
-	DBG(2, common->debugLevel, ErrorF(
-		    "%s - usbParse: prox in for %d, channel %d\n",
-		    timestr(), common->wcmLastToolSerial, channel));
-
+	int dbg_level = 3;
 
 	/* count currently used channels */
 	for (i=0; i<MAX_CHANNELS; ++i)
@@ -149,15 +145,13 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	if (nowUsedChannels != usedChannels)
 	{
 		DBG(2, common->debugLevel, ErrorF(
-			"%s - usbParse: usedChannels %d -> %d\n", 
+			"%s" "usbParse: usedChannels %d -> %d\n",
 			timestr(), usedChannels, nowUsedChannels));
 		if (nowUsedChannels > usedChannels)
-		{
-			DBG(2, common->debugLevel, dumpEventRing(local));
-		}
+		    dbg_level = 2;
 		usedChannels = nowUsedChannels;
 	}
-	DBG(3, common->debugLevel, dumpEventRing(local));
+	DBG(dbg_level, common->debugLevel, dumpEventRing(local));
 }
 
 #endif
