@@ -1475,7 +1475,8 @@ static void commonDispatchDevice(WacomCommonPtr common, unsigned int channel,
 			double tmpP = 0;
 			int tol = FILTER_PRESSURE_RES / 75, tol_more = 0;
 
-			priv->minPressure = rebasePressure(priv, &filtered);
+			priv->minPressure = common->wcmNoPressureRecal ?
+				0 : rebasePressure(priv, &filtered);
 
 			/* increase the tolerance for worn out pen */
 			if (priv->minPressure)

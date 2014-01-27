@@ -249,6 +249,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmInitedTools = 0;  /* start with no tool */
 	common->wcmEnabledTools = 0; /* start with no tool */
 	common->wcmWarnOnce = FALSE;
+	common->wcmNoPressureRecal = FALSE;
 
 	/* tool */
 	priv->tool = tool;
@@ -1197,6 +1198,9 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 			dev->identifier);
 		priv->twinview = TV_NONE;
 	}
+
+	common->wcmNoPressureRecal = xf86SetBoolOption(local->options,
+						       "DisablePressureRecalibration", 0);
 
 	/* mark the device configured */
 	local->flags |= XI86_POINTER_CAPABLE | XI86_CONFIGURED;

@@ -460,6 +460,8 @@ struct _WacomCommonRec
 	Bool wcmWarnOnce;       /* flag to log device disconnetion message only once */
 
 	WacomToolPtr wcmTool; /* List of unique tools */
+
+	Bool wcmNoPressureRecal; /* Don't recalibrate non-zero pressure of worn out pens */
 };
 
 #define HANDLE_TILT(comm) ((comm)->wcmFlags & TILT_ENABLED_FLAG)

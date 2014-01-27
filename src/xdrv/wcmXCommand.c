@@ -567,6 +567,11 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 			return BadValue;
 		}
 		break;
+	  case XWACOM_PARAM_NO_PRESSURE_RECAL:
+		  if ((value < 0) || (value > 1))
+			  return BadValue;
+		  common->wcmNoPressureRecal = value;
+		  break;
 	   default:
 		DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam invalid param %d\n",param));
 		return BadMatch;
@@ -953,6 +958,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 #else
 		return 0;
 #endif
+            case XWACOM_PARAM_NO_PRESSURE_RECAL:
+		return common->wcmNoPressureRecal;
 	}
 	DBG(10, priv->debugLevel, ErrorF("xf86WcmGetParam invalid param %d\n", param));
 	return -1;

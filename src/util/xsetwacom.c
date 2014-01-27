@@ -682,6 +682,11 @@ static PARAMINFO gParamInfo[] =
 		"Returns true if the tablet is a display tablet. Otherwise, false. ",
 		XWACOM_PARAM_ISDISPLAY, VALUE_OPTIONAL, RANGE, 
 		0, 1, BOOLEAN_VALUE, 1 },	
+	{ "DisablePressureRecalibration",
+		"Disables pressure recalibration for worn out pens. \n\t\t"
+		"default is 0 (off). ",
+		XWACOM_PARAM_NO_PRESSURE_RECAL, VALUE_REQUIRED, RANGE,
+		0, 1, BOOLEAN_VALUE, 0 },
 
 	{ NULL }
 };
