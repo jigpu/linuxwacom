@@ -998,6 +998,11 @@ static void usbParseEvent(LocalDevicePtr local,
 		memset(&common->wcmChannel[channel],0,sizeof(WacomChannel));
 		/* in case the in-prox event was missing */
 		common->wcmChannel[channel].work.proximity = 1;
+		LOG(LOG_PROXIMITY, common->logMask,
+		    ErrorF( "%s" "usbParse: prox in for %d, channel %d\n",
+					    timestr(),
+					    common->wcmLastToolSerial,
+					    channel));
 
 #ifdef WCM_CUSTOM_DEBUG
 		detectChannelChange(local, channel);
@@ -1106,6 +1111,24 @@ static int usbFindDeviceType(const WacomCommonPtr common,
 	return device_type;
 }
 
+static const char *usbGetDeviceTypeName(unsigned long type)
+{
+	switch (type) {
+	case STYLUS_ID:
+		return "PEN";
+	case ERASER_ID:
+		return "RUBBER";
+	case CURSOR_ID:
+		return "MOUSE";
+	case TOUCH_ID:
+		return "TOUCH";
+	case PAD_ID:
+		return "PAD";
+	default:
+		return "UNKNOWN";
+	}
+}
+
 static void usbParseChannel(LocalDevicePtr local, int channel)
 {
 	int i, shift, nkeys;
@@ -1115,6 +1138,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	WacomCommonPtr common = priv->common;
 	WacomChannelPtr pChannel = common->wcmChannel + channel;
 	WacomDeviceState dslast = pChannel->valid.state;
+	int log_proximity = dslast.proximity;
 	static WacomDeviceState* syslast;
 
 	DBG(6, common->debugLevel, ErrorF("usbParseChannel %d events received\n", common->wcmEventCnt));
@@ -1187,18 +1211,19 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					ds->throttle /= (2 * MAX_ABS_WHEEL);
 				}
 			} else if (event->code == ABS_MISC) {
-#ifdef WCM_CUSTOM_DEBUG
-				int oldProx = ds->proximity;
-#endif
 				ds->proximity = (event->value != 0);
 				if (event->value) {
 					ds->device_id = event->value;
 					ds->device_type = usbFindDeviceType(common, ds);
 				}
-#ifdef WCM_CUSTOM_DEBUG
-				if (oldProx)
-					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PAD\n", timestr()));
-#endif
+				if (log_proximity && ds->proximity == 0) {
+	                            LOG(LOG_PROXIMITY, common->logMask,
+				    ErrorF("%s" "usbParseChannel: prox out"
+					   " for %s %d, channel %d\n", timestr(),
+					   usbGetDeviceTypeName(ds->device_type),
+					   ds->serial_num, channel));
+				    log_proximity = 0;
+                                }
 			}
 		}
 		else if (event->type == EV_REL)
@@ -1211,9 +1236,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 
 		else if (event->type == EV_KEY)
 		{
-#ifdef WCM_CUSTOM_DEBUG
-			int oldProx = ds->proximity;
-#endif
 
 			if ((event->code == BTN_TOOL_PEN) ||
 				(event->code == BTN_TOOL_PENCIL) ||
@@ -1228,10 +1250,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				DBG(6, common->debugLevel, ErrorF(
 					"USB stylus detected %x\n",
 					event->code));
-#ifdef WCM_CUSTOM_DEBUG
-				if (oldProx)
-					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PEN\n", timestr()));
-#endif
 			}
 			else if (event->code == BTN_TOOL_RUBBER)
 			{
@@ -1245,10 +1263,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				DBG(6, common->debugLevel, ErrorF(
 					"USB eraser detected %x (value=%d)\n",
 					event->code, event->value));
-#ifdef WCM_CUSTOM_DEBUG
-				if (oldProx)
-					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool RUBBER\n", timestr()));
-#endif
 			}
 			else if ((event->code == BTN_TOOL_MOUSE) ||
 				(event->code == BTN_TOOL_LENS))
@@ -1261,10 +1275,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				if (common->wcmProtocolLevel == 4)
 					ds->device_id = CURSOR_DEVICE_ID;
 				ds->proximity = (event->value != 0);
-#ifdef WCM_CUSTOM_DEBUG
-				if (oldProx)
-					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool MOUSE\n", timestr()));
-#endif
 			}
 			else if (event->code == BTN_TOOL_FINGER)
 			{
@@ -1274,10 +1284,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->device_type = PAD_ID;
 				ds->device_id = PAD_DEVICE_ID;
 				ds->proximity = (event->value != 0);
-#ifdef WCM_CUSTOM_DEBUG
-				if (oldProx)
-					DBG(2, common->debugLevel, ErrorF("%s - usbParseEvent: tool PAD\n", timestr()));
-#endif
 			}
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
@@ -1342,15 +1348,16 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					}
 			}
 
-#ifdef WCM_CUSTOM_DEBUG
-			/* detect prox out events */
-			if (dslast.proximity && ds->proximity == 0) {
-				DBG(2, common->debugLevel, ErrorF("%s - usbParseChannel: prox out"
-					" for %d, channel %d\n", timestr(), ds->serial_num, channel));
-                                DBG(3, common->debugLevel, dumpEventRing(local));
-			}
-#endif
-		}
+			if (log_proximity && ds->proximity == 0) {
+	                            LOG(LOG_PROXIMITY, common->logMask,
+				    ErrorF("%s" "usbParseChannel: prox out"
+					   " for %s %d, channel %d\n", timestr(),
+					   usbGetDeviceTypeName(ds->device_type),
+					   ds->serial_num, channel));
+				    log_proximity = 0;
+                        }
+                 }
+		/* detect prox out events */
 	} /* next event */
 
 	/* device type unknown? Retrive it from the kernel again */
@@ -1382,6 +1389,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 			ds->proximity = 1;
 		}
 	}
+	if (dslast.proximity == 0 && ds->proximity != 0) {
+	        LOG(LOG_PROXIMITY,common->logMask, ErrorF("Device %d is %s\n",
+		ds->serial_num, usbGetDeviceTypeName(ds->device_type)));
+        }
 
 	/* retrieve (x,y) at the first time in-prox if it is not a pad */
 	if (!dslast.proximity && ds->device_type != PAD_ID)
