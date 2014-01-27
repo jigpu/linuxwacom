@@ -20,11 +20,6 @@
 #include <time.h>
 
 
-/*
- * Status variables for custom debug output
- */
-static int usedChannels = 0;
-
 /* 
  * Broken pen with a broken tip might give high pressure values
  * all the time. The following counter count the number of time a high prox-in
@@ -78,6 +73,12 @@ void dumpChannels(LocalDevicePtr local)
 			common->wcmChannel[i].work.serial_num));
 	}
 }
+#ifdef WCM_CUSTOM_DEBUG
+
+/*
+ * Status variables for custom debug output
+ */
+static int usedChannels = 0;
 
 /* Ring buffer for the events in order to output them in unusual situations */
 struct EventRingItem {
@@ -118,6 +119,26 @@ void dumpEventRing(LocalDevicePtr local)
 	ringCount = 0;
 }
 
+void logEvent(const struct input_event* event)
+{
+	struct timeval tv;
+	struct tm tm;
+	time_t t;
+
+	gettimeofday(&tv, NULL);
+	time(&t);
+	localtime_r(&t, &tm);
+
+	debugEventRing[ringPos].event = *event;
+	debugEventRing[ringPos].hour = tm.tm_hour;
+	debugEventRing[ringPos].min = tm.tm_min;
+	debugEventRing[ringPos].sec = tm.tm_sec;
+	debugEventRing[ringPos].usec = tv.tv_usec;
+
+	ringPos = (ringPos + 1) % RINGSIZE;
+	ringCount = MIN(RINGSIZE, ringCount + 1);
+}
+
 void detectChannelChange(LocalDevicePtr local, int channel)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
@@ -151,6 +172,7 @@ void detectChannelChange(LocalDevicePtr local, int channel)
 	DBG(3, common->debugLevel, dumpEventRing(local));
 }
 
+#endif
 void detectPressureIssue(struct input_event* event, WacomCommonPtr common, int channel)
 {
 	int serial = common->wcmChannel[channel].work.serial_num;
@@ -196,24 +218,4 @@ void detectPressureIssue(struct input_event* event, WacomCommonPtr common, int c
 		/* restart counter game */
 		highProxInPressureCounter = 0;
 	}
-}
-
-void logEvent(const struct input_event* event)
-{
-	struct timeval tv;
-	struct tm tm;
-	time_t t;
-
-	gettimeofday(&tv, NULL);
-	time(&t);
-	localtime_r(&t, &tm);
-
-	debugEventRing[ringPos].event = *event;
-	debugEventRing[ringPos].hour = tm.tm_hour;
-	debugEventRing[ringPos].min = tm.tm_min;
-	debugEventRing[ringPos].sec = tm.tm_sec;
-	debugEventRing[ringPos].usec = tv.tv_usec;
-
-	ringPos = (ringPos + 1) % RINGSIZE;
-	ringCount = MIN(RINGSIZE, ringCount + 1);
 }
