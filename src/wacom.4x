@@ -228,6 +228,33 @@ integers between 1 and 12. Once it is defined, all the debug
 messages with a level less than or equal to the "number" will 
 be logged into /etc/X11/Xorg.0.log.
 .TP 4
+.B Option \fI"DeviceLogMask" \fI"number"\fP
+bitmask that enables logging of a group of events.
+.RS
+.PD 0
+.TP
+Bit
+Event
+.TP
+0
+proximity
+.TP
+1
+button
+.TP
+2
+motion
+.TP
+3
+pressure
+.PD
+.RE
+.TP 4
+.B Option \fI"DisablePressureRecalibration"\fP
+Option to disable the pressure recalibration to compensate for non-zero pressure before
+even touching the tablet seen on worn out devices. This pressure recalibration may lead
+to 'lost button events' in some abnormal use cases.
+.TP 4
 .B Option \fI"CursorProx"\fP \fI"number"\fP
 sets the max distance from tablet to stop reporting movement for cursor in relative mode. 
 Default for Intuos series is 10, for Graphire series (including Volitos) is 42.
