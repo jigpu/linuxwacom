@@ -130,6 +130,16 @@
 #define DBG(lvl, dLevel, f)
 #endif
 
+#ifdef LOG
+#undef LOG
+#endif
+#define DO_LOG(m, v) (m & v)
+#define LOG(m, v, f) do { if (DO_LOG(m, v)) f; } while (0)
+#define LOG_PROXIMITY 1
+#define LOG_BUTTON 2
+#define LOG_MOTION 4
+#define LOG_PRESSURE 8
+
 /*****************************************************************************
  * General Macros
  ****************************************************************************/

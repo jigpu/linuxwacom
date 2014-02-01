@@ -372,6 +372,7 @@ struct _WacomCommonRec
 	char* wcmSysNode;	     /* sysfs path */
 	unsigned char wcmFlags;      /* various flags (handle tilt) */
 	int debugLevel;
+	int logMask;
 	int tablet_id;		     /* USB tablet ID */
 	Bool is_display;             /* is the tablet a display tablet? */
 	int fd;                      /* file descriptor to tablet */

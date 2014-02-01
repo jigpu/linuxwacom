@@ -197,6 +197,8 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	common->wcmISDV4Speed = 38400;  /* serial ISDV4 link speed */
 	common->debugLevel = 0;         /* shared debug level can only 
 					 * be changed though xsetwacom */
+	common->logMask = 0;           /* shared log level can only 
+					 * be changed though xsetwacom */
 
 	common->wcmDevCls = &gWacomSerialDevice; /* device-specific functions */
 	common->wcmModel = NULL;                 /* model-specific functions */
@@ -825,6 +827,11 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	if (common->debugLevel > 0)
 		xf86Msg(X_CONFIG, "WACOM: %s tablet common debug level set to %d\n",
 			dev->identifier, common->debugLevel);
+	common->logMask = xf86SetIntOption(local->options,
+		"DeviceLogMask", common->logMask);
+	if (common->logMask > 0)
+		xf86Msg(X_CONFIG, "WACOM: %s tablet device log mask set to %d\n",
+			dev->identifier, common->logMask);
 
 	s = xf86FindOptionValue(local->options, "Mode");
 

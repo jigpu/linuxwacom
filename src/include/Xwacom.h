@@ -46,6 +46,7 @@
 #define XWACOM_PARAM_TAPTIME		22
 #define XWACOM_PARAM_LED0		23
 #define XWACOM_PARAM_LED1		24
+#define XWACOM_PARAM_DEVICELOGMASK	25
 
 /* The followings are defined together */
 #define XWACOM_PARAM_BUTTON1    	101

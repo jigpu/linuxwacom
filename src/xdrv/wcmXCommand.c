@@ -229,6 +229,14 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 			common->debugLevel = value;
 		}
 		break;
+	    case XWACOM_PARAM_DEVICELOGMASK:
+		if ((value < 0) || (value > 0xf)) return BadValue;
+		if (common->logMask != value)
+		{
+			xf86ReplaceIntOption(local->options, "DeviceLogMask", value);
+			common->logMask = value;
+		}
+		break;
 	    case XWACOM_PARAM_SUPPRESS:
 		if ((value < 0) || (value > 100)) return BadValue;
 		if (common->wcmSuppress != value)
@@ -863,6 +871,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return priv->debugLevel;
 	    case XWACOM_PARAM_COMMONDBG:
 		return common->debugLevel;
+	    case XWACOM_PARAM_DEVICELOGMASK:
+		return common->logMask;
 	    case XWACOM_PARAM_ROTATE:
 		return common->wcmRotate;
 	    case XWACOM_PARAM_LED0:

@@ -317,6 +317,12 @@ static PARAMINFO gParamInfo[] =
 		XWACOM_PARAM_COMMONDBG, VALUE_OPTIONAL, RANGE, 
 		0, 100, SINGLE_VALUE, 0 },
 
+	{ "DeviceLogMask",
+		"Bitmask enabling logging capabilities "
+		"associated with the same tablet. \n\t\t   default is 0 (off). ",
+		XWACOM_PARAM_DEVICELOGMASK, VALUE_OPTIONAL, RANGE, 
+		0, 0xf, SINGLE_VALUE, 0 },
+
 	{ "Suppress",
 		"Number of points trimmed, default is 2. ",
 		XWACOM_PARAM_SUPPRESS, VALUE_OPTIONAL, RANGE, 
