@@ -6,7 +6,7 @@ exec wish -f "$0" ${1+"$@"}
 #
 # Author	: Ping Cheng <pinglinux@gmail.com>
 # Creation date	: 04/05/2003
-# Updated       : 2003 - 2013
+# Updated       : 2003 - 2014
 #
 # Based on calibrate 1998-99 Patrick Lecoanet --
 #
@@ -2124,13 +2124,16 @@ proc updateModelInfo { } {
     set numPadButtons(791) 9
     set numPadRings(791) 1
 
-   # Cintiq 24HD
+    # Cintiq 24HD
     set numPadButtons(244) 16
     set numPadRings(244) 2
 
-   # Cintiq 22HD
-    set numPadButtons(250) 18
-    set numPadRings(250) 2
+    # Cintiq 22HD
+    set numPadButtons(249) 18
+    set numPadRings(249) 2
+
+    # DTU-1031
+    set numPadButtons(250) 4
 
     # Cintiq 13HD
     set numPadButtons(772) 9

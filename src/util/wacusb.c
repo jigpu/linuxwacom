@@ -2,7 +2,7 @@
 ** wacusb.c
 **
 ** Copyright (C) 2002 - 2004 - John E. Joganic
-** Copyright (C) 2003 - 2013 - Ping Cheng
+** Copyright (C) 2003 - 2014 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -229,6 +229,7 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "DTU1931", "Wacom DTU1931", 12, 0xC7 },
 		{ "DTU2231", "Wacom DTU2231", 13, 0xCE },
 		{ "DTU1631", "Wacom DTU1631", 14, 0xF0 },
+		{ "DTU1031", "Wacom DTU1031", 15, 0xFB },
 		{ NULL }
 	};
 

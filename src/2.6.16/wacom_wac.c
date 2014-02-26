@@ -211,6 +211,67 @@ static int wacom_ptu_irq(struct wacom_wac *wacom)
 	return 1;
 }
 
+static int wacom_dtus_irq(struct wacom_wac *wacom)
+{
+	char *data = wacom->data;
+	struct input_dev *input = wacom->input;
+	unsigned short prox, pressure = 0;
+
+	if (data[0] != WACOM_REPORT_DTUS && data[0] != WACOM_REPORT_DTUSPAD) {
+		printk(KERN_INFO "wacom_dtus_irq: received unknown report #%d\n", data[0]);
+		return 0;
+	}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
+	input_regs(input, wacom->regs);
+#endif
+
+	if (data[0] == WACOM_REPORT_DTUSPAD) {
+		input_report_key(input, BTN_0, (data[1] & 0x01));
+		input_report_key(input, BTN_1, (data[1] & 0x02));
+		input_report_key(input, BTN_2, (data[1] & 0x04));
+		input_report_key(input, BTN_3, (data[1] & 0x08));
+		input_report_abs(input, ABS_MISC,
+				 data[1] & 0x0f ? PAD_DEVICE_ID : 0);
+		/*
+		 * Serial number is required when expresskeys are
+		 * reported through pen interface.
+		 */
+		input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+		return 1;
+	} else {
+		prox = data[1] & 0x80;
+		if (prox) {
+			switch ((data[1] >> 3) & 3) {
+			case 1: /* Rubber */
+				wacom->tool[0] = BTN_TOOL_RUBBER;
+				wacom->id[0] = ERASER_DEVICE_ID;
+				break;
+
+			case 2: /* Pen */
+				wacom->tool[0] = BTN_TOOL_PEN;
+				wacom->id[0] = STYLUS_DEVICE_ID;
+				break;
+			}
+		}
+
+		input_report_key(input, BTN_STYLUS, data[1] & 0x20);
+		input_report_key(input, BTN_STYLUS2, data[1] & 0x40);
+		input_report_abs(input, ABS_X, get_unaligned_be16(&data[3]));
+		input_report_abs(input, ABS_Y, get_unaligned_be16(&data[5]));
+		pressure = ((data[1] & 0x03) << 8) | (data[2] & 0xff);
+		input_report_abs(input, ABS_PRESSURE, pressure);
+		input_report_key(input, BTN_TOUCH, pressure > 10);
+
+		if (!prox) /* out-prox */
+			wacom->id[0] = 0;
+		input_report_key(input, wacom->tool[0], prox);
+		input_report_abs(input, ABS_MISC, wacom->id[0]);
+		input_event(input, EV_MSC, MSC_SERIAL, 1);
+		return 1;
+	}
+}
+
 static void wacom_bpt_finger_in(struct wacom_wac *wacom, char *data, int idx)
 {
 	int x = 0, y = 0;
@@ -1217,6 +1278,10 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
 		sync = wacom_ptu_irq(wacom_wac);
 		break;
 
+	case DTUS:
+		sync = wacom_dtus_irq(wacom_wac);
+		break;
+
 	case INTUOS:
 	case INTUOS3S:
 	case INTUOS3:
@@ -1460,9 +1525,15 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 
 		/* fall through */
 
+	case DTUS:
 	case PL:
 	case PTU:
 	case DTU:
+		if (features->type == DTUS) {
+			input_dev->mscbit[0] |= BIT(MSC_SERIAL);
+			input_dev->keybit[LONG(BTN_MISC)] |= BIT(BTN_0) | BIT(BTN_1)
+			| BIT(BTN_2) | BIT(BTN_3);
+		}
 		input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOOL_PEN) |
 			BIT(BTN_STYLUS) | BIT(BTN_STYLUS2);
 		/* fall through */
@@ -1613,6 +1684,8 @@ static const struct wacom_features wacom_features_0xCE =
 	{ "Wacom DTU2231",        WACOM_PKGLEN_GRAPHIRE,  47864, 27011,  511,  0, DTU };
 static const struct wacom_features wacom_features_0xF0 =
 	{ "Wacom DTU1631",        WACOM_PKGLEN_GRAPHIRE,  34623, 19553,  511,  0, DTU };
+static const struct wacom_features wacom_features_0xFB =
+	{ "Wacom DTU1031",        WACOM_PKGLEN_DTUS,      22096, 13960,  511,  0, DTUS };
 static const struct wacom_features wacom_features_0x57 =
 	{ "Wacom DTK2241",        WACOM_PKGLEN_INTUOS,    95840, 54260, 2047, 63, DTK };
 static const struct wacom_features wacom_features_0x59 =
@@ -1731,6 +1804,7 @@ const struct usb_device_id wacom_ids[] = {
 	{ USB_DEVICE_WACOM(0xF4) },
 	{ USB_DEVICE_WACOM(0xF8) },
 	{ USB_DEVICE_WACOM(0xFA) },
+	{ USB_DEVICE_WACOM(0xFB) },
 	{ }
 };
 MODULE_DEVICE_TABLE(usb, wacom_ids);

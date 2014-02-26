@@ -485,6 +485,7 @@ static struct
 	{ 0xC7, 2540, 2540, &usbCintiq     }, /* DTU1931 */
 	{ 0xCE, 2540, 2540, &usbCintiq     }, /* DTU2231 */
 	{ 0xF0, 2540, 2540, &usbCintiq     }, /* DTU1631 */
+	{ 0xFB, 2540, 2540, &usbCintiq     }, /* DTU1031 */
 
 	{ 0x41, 2540, 2540, &usbIntuos2    }, /* Intuos2 4x5 */
 	{ 0x42, 2540, 2540, &usbIntuos2    }, /* Intuos2 6x8 */
