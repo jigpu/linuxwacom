@@ -331,8 +331,8 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		}
 		break;
 	    case XWACOM_PARAM_XYDEFAULT:
-		xf86WcmSetParam (local, XWACOM_PARAM_TOPX, 0);
-		xf86WcmSetParam (local, XWACOM_PARAM_TOPY, 0);
+		xf86WcmSetParam (local, XWACOM_PARAM_TOPX, priv->minX);
+		xf86WcmSetParam (local, XWACOM_PARAM_TOPY, priv->minY);
 		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, priv->maxX);
 		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, priv->maxY);
 		break;

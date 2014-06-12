@@ -162,6 +162,8 @@ struct _WacomDeviceRec
 	int bottomY;		/* Y bottom */
 	int resolX;             /* X resolution */
 	int resolY;             /* Y resolution */
+	int minX;	        /* tool logical minX */
+	int minY;	        /* tool logical minY */
 	int maxX;	        /* tool logical maxX */
 	int maxY;	        /* tool logical maxY */
 	int sizeX;		/* active X size */
@@ -384,6 +386,8 @@ struct _WacomCommonRec
 	dev_t min_maj;               /* minor/major number */
 	unsigned long wcmKeys[NBITS(KEY_MAX)]; /* supported tool types for the device */
 
+	int wcmMinX;                 /* min tool logical X value */
+	int wcmMinY;                 /* min tool logical Y value */
 	int wcmMaxX;                 /* max tool logical X value */
 	int wcmMaxY;                 /* max tool logical Y value */
 	int wcmResolX;               /* tool X resolution in points/inch */

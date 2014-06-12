@@ -714,8 +714,10 @@ int usbWcmGetRanges(LocalDevicePtr local)
 		return !Success;
 	}
 	if (!is_touch)
+	{
+		common->wcmMinX = absinfo.minimum;
 		common->wcmMaxX = absinfo.maximum;
-	else
+	} else
 		common->wcmMaxTouchX = absinfo.maximum;
 
 	/* max y */
@@ -725,8 +727,10 @@ int usbWcmGetRanges(LocalDevicePtr local)
 		return !Success;
 	}
 	if (!is_touch)
+	{
+		common->wcmMinY = absinfo.minimum;
 		common->wcmMaxY = absinfo.maximum;
-	else
+	} else
 		common->wcmMaxTouchY = absinfo.maximum;
 
 	/* max finger strip X for tablets with Expresskeys 

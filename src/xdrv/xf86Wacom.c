@@ -312,6 +312,8 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 	}
 	else
 	{
+		priv->minX = common->wcmMinX;
+		priv->minY = common->wcmMinY;
 		priv->maxX = common->wcmMaxX;
 		priv->maxY = common->wcmMaxY;
 		priv->resolX = common->wcmResolX;
@@ -327,6 +329,10 @@ static void xf86WcmInitialToolSize(LocalDevicePtr local)
 		arealist = toollist->arealist;
 		for (; arealist; arealist=arealist->next)
 		{
+			if (!arealist->topX)
+				arealist->topX = priv->minX;
+			if (!arealist->topY)
+				arealist->topY = priv->minY;
 			if (!arealist->bottomX)
 				arealist->bottomX = priv->maxX;
 			if (!arealist->bottomY)
