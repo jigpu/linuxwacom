@@ -65,7 +65,6 @@ static int wacom_penpartner_irq(struct wacom_wac *wacom)
 
 static int wacom_dtu_irq(struct wacom_wac *wacom)
 {
-	struct wacom_features *features = &wacom->features;
 	unsigned char *data = wacom->data;
 	struct input_dev *input = wacom->input;
 	int prox = data[1] & 0x20;
@@ -102,10 +101,9 @@ static int wacom_dtu_irq(struct wacom_wac *wacom)
 
 static int wacom_pl_irq(struct wacom_wac *wacom)
 {
-	struct wacom_features *features = &wacom->features;
 	unsigned char *data = wacom->data;
 	struct input_dev *input = wacom->input;
-	int prox, pressure;
+	int prox;
 
 	if (data[0] != WACOM_REPORT_PENABLED) {
 		dbg("wacom_pl_irq: received unknown report #%d", data[0]);
@@ -119,10 +117,6 @@ static int wacom_pl_irq(struct wacom_wac *wacom)
 #endif
 	if (prox) {
 		wacom->id[0] = ERASER_DEVICE_ID;
-		pressure = (signed char)((data[7] << 1) | ((data[4] >> 2) & 1));
-		if (features->pressure_max > 255)
-			pressure = (pressure << 1) | ((data[4] >> 6) & 1);
-		pressure += (features->pressure_max + 1) / 2;
 
 		/*
 		 * if going from out of proximity into proximity select between the eraser
@@ -156,7 +150,7 @@ static int wacom_pl_irq(struct wacom_wac *wacom)
 		input_report_abs(input, ABS_MISC, wacom->id[0]); /* report tool id */
 		input_report_abs(input, ABS_X, data[3] | (data[2] << 7) | ((data[1] & 0x03) << 14));
 		input_report_abs(input, ABS_Y, data[6] | (data[5] << 7) | ((data[4] & 0x03) << 14));
-		input_report_abs(input, ABS_PRESSURE, pressure);
+		input_report_abs(input, ABS_PRESSURE, (data[7] << 1) | ((data[4] >> 2) & 1);
 
 		input_report_key(input, BTN_TOUCH, data[4] & 0x08);
 		input_report_key(input, BTN_STYLUS, data[4] & 0x10);
@@ -1156,7 +1150,6 @@ static void wacom_tpc_touch_in(struct wacom_wac *wacom, size_t len)
 
 static int wacom_tpc_irq(struct wacom_wac *wacom, size_t len)
 {
-	struct wacom_features *features = &wacom->features;
 	unsigned char *data = wacom->data;
 	struct input_dev *input = wacom->input;
 	int prox = 0;
@@ -1364,8 +1357,8 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
 
 	input_dev->keybit[LONG(BTN_DIGI)] |= BIT(BTN_TOUCH);
 
-	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
-	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
+	input_set_abs_params(input_dev, ABS_X, features->x_min, features->x_max, 4, 0);
+	input_set_abs_params(input_dev, ABS_Y, features->y_min, features->y_max, 4, 0);
 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
 	input_dev->absbit[LONG(ABS_MISC)] |= BIT(ABS_MISC);
 
@@ -1678,7 +1671,7 @@ static const struct wacom_features wacom_features_0xC5 =
 static const struct wacom_features wacom_features_0xC6 =
 	{ "Wacom Cintiq 12WX",    WACOM_PKGLEN_INTUOS,    53020, 33440, 1023, 63, WACOM_BEE };
 static const struct wacom_features wacom_features_0x304 =
-	{ "Wacom Cintiq 13HD",    WACOM_PKGLEN_INTUOS,    59552, 33848, 1023, 63, WACOM_13HD };
+	{ "Wacom Cintiq 13HD",    WACOM_PKGLEN_INTUOS,    59352, 33648, 1023, 63, WACOM_13HD, 200, 200 };
 static const struct wacom_features wacom_features_0xC7 =
 	{ "Wacom DTU1931",        WACOM_PKGLEN_GRAPHIRE,  37832, 30305,  511,  0, PL };
 static const struct wacom_features wacom_features_0xCE =
@@ -1688,19 +1681,19 @@ static const struct wacom_features wacom_features_0xF0 =
 static const struct wacom_features wacom_features_0xFB =
 	{ "Wacom DTU1031",        WACOM_PKGLEN_DTUS,      22096, 13960,  511,  0, DTUS };
 static const struct wacom_features wacom_features_0x57 =
-	{ "Wacom DTK2241",        WACOM_PKGLEN_INTUOS,    95840, 54260, 2047, 63, DTK };
+	{ "Wacom DTK2241",        WACOM_PKGLEN_INTUOS,    95640, 54060, 2047, 63, DTK, 200, 200 };
 static const struct wacom_features wacom_features_0x59 =
-	{ "Wacom DTH2242",        WACOM_PKGLEN_INTUOS,    95840, 54260, 2047, 63, DTK };
+	{ "Wacom DTH2242",        WACOM_PKGLEN_INTUOS,    95640, 54060, 2047, 63, DTK, 200, 200 };
 static const struct wacom_features wacom_features_0xF4 =
-	{ "Wacom Cintiq 24HD",    WACOM_PKGLEN_INTUOS,   104480, 65600, 2047, 63, WACOM_24HD, };
+	{ "Wacom Cintiq 24HD",    WACOM_PKGLEN_INTUOS,   104280, 65400, 2047, 63, WACOM_24HD, 200, 200 };
 static const struct wacom_features wacom_features_0xF8 =
-	{ "Wacom Cintiq 24HD touch", WACOM_PKGLEN_INTUOS,104480, 65600, 2047, 63, WACOM_24HD };
+	{ "Wacom Cintiq 24HD touch", WACOM_PKGLEN_INTUOS,104280, 65400, 2047, 63, WACOM_24HD, 200, 200 };
 static const struct wacom_features wacom_features_0xCC =
-	{ "Wacom Cintiq 21UX2",   WACOM_PKGLEN_INTUOS,    87200, 65600, 2047, 63, WACOM_21UX2 };
+	{ "Wacom Cintiq 21UX2",   WACOM_PKGLEN_INTUOS,    87000, 65400, 2047, 63, WACOM_21UX2, 200, 200 };
 static const struct wacom_features wacom_features_0xFA =
-	{ "Wacom Cintiq 22HD",    WACOM_PKGLEN_INTUOS,    95840, 54260, 2047, 63, WACOM_22HD };
+	{ "Wacom Cintiq 22HD",    WACOM_PKGLEN_INTUOS,    95640, 54060, 2047, 63, WACOM_22HD, 200, 200 };
 static const struct wacom_features wacom_features_0x5B =
-	{ "Wacom Cintiq 22HDT",   WACOM_PKGLEN_INTUOS,    95840, 54260, 2047, 63, WACOM_22HD };
+	{ "Wacom Cintiq 22HDT",   WACOM_PKGLEN_INTUOS,    95640, 54060, 2047, 63, WACOM_22HD, 200, 200 };
 static const struct wacom_features wacom_features_0x90 =
 	{ "Wacom ISDv4 90",       WACOM_PKGLEN_GRAPHIRE,  26202, 16325,  255,  0, TABLETPC };
 static const struct wacom_features wacom_features_0x93 =
