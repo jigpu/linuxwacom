@@ -416,7 +416,7 @@ static int wacom_led_control(struct wacom *wacom)
 		return -ENOMEM;
 
 	if (wacom->wacom_wac.features.type >= INTUOS5S &&
-	    wacom->wacom_wac.features.type <= INTUOS5L)	{
+	    wacom->wacom_wac.features.type <= INTUOSPL)	{
 		/* Touch Ring and crop mark LED luminance may take on
 		 * one of four values:
 		 *    0 = Low; 1 = Medium; 2 = High; 3 = Off
@@ -545,6 +545,9 @@ static int wacom_initialize_leds(struct wacom *wacom)
 	case INTUOS5S:
 	case INTUOS5:
 	case INTUOS5L:
+	case INTUOSPS:
+	case INTUOSPM:
+	case INTUOSPL:
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 32;
@@ -586,6 +589,9 @@ static void wacom_destroy_leds(struct wacom *wacom)
 	case INTUOS5S:
 	case INTUOS5:
 	case INTUOS5L:
+	case INTUOSPS:
+	case INTUOSPM:
+	case INTUOSPL:
 		sysfs_remove_group(&wacom->intf->dev.kobj,
 				   &intuos5_led_attr_group);
 		break;
@@ -596,6 +602,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 {
 	struct usb_device *dev = interface_to_usbdev(intf);
 	struct usb_endpoint_descriptor *endpoint;
+	struct usb_interface_descriptor *interface;
 	struct wacom *wacom;
 	struct wacom_wac *wacom_wac;
 	struct wacom_features *features;
@@ -641,6 +648,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 
 	wacom_wac->input = input_dev;
 
+	interface = &intf->cur_altsetting->desc;
 	endpoint = &intf->cur_altsetting->endpoint[0].desc;
 
 	/* Retrieve the physical and logical size for OEM devices */
@@ -648,9 +656,15 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	if (error)
 		goto fail3;
 
-	/* Ignore Intuos5 touch interface until BPT3 touch support backported */
-	if (features->type >= INTUOS5S && features->type <= INTUOS5L) {
+	if (features->type >= INTUOS5S && features->type <= INTUOSPL) {
 		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
+			/* Ignore touch interface until BPT3 touch support backported */
+			error = -ENODEV;
+			goto fail2;
+		} else if (interface->bInterfaceClass == 3 && \
+		           interface->bInterfaceSubClass == 1 && \
+		           interface->bInterfaceProtocol == 2) {
+			/* ingore extra (Windows-workaround) boot mouse interface */
 			error = -ENODEV;
 			goto fail2;
 		} else {
@@ -661,7 +675,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	strlcpy(wacom_wac->name, features->name, sizeof(wacom_wac->name));
 
 	if (features->type == TABLETPC || features->type == TABLETPC2FG ||
-	    features->type == BAMBOO_PT || (features->type >= INTUOS5S && features->type <= INTUOS5L)) {
+	    features->type == BAMBOO_PT || (features->type >= INTUOS5S && features->type <= INTUOSPL)) {
 		/* Append the device type to the name */
 		strlcat(wacom_wac->name,
 			features->device_type == BTN_TOOL_PEN ?
