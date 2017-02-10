@@ -9,7 +9,6 @@
 #ifndef WACOM_WAC_H
 #define WACOM_WAC_H
 
-#include <linux/version.h>
 #include <linux/types.h>
 
 /* maximum packet length for USB devices */
@@ -49,9 +48,9 @@ enum {
 	GRAPHIRE,
 	WACOM_G4,
 	PTU,
+	PL,
 	DTU,
 	DTUS,
-	PL,
 	BAMBOO_PT,
 	INTUOS,
 	INTUOS3S,
@@ -96,6 +95,10 @@ struct wacom_features {
 	unsigned char unitExpo;
 };
 
+struct wacom_shared {
+	bool stylus_in_proximity;
+};
+
 struct wacom_wac {
 	char name[64];
 	unsigned char *data;
@@ -104,10 +107,8 @@ struct wacom_wac {
 	__u32 serial[2];
 	int last_finger;
 	struct wacom_features features;
+	struct wacom_shared *shared;
 	struct input_dev *input;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-	struct pt_regs *regs;
-#endif
 };
 
 #endif

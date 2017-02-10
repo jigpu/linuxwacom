@@ -1,3 +1,254 @@
+2012-01-14  Ping Cheng <pingc@wacom.com>
+	* Add Cinitq 24HD support
+	* Label 0.9.3
+
+2011-10-12  Ping Cheng <pingc@wacom.com>
+	* Add LED support for Intuos4 and Cinitq 21UX2
+	* Label 0.9.1
+
+2011-06-20  Ping Cheng <pingc@wacom.com>
+	* Add "-lc" to Makefile.am (Daniel Grafe)
+	* Add "ignore first USB motion events" back. Otherwise cursor jumps when first in prox
+	* Updated wacdump.php with input from Patrick Horgan and David Foley
+	* Updated "Building wacom driver On RHEL 5" page by Sylvain Giasson
+	* Label 0.9.0
+
+2011-04-27  Ping Cheng <pingc@wacom.com>
+	* Put wacom_ioctl back for OLED (Eduard Hasenleithner)
+	* Fixed error path in wacom_probe (Alexander Strakh)
+	* Updated wacomcfg.c for touch device (David Foley)
+	* Some minor kernel updated
+	* Label 0.8.9
+
+2011-03-03  Ping Cheng <pingc@wacom.com>
+	* Always retrieve (x,y) from the kernel the first time in prox for non-pad tool
+	* Don't read data while driver loading/unloading to avoid a hotplugging race condition
+	* Don't turn device off when getting read errors
+	* Fixed a missing tool type for Cintiq in 2.6.16/wacom_wac.c
+	* Label 0.8.8-11
+
+2010-10-12  Ping Cheng <pingc@wacom.com>
+	* Fixed a kernel bug for Cintiq 21UX2 pressure (Aristeu Rozanski <aris@redhat.com>)
+	* Fixed a print format error in xidump.c (Aristeu Rozanski)
+	* Label 0.8.8-10
+
+2010-10-01  Ping Cheng <pingc@wacom.com>
+	* Specify the tools supported by Intuos and CintiqV5 
+	  series respectively in the kernel
+	* Calibration-only wacomcpl has the options to display warnings or 
+	  flashing the crosshairs in red when abnormal (x,y) is detected
+	* Enable all tools for X server 1.4 and older and kernel 2.6.24 and older
+	* Peter Hutterer's configure message update for newer Xorg
+	* Label 0.8.8-9
+
+2010-07-27  Ping Cheng <pingc@wacom.com>
+	* Updated kernel driver for 2.6.23 and later
+	* Label 0.8.8-8
+
+2010-07-22  Ping Cheng <pingc@wacom.com>
+	* Fixed a memory leakage in util/wacomcfg.c (Eldar Firing <eldarf@sf.net>)
+	* Replaced usb_buffer_free with usb_free_coherent for 2.6.35 
+		- by Diego Calleja <diegocg@gmail.com>
+	* Removed a few unused routines in xf86Wacom.c
+	* Label 0.8.8-7
+
+2010-07-14  Ping Cheng <pingc@wacom.com>
+	* Updated udev wacom rules
+	* Updated web pages for new devices
+	* Added call EVIOCGKEY back in wcmUSB.c
+	* Label 0.8.8-6
+
+2010-07-12  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in and src/Makefile.am to include xorg server 1.6.5
+	* Updated wcmUSB.c to use default nbuttons and npadkeys since kernels 
+	  older than 2.6.24 doesn't return proper keys from EVIOCGKEY
+	* Added a new xsetwacom option, isDisplay, to report if the tablet is 
+	  a display tablet or not 
+	* Label 0.8.8-5
+
+2010-06-29  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in and src/Makefile.am for XFree86 servers
+	* Updated 2.6.16/wacom_wac.c for kernels older than 2.6.21
+	* Added "\" to wacomcpl-exec to continue the partial lines
+	* Label 0.8.8-4
+
+2010-06-18  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in for older X servers
+	* Updated 2.6.16/wacom_wac.c for Cintiq 21UX2
+	* Label 0.8.8-3
+
+2010-06-16  Ping Cheng <pingc@wacom.com>
+	* Updated wacom_wac.c and wacom_wac.h for DTU-2231 and DTU-1631
+	* Updated wacomcpl
+	* Label 0.8.8-2
+
+2010-06-11  Ping Cheng <pingc@wacom.com>
+	* Fixed a few minor issues
+	* Added DTU-2231 support
+	* Added DTU-1631 support
+	* Label 0.8.8-1
+
+2010-06-07  Ping Cheng <pingc@wacom.com>
+	* Fixed free toolarea issue
+	* Moved "retrieving tools" from wcmCommon to wcmUSB, where it belongs
+	* Initialize common->npadkeys before recounting the keys
+	* Label 0.8.8
+
+2010-06-02  Ping Cheng <pingc@wacom.com>
+	* Added the xsetwacom manpage
+		- by Peter Hutterer <peter.hutterer@redhat.com>
+	* Free common, common->toollist, priv->tool, and toolarea
+	* Added Application Defined functionality for buttons
+	* Retrieve supported tools from the kernel if a tool is on 
+	  the tablet when X server started
+	* Label 0.8.7-2
+
+2010-05-21  Ping Cheng <pingc@wacom.com>
+	* Normalized the 6th valuator to 2048
+	  this valuator reports absolute wheel or ArtPen rotation
+	  they are normally considered as the tangential pressure
+	* Updated wacomcpl for button options
+	* Added support for Intuos4WL (USB ndpoint)E in the kernel
+	* Added support for Intuos4WL in xdrv (both bluetooth and USB)
+	* Label 0.8.7-1
+
+2010-05-17  Ping Cheng <pingc@wacom.com>
+	* Restructured supported kernesl
+	* Removed kernels 2.6.9 to 2.6.15 support
+	* Added support for Cintiq 21UX2
+	* Label 0.8.7
+
+2010-05-12  Ping Cheng <pingc@wacom.com>
+	* Updated configure.in to disable wacom_drv and its utilities
+	  and tell user to build wacom_drv from xf86-input-wacom for 
+	  Xorg server 1.7 or later
+	* Label 0.8.6-2
+	  
+2010-04-30  Ping Cheng <pingc@wacom.com>
+	* Updated wacom_sys.c for system resume
+	* Reset wcmTouchpadMode in xf86WcmSoftOutEvent
+	* Added wcmCustomDebug.c for extra debug information
+		- by Stefan Schimanski
+	* Label 0.8.6-1
+
+2010-04-09  Ping Cheng <pingc@wacom.com>
+	* Updated calibration in wacomcpl (Stefan Schimanski)
+	* Updated wacom_wac.c for 2.6.24+ 
+		- by Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	* Updated pressure normalization
+	* Updated ISDV4 data parsing routine
+	* Updated wacom man page
+	* Updated linuxwacom web pages
+	* Label 0.8.6
+
+2010-03-26  Ping Cheng <pingc@wacom.com>
+	* Updated kernel driver for 2FGT and Bamboo touch
+	* Added 2.6.30 path for kernels 2.6.30 and later
+	* Normalized pressure sensitivity to 2048
+	* Updated 2FGT gesture with Chris Bagwell's suggestion
+	* Label 0.8.5-12
+
+2010-03-10  Ping Cheng <pingc@wacom.com>
+	* Add modifiers (right) to wcmAction.c
+	* Fixed a copy/paste error in the license statement
+	* Support kernel 2.6.33
+	* Cleaned kernel drivers for 2FGT
+	* Add HAL_CFLAGS to CFLAGS 
+		- by Pedro Gimeno <pg-lwd391@personal.formauri.es>
+	* Retrieve tablet_id early on in wcmValidateDevice
+	* Call getRange for both touch and pad, whichever comes the first
+		- by Chris Bagwell <chris@cnpbagwell.com>
+	* Fixed a keystroke bug for non-core mode of older Xorgs
+		- by Stefan Schimanski
+	* Added wacom XRandR daemon to support RandR settting
+		- by Takashi Iwai <tiwai@suse.de>
+	* Label 0.8.5-11
+
+2010-02-12  Ping Cheng <pingc@wacom.com>
+	* Updated Bamboo series support in the kernel and X drivers
+		- by Jason Childs <oblivian@users.sourceforge.net>
+	* Support at least 7 buttons for each tool
+		- by Alexia Death <alexiadeath@gmail.com>
+	* Avoid lose of duplicated second finger data in wacom_wac
+		- by Chris Bagwell <chris@cnpbagwell.com>
+	* Label 0.8.5-10
+
+2009-12-30  Ping Cheng <pingc@wacom.com>
+	* Incorporated Ayuthia's Bamboo P&T patch -34
+		- submitted by Favux <favux.is@gmail.com>
+	* Fixed some kernel misplacement
+	* Fixed a protocol4 mouse button click issue
+	* Label 0.8.5-9
+
+2009-12-22  Ping Cheng <pingc@wacom.com>
+	* Added max and resolution for local tool
+	* Use linuxwacom.fdi gathered from Ubuntu forum
+		- modified by Kory Prince and cyberfish
+		- submitted by Favux <favux.is@gmail.com>
+	* Merged Nicholas Hirsch's Intuos4 OLED Support
+		- Patch ID 2878608 at Tracker
+	* Fixed tablet rotate bug reported by Favux
+	* Label 0.8.5-8
+
+2009-12-15  Ping Cheng <pingc@wacom.com>
+	* Updated serial Tablet PCs support
+	* Added 5 new Bamboo tablets support
+		- kernel patch submitted by K Gingerich
+		- xorg by Enrico Ros <enrico.ros@gmail.com>
+	* Label 0.8.5-7
+
+2009-12-08  Ping Cheng <pingc@wacom.com>
+	* Merged src/2.6.28 into src/2.6.27 so we have less files to worry
+	* Removed src/2.6.28
+	* Updated src/2.6.27 to version 1.52 in the kernel tree
+	* Support new serial Tablet PCs
+	* Label 0.8.5-6
+
+2009-11-30  Ping Cheng <pingc@wacom.com>
+	* Fixed a kernel driver bug for E3
+	* Updated serial ISDv4 support with newer protocol
+	* Support suspend/resume for kernel 2.6.26 and later
+	* Label 0.8.5-5
+
+2009-11-13  Ping Cheng <pingc@wacom.com>
+	* Allow multiple tools defined with one type
+	* Label 0.8.5-4
+
+2009-11-09  Ping Cheng <pingc@wacom.com>
+	* Added right click, scroll, and zoom for two finger touch
+	* Updated kernel driver
+	* Validating tool by retriving device type from kernel driver
+	* Fixed a bug in xsetwacom TWINVIEW option
+	* Fixed a device id issue in xsetwacom TOOLID option
+	* Label 0.8.5-2
+
+2009-10-31  Ping Cheng <pingc@wacom.com>
+	* Avoid duplicated devices
+	* Validate tool type before adding it
+	* Use struct input_id and struct input_absinfo in wcmUSB.c
+		- for kernel cross version compatibility support
+	* Support device names with white spaces in xsetwacom and wacomcpl 
+		- for hot-plugged devices
+	* Fine tuned configure.in (tested by Camille Moncelier)
+	* Label 0.8.5-1
+
+2009-10-19  Ping Cheng <pingc@wacom.com>
+	* Added Cap+ (9F) touch support (Camille Moncelier)
+	* Added TabletPC (E2 and E3) support
+	* Merged Thomas Jaeger's xidump patch
+	* Merged Peter Hutterer's remove kernel 2.4 support patch
+	* Updated 10-linuxwacom.fdi for touch
+	* Don't allow HAL add tools that were defined in xorg.conf again
+	* Added calibration-only feature to wacomcpl (Oleg Gaier)
+	* Fixed a package configuration issue for Xorgs 6.7 - 7.2 
+	* Label 0.8.5
+
+2009-10-07  Ping Cheng <pingc@wacom.com>
+	* Fixed a minor TwinView bug in xsetwacom command
+	* Fixed a serial number = 0 case in wcmUSB.c
+	* Fixed a crash issue on Xserver 1.6 or later
+	* Label 0.8.4-3
+
 2009-09-16  Ping Cheng <pingc@wacom.com>
 	* Fixed a mapping issue introduced by non-TwinView support
 	* Label 0.8.4-2
@@ -145,86 +396,3 @@
 	* Update ~/.xsession from wacomcpl for KDE system
 	* Added IsXExtensionKeyboard check for Xserver 1.4 or later in wacomcfg.c
 	* Label 0.8.0
-
-2008-04-11  Ping Cheng <pingc@wacom.com>
-	* Excluded dixScreenOrigins call for Xorg 6.8.x
-	* Synchronized databases
-	* Updated webpages
-	* Label 0.7.9-11
-
-2008-04-03  Ping Cheng <pingc@wacom.com>
-	* Minor fixes in kernel and wacomcpl
-	* Removed debug statement in wcmSerial.c
-	* Label 0.7.9-10
-
-2008-03-30  Ping Cheng <pingc@wacom.com>
-	* Updated configure.in for keystrokes (Magnus Vigerlöf)
-	* Added touch support for serial TabletPC (ISDv4)
-	* Added autoprobe patch (Matthias Hopf @ Suse)
-	* Label 0.7.9-9
-
-2008-03-07  Ping Cheng <pingc@wacom.com>
-	* Updated wacomcpl for keystrokes
-	* Excluded keystroke support for XFree86
-	* Introduced wacom defined keymap (Magnus Vigerlöf)
-	* Support building outside the source-directory (Magnus Vigerlöf)
-
-2008-02-28  Ping Cheng <pingc@wacom.com>
-	* Added support for Cintiq 20WSX
-	* Fixed Bug 1875050 (Kovid Goyal)
-	* Incorporated patch 1901778 (Steven Seed)
-
-2008-02-23  Magnus Vigerlöf <Magnus.Vigerlof@ipbo.se>
-	* The rescaling patch is now in X.org master database
-	* Updated configure.in
-	* Added 2.6.24 support
-	* Updated kernel 2.4 make file
-
-2008-01-22  Ping Cheng <pingc@wacom.com>
-	* Updarted xsetwacom for Cintiq 12WX, Bamboo1, and BambooFun
-	* Regrouped the routines for coming Xorg 7.3 hot-plug support (Magnus Vigerlöf)
-	* refer to http://git.debian.org/?p=collab-maint/linux-wacom.git;a=summary for detailed changes
-	* Label 0.7.9-7
-
-2008-01-10  Ping Cheng <pingc@wacom.com>
-	* Label 0.7.9-6
-
-2008-01-02  Ping Cheng <pingc@wacom.com>
-	* Updated build and configure scripts (Magnus Vigerlöf)
-	* Support Xorg 7.3 with multimonitors
-	* Unified screen, tablet, and cordinate initialization
-
-2007-12-19  Ping Cheng <pingc@wacom.com>
-	* Support multimonitor setup on 4 directions
-
-2007-12-13  Ping Cheng <pingc@wacom.com>
-	* Updated wacomcpl
-	* Incorporated Xorg 7.3 workaround from Magnus Vigerlöf
-	* Label 0.7.9-4
-
-2007-11-28  Ping Cheng <pingc@wacom.com>
-	* Clean support of outbound tracking for Bamboo, etc
-	* Updated kernel 2.4.x code
-	* Label 0.7.9-3
-
-2007-11-28  Ping Cheng <pingc@wacom.com>
-	* Updated TwinView support to eliminate the unnecessary tvoffset (bug 1812593)
-	* Incorporated Bartosz Fabianowski's patch (bug 1831998)
-	* Patch 1818295 from Alexander V. Inyukhin
-	* Patch 1834712 from Magnus Vigerlöf 
-	* Fixed bug 1791005 (protocol 4 tablets don't support serial numbers)
-	* Patch 1839008 from Magnus Vigerlöf 
-
-2007-11-12  Ping Cheng <pingc@wacom.com>
-	* Support legacy kernels
-	* Label 0.7.9-2
-
-2007-11-08  Ping Cheng <pingc@wacom.com>
-	* Added support for BambooFun, Bamboo1 and Hummingbird
-	* Support multimonitors horizontally and vertically in the same configuration
-
-2007-10-24  Ping Cheng <pingc@wacom.com>
-	* Added support for 2.6.22
-	* Temporary workaround for Xorg 7.3 (Magnus and Ron)
-	* Support up to 8 screens in xsetwacom
-	* Label 0.7.9

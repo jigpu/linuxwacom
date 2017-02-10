@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2007-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -9,7 +9,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -24,17 +24,18 @@
  * 2008-06-26 0.3 - Added Capacity
  * 2009-03-16 0.4 - Added leftOF for TwinView
  * 2009-04-21 0.5 - Added set serial option
+ * 2009-09-31 0.6 - Added dual touch
+ * 2010-02-09 0.7 - Added gesture options
  */
-
 
 /****************************************************************************/
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
 
+extern void xf86WcmChangeScreen(LocalDevicePtr local, int value);
 extern void xf86WcmInitialCoordinates(LocalDevicePtr local, int axes);
 extern void xf86WcmRotateTablet(LocalDevicePtr local, int value);
-extern void xf86WcmInitialScreens(LocalDevicePtr local);
 
 /*****************************************************************************
  * xf86WcmSetPadCoreMode
@@ -118,27 +119,6 @@ int xf86WcmDevSwitchMode(ClientPtr client, DeviceIntPtr dev, int mode)
 
 	/* Share this call with sendAButton in wcmCommon.c */
 	return xf86WcmDevSwitchModeCall(local, mode);
-}
-
-/*****************************************************************************
- * xf86WcmChangeScreen
- ****************************************************************************/
-
-void xf86WcmChangeScreen(LocalDevicePtr local, int value)
-{
-	WacomDevicePtr priv = (WacomDevicePtr)local->private;
-
-	if (priv->screen_no != value)
-	{
-		priv->screen_no = value;
-		xf86ReplaceIntOption(local->options, "ScreenNo", value);
-	}
-
-	if (priv->screen_no != -1)
-		priv->currentScreen = priv->screen_no;
-	xf86WcmInitialScreens(local);
-	xf86WcmInitialCoordinates(local, 0);
-	xf86WcmInitialCoordinates(local, 1);
 }
 
 /*****************************************************************************
@@ -249,6 +229,14 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 			common->debugLevel = value;
 		}
 		break;
+	    case XWACOM_PARAM_DEVICELOGMASK:
+		if ((value < 0) || (value > 0xf)) return BadValue;
+		if (common->logMask != value)
+		{
+			xf86ReplaceIntOption(local->options, "DeviceLogMask", value);
+			common->logMask = value;
+		}
+		break;
 	    case XWACOM_PARAM_SUPPRESS:
 		if ((value < 0) || (value > 100)) return BadValue;
 		if (common->wcmSuppress != value)
@@ -279,7 +267,7 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		break;
 	    case XWACOM_PARAM_PRESSCURVE:
 	    {
-		if ( !IsCursor(priv) && !IsPad (priv) && !IsTouch (priv)) 
+		if (IsStylus(priv) || IsEraser(priv)) 
 		{
 			char chBuf[64];
 			int x0 = (value >> 24) & 0xFF;
@@ -323,11 +311,12 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 	    case XWACOM_PARAM_CLICKFORCE:
 		if ((value < 1) || (value > 21)) return BadValue;
 		common->wcmThreshold = (int)((double)
-				(value*common->wcmMaxZ)/100.00+0.5);
+				(value * FILTER_PRESSURE_RES ) / 100.00 + 0.5);
 		xf86ReplaceIntOption(local->options, "Threshold", 
 				common->wcmThreshold);
 		break;
 	    case XWACOM_PARAM_THRESHOLD:
+		if ((value < 1) || (value > FILTER_PRESSURE_RES)) return BadValue;
 		common->wcmThreshold = value;
 		xf86ReplaceIntOption(local->options, "Threshold", 
 				common->wcmThreshold);
@@ -342,10 +331,10 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		}
 		break;
 	    case XWACOM_PARAM_XYDEFAULT:
-		xf86WcmSetParam (local, XWACOM_PARAM_TOPX, 0);
-		xf86WcmSetParam (local, XWACOM_PARAM_TOPY, 0);
-		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, priv->wcmMaxX);
-		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, priv->wcmMaxY);
+		xf86WcmSetParam (local, XWACOM_PARAM_TOPX, priv->minX);
+		xf86WcmSetParam (local, XWACOM_PARAM_TOPY, priv->minY);
+		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMX, priv->maxX);
+		xf86WcmSetParam (local, XWACOM_PARAM_BOTTOMY, priv->maxY);
 		break;
 	    case XWACOM_PARAM_MMT:
 		if ((value != 0) && (value != 1)) 
@@ -385,13 +374,43 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 				xf86ReplaceStrOption(local->options, "Touch", "off");
 		}
 		break;
-	    case XWACOM_PARAM_CAPACITY:
-		if ((value < -1) || (value > 5)) 
+	    case XWACOM_PARAM_GESTURE:
+		if ((value != 0) && (value != 1)) 
 			return BadValue;
-		else if (common->wcmCapacity != value)
+		else if (common->wcmGesture != value)
 		{
-			common->wcmCapacity = value;
-			xf86ReplaceIntOption(local->options, "Capacity", value);
+			common->wcmGesture = value;
+			if (value)
+				xf86ReplaceStrOption(local->options, "Gesture", "on");
+			else
+				xf86ReplaceStrOption(local->options, "Gesture", "off");
+		}
+		break;
+	    case XWACOM_PARAM_ZOOMDISTANCE:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmZoomDistance != value)
+		{
+			common->wcmZoomDistance = value;
+			xf86ReplaceIntOption(local->options, "ZoomDistance", value);
+		}
+		break;
+	    case XWACOM_PARAM_SCROLLDISTANCE:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmScrollDistance != value)
+		{
+			common->wcmScrollDistance = value;
+			xf86ReplaceIntOption(local->options, "ScrollDistance", value);
+		}
+		break;
+	    case XWACOM_PARAM_TAPTIME:
+		if (value < 0)
+			return BadValue;
+		else if (common->wcmTapTime != value)
+		{
+			common->wcmTapTime = value;
+			xf86ReplaceIntOption(local->options, "TapTime", value);
 		}
 		break;
 	    case XWACOM_PARAM_CURSORPROX:
@@ -415,12 +434,12 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 	    case XWACOM_PARAM_TWINVIEW:
 		if (priv->twinview != value)
 		{
-			if ((value > TV_MAX) || (value < TV_NONE) || screenInfo.numScreens != 1)
+			if ((value > TV_MAX) || (value < TV_NONE))
 				return BadValue;
 			priv->twinview = value;
 
-			/* Can not restrict the cursor to a particular screen */
-			if (!value)
+			/* Can not restrict the cursor to a particular screen for TwinView case here */
+			if (!value && (screenInfo.numScreens == 1))
 			{
 				value = -1;
 				priv->currentScreen = 0;
@@ -455,7 +474,7 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 				"from %d toResY=%d \n",
 				priv->tvResolution[0], rX, priv->tvResolution[1], rY));
 
-			if ( priv->twinview == TV_ABOVE_BELOW )
+			if ((priv->twinview == TV_ABOVE_BELOW) || (priv->twinview == TV_BELOW_ABOVE))
 			{
 				if (sNum)
 				{
@@ -510,6 +529,57 @@ static int xf86WcmSetParam(LocalDevicePtr local, int param, int value)
 		if (common->wcmRotate != value)
 			xf86WcmRotateTablet(local, value);
 		break;
+	   case XWACOM_PARAM_LED0:
+		if ((value < 0) || (value > 3))
+			return BadValue;
+		else if (common->fd_sysfs0 >= 0)
+		{
+			char buf[10];
+			int err = -1;
+			sprintf(buf, "%d", value);
+			err = write(common->fd_sysfs0, buf, strlen(buf));
+			if (err < -1)
+			{
+				DBG(10, priv->debugLevel,
+				    ErrorF("xf86WcmSetParam can not set led0 (%d) \n", err));
+				return BadValue;
+			}
+			common->led0_status = value;
+		}
+		else
+		{
+			DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam can not access led0\n"));
+			return BadValue;
+		}
+		break;
+	    case XWACOM_PARAM_LED1:
+		if ((value < 0) || (value > 3))
+			return BadValue;
+		else if (common->fd_sysfs1 >= 0)
+		{
+			char buf[10];
+			int err = -1;
+			sprintf(buf, "%d", value);
+			err = write(common->fd_sysfs1, buf, strlen(buf));
+			if (err < -1)
+			{
+				DBG(10, priv->debugLevel,
+				    ErrorF("xf86WcmSetParam can not set led1 (%d) \n", err));
+				return BadValue;
+			}
+			common->led1_status = value;
+		}
+		else
+		{
+			DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam can not access led1\n"));
+			return BadValue;
+		}
+		break;
+	  case XWACOM_PARAM_NO_PRESSURE_RECAL:
+		  if ((value < 0) || (value > 1))
+			  return BadValue;
+		  common->wcmNoPressureRecal = value;
+		  break;
 	   default:
 		DBG(10, priv->debugLevel, ErrorF("xf86WcmSetParam invalid param %d\n",param));
 		return BadMatch;
@@ -568,6 +638,14 @@ static int xf86WcmSetButtonParam(LocalDevicePtr local, int param, int value)
 	   case XWACOM_PARAM_ABSWDN:
 		setVal = &(priv->wheeldn);
 		keyP = priv->wdnk;
+		break;
+	   case XWACOM_PARAM_ABSW2UP:
+		setVal = &(priv->wheel2up);
+		keyP = priv->w2upk;
+		break;
+	   case XWACOM_PARAM_ABSW2DN:
+		setVal = &(priv->wheel2dn);
+		keyP = priv->w2dnk;
 		break;
 	   case XWACOM_PARAM_STRIPLUP:
 		setVal = &(priv->striplup);
@@ -656,6 +734,14 @@ static int xf86WcmGetButtonParam(LocalDevicePtr local, int param)
 	   case XWACOM_PARAM_ABSWDN:
 		retVal = priv->wheeldn;
 		keyP = priv->wdnk;
+		break;
+	   case XWACOM_PARAM_ABSW2UP:
+		retVal = priv->wheel2up;
+		keyP = priv->w2upk;
+		break;
+	   case XWACOM_PARAM_ABSW2DN:
+		retVal = priv->wheel2dn;
+		keyP = priv->w2dnk;
 		break;
 	   case XWACOM_PARAM_STRIPLUP:
 		retVal = priv->striplup;
@@ -785,8 +871,22 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return priv->debugLevel;
 	    case XWACOM_PARAM_COMMONDBG:
 		return common->debugLevel;
+	    case XWACOM_PARAM_DEVICELOGMASK:
+		return common->logMask;
 	    case XWACOM_PARAM_ROTATE:
 		return common->wcmRotate;
+	    case XWACOM_PARAM_LED0:
+		if (common->fd_sysfs0 >= 0)
+			return common->led0_status;
+		else
+			return -1;
+		break;
+	    case XWACOM_PARAM_LED1:
+		if (common->fd_sysfs1 >= 0)
+			return common->led1_status;
+		else
+			return -1;
+		break;
 	    case XWACOM_PARAM_SUPPRESS:
 		return common->wcmSuppress;
 	    case XWACOM_PARAM_RAWFILTER:
@@ -794,12 +894,14 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 	    case XWACOM_PARAM_RAWSAMPLE:
 		return common->wcmRawSample;
 	    case XWACOM_PARAM_PRESSCURVE:
-		if (!IsCursor (priv) && !IsPad (priv) && !IsTouch (priv))
+		if (IsStylus (priv) || IsEraser (priv))
 			return (priv->nPressCtrl [0] << 24) |
 			       (priv->nPressCtrl [1] << 16) |
 			       (priv->nPressCtrl [2] << 8) |
 			       (priv->nPressCtrl [3]);
 		return -1;
+	    case XWACOM_PARAM_ISDISPLAY:
+		return common->is_display;
 	    case XWACOM_PARAM_MODE:
 		return ((priv->flags & ABSOLUTE_FLAG) ? 1 : 0);
 	    case XWACOM_PARAM_COREEVENT:
@@ -811,8 +913,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 	    case XWACOM_PARAM_ACCEL:
 		return priv->accel + 1;
 	    case XWACOM_PARAM_CLICKFORCE:
-		return !common->wcmMaxZ ? 0 :
-			(int) (((common->wcmThreshold + 0.5) * 100) / common->wcmMaxZ);
+		return (int) ((double)((common->wcmThreshold + 0.5) * 100)
+			 / (double)FILTER_PRESSURE_RES);
 	    case XWACOM_PARAM_THRESHOLD:
 		return !common->wcmMaxZ ? 0 : common->wcmThreshold;
 	    case XWACOM_PARAM_XYDEFAULT:
@@ -823,8 +925,14 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 		return common->wcmTPCButton;
 	    case XWACOM_PARAM_TOUCH:
 		return common->wcmTouch;
-	    case XWACOM_PARAM_CAPACITY:
-		return common->wcmCapacity;
+	    case XWACOM_PARAM_GESTURE:
+		return common->wcmGesture;
+	    case XWACOM_PARAM_ZOOMDISTANCE:
+		return common->wcmZoomDistance;
+	    case XWACOM_PARAM_SCROLLDISTANCE:
+		return common->wcmScrollDistance;
+	    case XWACOM_PARAM_TAPTIME:
+		return common->wcmTapTime;
 	    case XWACOM_PARAM_CURSORPROX:
 		if (IsCursor (priv))
 			return common->wcmCursorProxoutDist;
@@ -860,6 +968,8 @@ static int xf86WcmGetParam(LocalDevicePtr local, int param)
 #else
 		return 0;
 #endif
+            case XWACOM_PARAM_NO_PRESSURE_RECAL:
+		return common->wcmNoPressureRecal;
 	}
 	DBG(10, priv->debugLevel, ErrorF("xf86WcmGetParam invalid param %d\n", param));
 	return -1;
@@ -954,8 +1064,8 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	if ( param >= XWACOM_PARAM_STOPX0 && param <= XWACOM_PARAM_SBOTTOMY2)
 		return xf86WcmGetDefaultScreenInfo(local, param);
 
-	if (param >= XWACOM_PARAM_BUTTON6 && param <= XWACOM_PARAM_BUTTON32)
-		return 0;
+	if (param >= XWACOM_PARAM_BUTTON1 && param <= XWACOM_PARAM_BUTTON32)
+		return (param - XWACOM_PARAM_BUTTON1 + 1);
 
 	switch (param)
 	{
@@ -964,15 +1074,9 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	case XWACOM_PARAM_TOPY:
 		return 0;
 	case XWACOM_PARAM_BOTTOMX:
-		return priv->wcmMaxX;
+		return priv->maxX;
 	case XWACOM_PARAM_BOTTOMY:
-		return priv->wcmMaxY;		
-	case XWACOM_PARAM_BUTTON1:
-	case XWACOM_PARAM_BUTTON2:
-	case XWACOM_PARAM_BUTTON3:
-	case XWACOM_PARAM_BUTTON4:
-	case XWACOM_PARAM_BUTTON5:
-		return (param - XWACOM_PARAM_BUTTON1 + 1);
+		return priv->maxY;		
 	case XWACOM_PARAM_MODE:
 		if (IsCursor(priv) || (IsPad(priv) && (priv->flags & COREEVENT_FLAG)))
 			return 0;
@@ -995,20 +1099,23 @@ static int xf86WcmGetDefaultParam(LocalDevicePtr local, int param)
 	case XWACOM_PARAM_CLICKFORCE:
 		return 6;
 	case XWACOM_PARAM_THRESHOLD:
-		if (strstr(common->wcmModel->name, "Intuos4"))
-			return (common->wcmMaxZ * 3 / 25);
-		else
-			return (common->wcmMaxZ * 3 / 50);
+		return (FILTER_PRESSURE_RES * 3 / 25);
 	case XWACOM_PARAM_MMT:
 		return 1;
 	case XWACOM_PARAM_TPCBUTTON:
 		return common->wcmTPCButtonDefault;
 	case XWACOM_PARAM_TOUCH:
 		return common->wcmTouchDefault;
-	case XWACOM_PARAM_CAPACITY:
-		return common->wcmCapacityDefault;
+	case XWACOM_PARAM_GESTURE:
+		return common->wcmGestureDefault;
+	case XWACOM_PARAM_ZOOMDISTANCE:
+		return common->wcmZoomDistanceDefault;
+	case XWACOM_PARAM_SCROLLDISTANCE:
+		return common->wcmScrollDistanceDefault;
+	case XWACOM_PARAM_TAPTIME:
+		return common->wcmTapTimeDefault;
 	case XWACOM_PARAM_PRESSCURVE:
-		if (!IsCursor (priv) && !IsPad (priv) && !IsTouch (priv))
+		if (IsStylus (priv) || IsEraser (priv))
 			return (0 << 24) | (0 << 16) | (100 << 8) | 100;
 		return -1;
 	case XWACOM_PARAM_SUPPRESS:
@@ -1048,7 +1155,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 			AxisInfoPtr a;
 
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmQueryControl: dev %s query 0x%x at %d\n",
+				"xf86WcmDevChangeControl: dev %s query 0x%x at %d\n",
 				local->dev->name, r [0], priv->naxes));
 			/* Since X11 doesn't provide any sane protocol for querying
 			 * device parameters, we have to do a dirty trick here:
@@ -1069,7 +1176,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 		case 2:
 		{
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmChangeControl: dev %s set 0x%x to 0x%x\n",
+				"xf86WcmDevChangeControl: dev %s set 0x%x to 0x%x\n",
 				local->dev->name, r [0], r [1]));
 			if (r [0] >= XWACOM_PARAM_BUTTON1 && r[0] <= XWACOM_PARAM_STRIPRDN)
 				rc = xf86WcmSetButtonParam (local, r [0], r[1]);
@@ -1082,7 +1189,7 @@ int xf86WcmDevChangeControl(LocalDevicePtr local, xDeviceCtl* control)
 			AxisInfoPtr a;
 
 			DBG (5, common->debugLevel, ErrorF(
-				"xf86WcmQueryControl: dev %s query 0x%x at %d\n",
+				"xf86WcmDevChangeControl: dev %s query 0x%x at %d\n",
 				local->dev->name, r [0], priv->naxes));
 			/* Since X11 doesn't provide any sane protocol for querying
 			 * device parameters, we have to do a dirty trick here:

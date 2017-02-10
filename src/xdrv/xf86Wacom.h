@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2008 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
  * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  * 
@@ -12,7 +12,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -52,7 +52,24 @@
 #undef BUS_ISA
 #endif
 
+/* Defines to acccess new tool types in kernel */
+#ifndef BTN_TOOL_DOUBLETAP
+#define BTN_TOOL_DOUBLETAP 0x14d
+#endif
+
 #define MAX_USB_EVENTS 32
+
+/* Defines to access kernels defines */
+#define HEADER_BIT      0x80
+#define ZAXIS_SIGN_BIT  0x40
+#define ZAXIS_BIT       0x04
+#define ZAXIS_BITS      0x3F
+#define POINTER_BIT     0x20
+#define PROXIMITY_BIT   0x40
+#define BUTTON_FLAG     0x08
+#define BUTTONS_BITS    0x78
+#define TILT_SIGN_BIT   0x40
+#define TILT_BITS       0x3F
 
 #endif /* WCM_ENABLE_LINUXINPUT */
 
@@ -118,6 +135,16 @@
 #define DBG(lvl, dLevel, f)
 #endif
 
+#ifdef LOG
+#undef LOG
+#endif
+#define DO_LOG(m, v) (m & v)
+#define LOG(m, v, f) do { if (DO_LOG(m, v)) f; } while (0)
+#define LOG_PROXIMITY 1
+#define LOG_BUTTON 2
+#define LOG_MOTION 4
+#define LOG_PRESSURE 8
+
 /*****************************************************************************
  * General Macros
  ****************************************************************************/
@@ -162,6 +189,14 @@ struct _WacomModule
 
 /* The rest are defined in a separate .h-file */
 #include "xf86WacomDefs.h"
+
+extern const char* wcm_timestr();
+#ifdef WCM_CUSTOM_DEBUG
+extern void wcm_detectChannelChange(LocalDevicePtr local, int channel);
+extern void wcm_dumpEventRing(LocalDevicePtr local);
+extern void wcm_dumpChannels(LocalDevicePtr local);
+extern void wcm_logEvent(const struct input_event* event);
+#endif
 
 /*****************************************************************************
  * XFree86 V4 Inlined Functions and Prototypes
@@ -238,5 +273,13 @@ int xf86WcmSetPadCoreMode(LocalDevicePtr local);
 /* calculate the proper tablet to screen mapping factor */
 void xf86WcmMappingFactor(LocalDevicePtr local);
 
+/* send a soft prox-out event for local */
+void xf86WcmSoftOutEvent(LocalDevicePtr local);
+
+/* send a soft prox-out event for device at the channel  */
+void xf86WcmSoftOut(WacomCommonPtr common, int channel);
+
+/* send a left button up event */
+void xf86WcmLeftClickOff(WacomDevicePtr priv);
 /****************************************************************************/
 #endif /* __XF86WACOM_H */

@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2009 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -19,6 +19,14 @@
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+#include <fcntl.h>
+
+extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
+extern void wcmIsDisplay(WacomCommonPtr common);
+#ifdef WCM_XORG_XSERVER_1_4
+    extern Bool wcmIsAValidType(LocalDevicePtr local, const char *type, unsigned long* keys);
+    extern int wcmIsDuplicate(char* device, LocalDevicePtr local);
+#endif
 
 /*****************************************************************************
  * xf86WcmAllocate --
@@ -93,7 +101,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 
 	priv->next = NULL;
 	priv->local = local;
-	priv->flags = flag;          /* various flags (device type, absolute, first touch...) */
+	priv->flags = flag;         /* various flags (device type, absolute, first touch...) */
 	priv->oldX = 0;             /* previous X position */
 	priv->oldY = 0;             /* previous Y position */
 	priv->oldZ = 0;             /* previous pressure */
@@ -101,24 +109,23 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->oldTiltY = 0;         /* previous tilt in y direction */
 	priv->oldStripX = 0;	    /* previous left strip value */
 	priv->oldStripY = 0;	    /* previous right strip value */
-	priv->oldButtons = 0;        /* previous buttons state */
-	priv->oldWheel = 0;          /* previous wheel */
-	priv->topX = 0;              /* X top */
-	priv->topY = 0;              /* Y top */
-	priv->bottomX = 0;           /* X bottom */
-	priv->bottomY = 0;           /* Y bottom */
-	priv->wcmMaxX = 0;           /* max tool logical X value */
-	priv->wcmMaxY = 0;           /* max tool logical Y value */
-	priv->wcmResolX = 0;         /* tool X resolution in points/inch */
-	priv->wcmResolY = 0;         /* tool Y resolution in points/inch */
-	priv->sizeX = 0;	     /* active X size */
-	priv->sizeY = 0;	     /* active Y size */
-	priv->factorX = 0.0;         /* X factor */
-	priv->factorY = 0.0;         /* Y factor */
-	priv->common = common;       /* common info pointer */
-	priv->oldProximity = 0;      /* previous proximity */
-	priv->hardProx = 1;	     /* previous hardware proximity */
-	priv->old_serial = 0;	     /* last active tool's serial */
+	priv->oldButtons = 0;       /* previous buttons state */
+	priv->oldWheel = 0;         /* previous wheel */
+	priv->oldWheel2 = 0;        /* previous wheel2 */
+	priv->topX = 0;             /* X top */
+	priv->topY = 0;             /* Y top */
+	priv->bottomX = 0;          /* X bottom */
+	priv->bottomY = 0;          /* Y bottom */
+	priv->resolX = 0;           /* X resolution */
+	priv->resolY = 0;           /* Y resolution */
+	priv->sizeX = 0;	    /* active X size */
+	priv->sizeY = 0;	    /* active Y size */
+	priv->factorX = 0.0;        /* X factor */
+	priv->factorY = 0.0;        /* Y factor */
+	priv->common = common;      /* common info pointer */
+	priv->oldProximity = 0;     /* previous proximity */
+	priv->hardProx = 1;	    /* previous hardware proximity */
+	priv->old_serial = 0;	    /* last active tool's serial */
 	priv->old_device_id = IsStylus(priv) ? STYLUS_DEVICE_ID :
 		(IsEraser(priv) ? ERASER_DEVICE_ID : 
 		(IsCursor(priv) ? CURSOR_DEVICE_ID : 
@@ -134,6 +141,7 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->nPressCtrl [1] = 0;    /* pressure curve y0 */
 	priv->nPressCtrl [2] = 100;  /* pressure curve x1 */
 	priv->nPressCtrl [3] = 100;  /* pressure curve y1 */
+	priv->minPressure = 0;       /* initial pressure should be 0 for normal tools */
 
 	/* Default button and expresskey values */
 	for (i=0; i<MAX_BUTTONS; i++)
@@ -144,15 +152,17 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 			priv->keys[i][j] = 0;
 
 	priv->nbuttons = MAX_BUTTONS;		/* Default number of buttons */
-	priv->relup = 5;			/* Default relative wheel up event */
-	priv->reldn = 4;			/* Default relative wheel down event */
+	priv->relup = SCROLL_UP;		/* Default relative wheel up event */
+	priv->reldn = SCROLL_DOWN;		/* Default relative wheel down event */
 	
-	priv->wheelup = IsPad (priv) ? 4 : 0;	/* Default absolute wheel up event */
-	priv->wheeldn = IsPad (priv) ? 5 : 0;	/* Default absolute wheel down event */
-	priv->striplup = 4;			/* Default left strip up event */
-	priv->stripldn = 5;			/* Default left strip down event */
-	priv->striprup = 4;			/* Default right strip up event */
-	priv->striprdn = 5;			/* Default right strip down event */
+	priv->wheelup = IsPad (priv) ? SCROLL_DOWN : 0;	/* Default absolute wheel up event */
+	priv->wheeldn = IsPad (priv) ? SCROLL_UP : 0;	/* Default absolute wheel down event */
+	priv->wheel2up = IsPad (priv) ? SCROLL_DOWN : 0;/* Default absolute wheel2 up event */
+	priv->wheel2dn = IsPad (priv) ? SCROLL_UP : 0;	/* Default absolute wheel2 down event */
+	priv->striplup = SCROLL_DOWN;			/* Default left strip up event */
+	priv->stripldn = SCROLL_UP;		/* Default left strip down event */
+	priv->striprup = SCROLL_DOWN;		/* Default right strip up event */
+	priv->striprdn = SCROLL_UP;		/* Default right strip down event */
 	priv->naxes = 6;			/* Default number of axes */
 	priv->debugLevel = 0;			/* debug level */
 	priv->numScreen = screenInfo.numScreens; /* configured screens count */
@@ -175,14 +185,19 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 	priv->throttleLimit = -1;
 	
 	common->wcmDevice = "";                  /* device file name */
+	common->fd_sysfs0 = -1;			 /* file descriptor to sysfs led0 */
+	common->fd_sysfs1 = -1;			 /* file descriptor to sysfs led1 */
+	common->min_maj = 0;			 /* device major and minor */
 	common->wcmFlags = RAW_FILTERING_FLAG;   /* various flags */
 	common->wcmDevices = priv;
-	common->npadkeys = 0;		   /* Default number of pad keys */
-	common->wcmProtocolLevel = 4;      /* protocol level */
+	common->npadkeys = MAX_BUTTONS; /* Default number of pad keys */
+	common->wcmProtocolLevel = 4;   /* protocol level */
 	common->wcmThreshold = 0;       /* unconfigured threshold */
 	common->wcmLinkSpeed = 9600;    /* serial link speed */
 	common->wcmISDV4Speed = 38400;  /* serial ISDV4 link speed */
 	common->debugLevel = 0;         /* shared debug level can only 
+					 * be changed though xsetwacom */
+	common->logMask = 0;           /* shared log level can only 
 					 * be changed though xsetwacom */
 
 	common->wcmDevCls = &gWacomSerialDevice; /* device-specific functions */
@@ -193,26 +208,34 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 		common->wcmTPCButtonDefault; /* set Tablet PC button on/off */
 	common->wcmTouch = 0;              /* touch is disabled */
 	common->wcmTouchDefault = 0; 	   /* default to disable when touch isn't supported */
-	common->wcmCapacity = -1;          /* Capacity is disabled */
-	common->wcmCapacityDefault = -1;    /* default to -1 when capacity isn't supported */
-					   /* 3 when capacity is supported */
+	common->wcmGestureMode = 0;        /* touch is not in Gesture mode */
+	common->wcmGesture = 0;            /* touch Gesture is disabled */
+	common->wcmGestureDefault = 0; 	   /* default to disable when touch Gesture isn't supported */
+	common->wcmZoomDistance = 50;	       /* minimum distance for a zoom touch gesture */
+	common->wcmZoomDistanceDefault = 50;   /* default minimum distance for a zoom touch gesture */
+	common->wcmScrollDirection = 0;	       /* scroll vertical or horizontal */
+	common->wcmScrollDistance = 20;	       /* minimum motion before sending a scroll gesture */
+	common->wcmScrollDistanceDefault = 20; /* default minimum motion before sending a scroll gesture */
+	common->wcmTapTime = 250;	   /* minimum time between taps for a right click */
+	common->wcmTapTimeDefault = 250;   /* default minimum time between taps for a right click */
 	common->wcmRotate = ROTATE_NONE;   /* default tablet rotation to off */
-	common->wcmMaxX = 0;               /* max digitizer logical X value */
-	common->wcmMaxY = 0;               /* max digitizer logical Y value */
-	common->wcmMaxTouchX = 1024;       /* max touch X value */
-	common->wcmMaxTouchY = 1024;       /* max touch Y value */
-        common->wcmMaxZ = 0;               /* max Z value */
-        common->wcmMaxCapacity = 0;        /* max capacity value */
+	common->wcmMaxX = 0;               /* max tool logical X value */
+	common->wcmMaxY = 0;               /* max tool logical Y value */
+ 	common->wcmMaxTouchX = 1024;       /* max touch logical X value */
+	common->wcmMaxTouchY = 1024;       /* max touch logical Y value */
+	common->wcmMaxZ = 0;               /* max Z value */
+	common->wcmResolX = 0;             /* tool X resolution in 
+				            * points/inch for penabled */
+	common->wcmTouchResolX = 10;       /* touch X resolution in points/mm */
+	common->wcmResolY = 0;             /* tool Y resolution in 
+				            * points/inch for penabled */
+	common->wcmTouchResolY = 10;       /* touch y resolution in points/mm */
  	common->wcmMaxDist = 0;            /* max distance value */
-	common->wcmResolX = 0;             /* digitizer X resolution in points/inch */
-	common->wcmResolY = 0;             /* digitizer Y resolution in points/inch */
-	common->wcmTouchResolX = 0;        /* touch X resolution in points/inch */
-	common->wcmTouchResolY = 0;        /* touch Y resolution in points/inch */
 	common->wcmMaxStripX = 4096;       /* Max fingerstrip X */
 	common->wcmMaxStripY = 4096;       /* Max fingerstrip Y */
 	common->wcmMaxtiltX = 128;	   /* Max tilt in X directory */
 	common->wcmMaxtiltY = 128;	   /* Max tilt in Y directory */
-	common->wcmMaxCursorDist = 0;	/* Max distance received so far */
+	common->wcmMaxCursorDist = 0;	   /* Max distance received so far */
 	common->wcmCursorProxoutDist = 0;
 			/* Max mouse distance for proxy-out max/256 units */
 	common->wcmCursorProxoutDistDefault = PROXOUT_INTUOS_DISTANCE; 
@@ -221,6 +244,14 @@ LocalDevicePtr xf86WcmAllocate(char* name, int flag)
 			/* transmit position if increment is superior */
 	common->wcmRawSample = DEFAULT_SAMPLES;    
 			/* number of raw data to be used to for filtering */
+#ifdef WCM_ENABLE_LINUXINPUT
+	common->wcmLastToolSerial = 0;
+	common->wcmEventCnt = 0;
+#endif
+	common->wcmInitedTools = 0;  /* start with no tool */
+	common->wcmEnabledTools = 0; /* start with no tool */
+	common->wcmWarnOnce = FALSE;
+	common->wcmNoPressureRecal = FALSE;
 
 	/* tool */
 	priv->tool = tool;
@@ -256,9 +287,16 @@ LocalDevicePtr xf86WcmAllocateStylus(void)
 
 /* xf86WcmAllocateTouch */
 
-LocalDevicePtr xf86WcmAllocateTouch(void)
+LocalDevicePtr xf86WcmAllocateTouch(int tablet_id)
 {
-	LocalDevicePtr local = xf86WcmAllocate(XI_TOUCH, ABSOLUTE_FLAG|TOUCH_ID);
+	LocalDevicePtr local;
+	int flags = TOUCH_ID;
+
+	/* non-Bamboo touch defaults to absolute mode */
+	if (tablet_id < 0xd0 || tablet_id > 0xd3)
+		flags |= ABSOLUTE_FLAG;
+
+	local = xf86WcmAllocate(XI_TOUCH, flags);
 
 	if (local)
 		local->type_name = "Wacom Touch";
@@ -359,26 +397,93 @@ static const char *default_options[] =
 	NULL
 };
 
+static void xf86WcmRemoveAssociates(LocalDevicePtr local)
+{
+	WacomDevicePtr priv = (WacomDevicePtr) local->private;
+	WacomCommonPtr common = priv->common;
+	WacomDevicePtr *prev = &common->wcmDevices;
+	WacomDevicePtr dev = common->wcmDevices;
+
+	DBG(1, priv->debugLevel, ErrorF("xf86WcmRemoveAssociates\n"));
+
+	if (!priv)
+		return;
+
+	if (priv->pPressCurve)
+		xfree(priv->pPressCurve);
+
+	if (priv->toolarea)
+	{
+		WacomToolAreaPtr *preva = &priv->tool->arealist;
+		WacomToolAreaPtr area = *preva;
+		while (area)
+		{
+			if (area == priv->toolarea)
+			{
+				*preva = area->next;
+				break;
+			}
+			preva = &area->next;
+			area = area->next;
+		}
+		free(priv->toolarea);
+	}
+
+	if (priv->tool)
+	{
+		WacomToolPtr *prevt = &common->wcmTool;
+		WacomToolPtr tool = *prevt;
+
+		while (tool)
+		{
+			if (tool == priv->tool)
+			{
+				*prevt = tool->next;
+				break;
+			}
+			prevt =	&tool->next;
+			tool = tool->next;
+		}
+		free(priv->tool);
+	}
+
+	while (dev)
+	{
+		if (dev == priv)
+		{
+			*prev = dev->next;
+			break;
+		}
+		prev = &dev->next;
+		dev = dev->next;
+	}
+
+	free(priv);
+	local->private = NULL;
+}
+
 /* xf86WcmUninit - called when the device is no longer needed. */
 
 static void xf86WcmUninit(InputDriverPtr drv, LocalDevicePtr local, int flags)
 {
 	WacomDevicePtr priv = (WacomDevicePtr) local->private;
-    
+ 	WacomCommonPtr common = priv->common;
+
 	DBG(1, priv->debugLevel, ErrorF("xf86WcmUninit\n"));
 
-#ifndef WCM_XORG_XSERVER_1_4
+	/* Xservers 1.4 and later but earlier than 1.5.2 need this call */
+#ifdef WCM_XORG_XSERVER_1_4
+   #ifndef WCM_XORG_XSERVER_1_5_2
 	gWacomModule.DevProc(local->dev, DEVICE_OFF);
+   #endif
 #endif
 
-	/* free pressure curve */
-	if (priv->pPressCurve)
-		xfree(priv->pPressCurve);
-    
-	/* free priv here otherwise X server 1.6 or later crashes 
-	 */
-	xfree(priv);
-	local->private = NULL;
+	/* free objects associated with priv */
+	xf86WcmRemoveAssociates(local);
+
+	/* the last priv frees the common */
+	if(common && !common->wcmDevices)
+		xfree(common);
 
 	xf86DeleteInput(local, 0);    
 }
@@ -397,7 +502,7 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 		!strcmp(privMatch->common->wcmDevice, common->wcmDevice))
 	{
 		DBG(2, priv->debugLevel, ErrorF(
-			"xf86WcmInit wacom port share between"
+			"xf86WcmMatchDevice: wacom port share between"
 			" %s and %s\n", pLocal->name, pMatch->name));
 		type = xf86FindOptionValue(pMatch->options, "Type");
 		if ( type && (strstr(type, "eraser")) )
@@ -410,8 +515,11 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 				privMatch->common->wcmEraserID=pLocal->name;
 			}
 		}
+
 		xfree(common);
 		common = priv->common = privMatch->common;
+
+		/* insert the device to the front of the wcmDevices list */
 		priv->next = common->wcmDevices;
 		common->wcmDevices = priv;
 		return 1;
@@ -419,20 +527,113 @@ static Bool xf86WcmMatchDevice(LocalDevicePtr pMatch, LocalDevicePtr pLocal)
 	return 0;
 }
 
-/* xf86WcmInit - called when the module subsection is found in XF86Config */
+#ifdef WCM_XORG_XSERVER_1_4
+/* retrieve the specific options for the device */
+static void wcmDeviceSpecCommonOptions(LocalDevicePtr local)
+{
+	WacomDevicePtr priv = (WacomDevicePtr)local->private;
+	WacomCommonPtr common = priv->common;
 
+	/* a single touch device */
+	if (ISBITSET (common->wcmKeys, BTN_TOOL_DOUBLETAP))
+	{
+		/* TouchDefault was off for all devices
+		 * except when touch is supported */
+		common->wcmTouchDefault = 1;
+	}
+
+	/* 2FG touch device */
+	if (ISBITSET (common->wcmKeys, BTN_TOOL_TRIPLETAP))
+	{
+		/* GestureDefault was off for all devices
+		 * except when multi-touch is supported. */
+		common->wcmGestureDefault = 1;
+	}
+
+	/* check if touch was turned off in xorg.conf */
+	common->wcmTouch = xf86SetBoolOption(local->options, "Touch",
+		common->wcmTouchDefault);
+
+	/* Touch gesture applies to the whole tablet */
+	common->wcmGesture = xf86SetBoolOption(local->options, "Gesture",
+		common->wcmGestureDefault);
+
+	/* Set gesture size and timeouts for larger USB 2FGT tablets */
+	if ((common->wcmDevCls == &gWacomUSBDevice) &&
+	    (common->tablet_id == 0xE2 || common->tablet_id == 0xE3)) {
+		common->wcmZoomDistanceDefault = 30;
+		common->wcmScrollDistanceDefault = 30;
+		common->wcmTapTimeDefault = 250;
+	}
+
+	/* Set minimum distance allowed for zoom touch gesture */
+	common->wcmZoomDistance = xf86SetIntOption(local->options,
+		"ZoomDistance", common->wcmZoomDistanceDefault);
+
+	/* Set minimum motion required before sending on a scroll gesture */
+	common->wcmScrollDistance = xf86SetIntOption(local->options,
+		"ScrollDistance", common->wcmScrollDistanceDefault);
+
+	/* Set minimum time between events for right click touch gesture */
+	common->wcmTapTime = xf86SetIntOption(local->options,
+		"TapTime", common->wcmTapTimeDefault);
+}
+#endif  /* WCM_XORG_XSERVER_1_4 */
+
+void wcmIsDisplay(WacomCommonPtr common)
+{
+	common->is_display = FALSE;
+	switch (common->tablet_id)
+	{
+		case 0x30:	/* PL400 */
+		case 0x31:	/* PL500 */
+		case 0x32:	/* PL600 */
+		case 0x33:	/* PL600SX */
+		case 0x34:	/* PL550 */
+		case 0x35:	/* PL800 */
+		case 0x37:	/* PL700 */
+		case 0x38:	/* PL510 */
+		case 0x39:	/* PL710 */ 
+		case 0xC0:	/* DTF720 */
+		case 0xC2:	/* DTF720a */
+		case 0xC4:	/* DTF521 */ 
+		case 0xC7:	/* DTU1931 */
+		case 0xCE:	/* DTU2231 */
+		case 0xF0:	/* DTU1631 */
+
+		case 0x3F:	/* Cintiq 21UX */ 
+		case 0xC5:	/* Cintiq 20WSX */ 
+		case 0xC6:	/* Cintiq 12WX */ 
+		case 0xCC:	/* Cintiq 21UX2 */ 
+
+		case 0x90:	/* TabletPC 0x90 */ 
+		case 0x93:	/* TabletPC 0x93 */
+		case 0x9A:	/* TabletPC 0x9A */
+		case 0x9F:	/* CapPlus  0x9F */
+		case 0xE2:	/* TabletPC 0xE2 */ 
+		case 0xE3:	/* TabletPC 0xE3 */
+			common->is_display = TRUE;
+			break;
+	}
+}
+
+/* xf86WcmInit - called when the module subsection is found in XF86Config */
 static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
 	LocalDevicePtr local = NULL;
 	LocalDevicePtr fakeLocal = NULL;
 	WacomDevicePtr priv = NULL;
 	WacomCommonPtr common = NULL;
+	const char*	type;
 	char		*s, b[12];
 	int		i, oldButton;
-	LocalDevicePtr localDevices;
-
+	LocalDevicePtr	localDevices;
+	char*		device;
 	WacomToolPtr tool = NULL;
 	WacomToolAreaPtr area = NULL;
+	int		tablet_id = 0;
+	unsigned long	keys[NBITS(KEY_MAX)];
+	char		sysFile[128];
 
 	gWacomModule.wcmDrv = drv;
 
@@ -447,18 +648,40 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	 */
 	xf86CollectInputOptions(fakeLocal, default_options, NULL);
 
-	/* Type is mandatory */
-	s = xf86FindOptionValue(fakeLocal->options, "Type");
+        device = xf86CheckStrOption(fakeLocal->options, "Device", NULL);
+        fakeLocal->name = dev->identifier;
 
-	if (s && (xf86NameCmp(s, "stylus") == 0))
+	/* Type is mandatory */
+	type = xf86FindOptionValue(fakeLocal->options, "Type");
+
+        /* leave the undefined for auto-dev (if enabled) to deal with */
+       if(device)
+        {
+		/* initialize supported keys for Xorg server 1.4 or later */
+		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
+
+        	/* check if the type is valid for the device
+ 		 * that is not defined in xorg.conf	
+ 		 */
+#ifdef WCM_XORG_XSERVER_1_4
+		if(!wcmIsAValidType(fakeLocal, type, keys))
+        	        goto SetupProc_fail;
+
+                /* check if the device has been added */
+                if (wcmIsDuplicate(device, fakeLocal))
+                        goto SetupProc_fail;
+#endif   /* WCM_XORG_XSERVER_1_4 */
+       }
+
+	if (type && (xf86NameCmp(type, "stylus") == 0))
 		local = xf86WcmAllocateStylus();
-	else if (s && (xf86NameCmp(s, "touch") == 0))
-		local = xf86WcmAllocateTouch();
-	else if (s && (xf86NameCmp(s, "cursor") == 0))
+	else if (type && (xf86NameCmp(type, "touch") == 0))
+		local = xf86WcmAllocateTouch(tablet_id);
+	else if (type && (xf86NameCmp(type, "cursor") == 0))
 		local = xf86WcmAllocateCursor();
-	else if (s && (xf86NameCmp(s, "eraser") == 0))
+	else if (type && (xf86NameCmp(type, "eraser") == 0))
 		local = xf86WcmAllocateEraser();
-	else if (s && (xf86NameCmp(s, "pad") == 0))
+	else if (type && (xf86NameCmp(type, "pad") == 0))
 		local = xf86WcmAllocatePad();
 	else
 	{
@@ -483,6 +706,65 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	xfree(fakeLocal);
     
 	common->wcmDevice = xf86FindOptionValue(local->options, "Device");
+
+	if (!common->wcmSysNode || !strlen(common->wcmSysNode))
+		common->wcmSysNode = xf86FindOptionValue(local->options, "sysnode");
+	if (common->wcmSysNode && strlen(common->wcmSysNode))
+	{
+		sprintf(sysFile, "%s/wacom_led/status_led0_select", common->wcmSysNode);
+
+		SYSCALL(common->fd_sysfs0 = open(sysFile, O_RDWR));
+
+		if (common->fd_sysfs0 < 0)
+			xf86Msg(X_WARNING, "%s: failed to open %s in "
+				"wcmInit. Device may not support led0.\n",
+				 local->name, sysFile);
+		else
+		{
+			char buf[10];
+			int err = -1;
+			SYSCALL(err = read(common->fd_sysfs0, buf, 1));
+			if (err < -1)
+			{
+				xf86Msg(X_WARNING, "%s: failed to get led0 status in "
+				"wcmInit.\n", local->name);
+			}
+			else
+				common->led0_status = buf[0] - '0';
+		}
+
+		sprintf(sysFile, "%s/wacom_led/status_led1_select", common->wcmSysNode);
+
+		SYSCALL(common->fd_sysfs1 = open(sysFile, O_RDWR));
+
+		if (common->fd_sysfs1 < 0)
+			xf86Msg(X_WARNING, "%s: failed to open %s in "
+				"wcmInit. Device may not support led1.\n",
+				 local->name, sysFile);
+		else
+		{
+			char buf[10];
+			int err = -1;
+			SYSCALL(err = read(common->fd_sysfs1, buf, 1));
+			if (err < -1)
+			{
+				xf86Msg(X_WARNING, "%s: failed to get led1 status in "
+				"wcmInit.\n", local->name);
+			}
+			else
+				common->led1_status = buf[0] - '0';
+		}
+	}
+
+	/* reassign the keys back */
+	for (i=0; i<NBITS(KEY_MAX); i++)
+		common->wcmKeys[i] |= keys[i];
+
+	/* Hardware specific initialization relies on tablet_id */
+	common->tablet_id = tablet_id;
+	
+	wcmIsDisplay(common);
+
 
 #ifdef LINUX_INPUT
 	/* Autoprobe if not given */
@@ -521,11 +803,16 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		}
 	}
 
-	/* Process the common options. */
+	/* Process the common options for individual tool */
 	xf86ProcessCommonOptions(local, local->options);
 
-	/* Optional configuration */
+	/* update device specific common options
+	 * it is called only once for each device   */	
+#ifdef WCM_XORG_XSERVER_1_4
+	wcmDeviceSpecCommonOptions(local);
+#endif /* WCM_XORG_XSERVER_1_4 */
 
+	/* Optional configuration */
 	xf86Msg(X_CONFIG, "%s device is %s\n", dev->identifier,
 			common->wcmDevice);
 
@@ -540,6 +827,11 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	if (common->debugLevel > 0)
 		xf86Msg(X_CONFIG, "WACOM: %s tablet common debug level set to %d\n",
 			dev->identifier, common->debugLevel);
+	common->logMask = xf86SetIntOption(local->options,
+		"DeviceLogMask", common->logMask);
+	if (common->logMask > 0)
+		xf86Msg(X_CONFIG, "WACOM: %s tablet device log mask set to %d\n",
+			dev->identifier, common->logMask);
 
 	s = xf86FindOptionValue(local->options, "Mode");
 
@@ -547,18 +839,15 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		priv->flags |= ABSOLUTE_FLAG;
 	else if (s && (xf86NameCmp(s, "relative") == 0))
 		priv->flags &= ~ABSOLUTE_FLAG;
-	else if (s)
+	else
 	{
-		xf86Msg(X_ERROR, "%s: invalid Mode (should be absolute or "
-			"relative). Using default.\n", dev->identifier);
+		if (s)
+			xf86Msg(X_ERROR, "%s: invalid Mode (should be absolute or "
+				"relative). Using default.\n", dev->identifier);
 
-		/* stylus/eraser defaults to absolute mode 
-		 * cursor defaults to relative mode 
+		/* If Mode not specified or is invalid then rely on
+		 * Type specific defaults from initialization.
 		 */
-		if (IsCursor(priv)) 
-			priv->flags &= ~ABSOLUTE_FLAG;
-		else 
-			priv->flags |= ABSOLUTE_FLAG;
 	}
 
 	/* Pad is always in relative mode when it's a core device.
@@ -652,7 +941,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	 * Slightly raised curve might be 0,5,95,100
 	 */
 	s = xf86FindOptionValue(local->options, "PressCurve");
-	if (s && !IsCursor(priv) && !IsTouch(priv)) 
+	if (s && (IsStylus(priv) || IsEraser(priv))) 
 	{
 		int a,b,c,d;
 		if ((sscanf(s,"%d,%d,%d,%d",&a,&b,&c,&d) != 4) ||
@@ -780,23 +1069,21 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 		xf86Msg(X_CONFIG, "%s: threshold = %d\n", dev->identifier,
 			common->wcmThreshold);
 
-	priv->wcmMaxX = xf86SetIntOption(local->options, "MaxX",
+	common->wcmMaxX = xf86SetIntOption(local->options, "MaxX",
 		common->wcmMaxX);
-	if (priv->wcmMaxX > 0)
-		xf86Msg(X_CONFIG, "%s: max x set to %d by xorg.conf\n", dev->identifier,
-			priv->wcmMaxX);
+	if (common->wcmMaxX > 0)
+	{
+		xf86Msg(X_CONFIG, "%s: max x set to %d \n", dev->identifier,
+			common->wcmMaxX);
+	}
 
-	/* Update tablet logical max X */
-	if (!IsTouch(priv)) common->wcmMaxX = priv->wcmMaxX;
-
-	priv->wcmMaxY = xf86SetIntOption(local->options, "MaxY",
+	common->wcmMaxY = xf86SetIntOption(local->options, "MaxY",
 		common->wcmMaxY);
-	if (priv->wcmMaxY > 0)
-		xf86Msg(X_CONFIG, "%s: max y set to %d by xorg.conf\n", dev->identifier,
-			priv->wcmMaxY);
-
-	/* Update tablet logical max Y */
-	if (!IsTouch(priv)) common->wcmMaxY = priv->wcmMaxY;
+	if (common->wcmMaxY > 0)
+	{
+		xf86Msg(X_CONFIG, "%s: max y set to %d \n", dev->identifier,
+			common->wcmMaxY);
+	}
 
 	common->wcmMaxZ = xf86SetIntOption(local->options, "MaxZ",
 		common->wcmMaxZ);
@@ -837,16 +1124,6 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 			xf86Msg(X_CONFIG, "%s: Tablet PC buttons are on \n", common->wcmDevice);
 	}
 
-	/* Touch applies to the whole tablet */
-	common->wcmTouch = xf86SetBoolOption(local->options, "Touch", common->wcmTouchDefault);
-	if ( common->wcmTouch )
-		xf86Msg(X_CONFIG, "%s: Touch is enabled \n", common->wcmDevice);
-
-	/* Touch capacity applies to the whole tablet */
-	common->wcmCapacity = xf86SetBoolOption(local->options, "Capacity", common->wcmCapacityDefault);
-	if ( common->wcmCapacity >= 0 )
-		xf86Msg(X_CONFIG, "%s: Touch capacity is enabled \n", common->wcmDevice);
-
 	/* Mouse cursor stays in one monitor in a multimonitor setup */
 	if ( !priv->wcmMMonitor )
 	{
@@ -859,16 +1136,12 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 	for (i=0; i<MAX_BUTTONS; i++)
 	{
 		sprintf(b, "Button%d", i+1);
-		s = xf86SetStrOption(local->options, b, NULL);
-		if (s)
-		{
-			oldButton = priv->button[i];
-			priv->button[i] = xf86SetIntOption(local->options, b, priv->button[i]);
+		oldButton = priv->button[i];
+		priv->button[i] = xf86SetIntOption(local->options, b, priv->button[i]);
 
-			if (oldButton != priv->button[i])
-				xf86Msg(X_CONFIG, "%s: button%d assigned to %d\n",
+		if (oldButton != priv->button[i])
+			xf86Msg(X_CONFIG, "%s: button%d assigned to %d\n",
 					dev->identifier, i+1, priv->button[i]);
-		}
 	}
 
 	/* baud rate */
@@ -932,6 +1205,9 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
 			dev->identifier);
 		priv->twinview = TV_NONE;
 	}
+
+	common->wcmNoPressureRecal = xf86SetBoolOption(local->options,
+						       "DisablePressureRecalibration", 0);
 
 	/* mark the device configured */
 	local->flags |= XI86_POINTER_CAPABLE | XI86_CONFIGURED;

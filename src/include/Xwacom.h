@@ -1,6 +1,6 @@
 /*
  * Copyright 2003 by John Joganic <john@joganic.com>
- * Copyright 2003 - 2009 by Ping Cheng <pingc@wacom.com> 
+ * Copyright 2003 - 2011 by Ping Cheng <pingc@wacom.com> 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -38,8 +38,15 @@
 #define XWACOM_PARAM_SCREEN_NO		14
 #define XWACOM_PARAM_COMMONDBG		15
 #define XWACOM_PARAM_RAWSAMPLE		16
-#define XWACOM_PARAM_CAPACITY       	17
-#define XWACOM_PARAM_SERIAL		18
+#define XWACOM_PARAM_SERIAL		17
+#define XWACOM_PARAM_GESTURE       	18
+#define XWACOM_PARAM_TAPDISTANCE	19
+#define XWACOM_PARAM_ZOOMDISTANCE	20
+#define XWACOM_PARAM_SCROLLDISTANCE	21
+#define XWACOM_PARAM_TAPTIME		22
+#define XWACOM_PARAM_LED0		23
+#define XWACOM_PARAM_LED1		24
+#define XWACOM_PARAM_DEVICELOGMASK	25
 
 /* The followings are defined together */
 #define XWACOM_PARAM_BUTTON1    	101
@@ -80,10 +87,12 @@
 #define XWACOM_PARAM_RELWDN    		152
 #define XWACOM_PARAM_ABSWUP    		153
 #define XWACOM_PARAM_ABSWDN    		154
-#define XWACOM_PARAM_STRIPLUP    	155
-#define XWACOM_PARAM_STRIPLDN    	156
-#define XWACOM_PARAM_STRIPRUP    	157
-#define XWACOM_PARAM_STRIPRDN    	158
+#define XWACOM_PARAM_ABSW2UP   		155
+#define XWACOM_PARAM_ABSW2DN   		156
+#define XWACOM_PARAM_STRIPLUP    	157
+#define XWACOM_PARAM_STRIPLDN    	158
+#define XWACOM_PARAM_STRIPRUP    	159
+#define XWACOM_PARAM_STRIPRDN    	160
 /* End of together */
 
 #define XWACOM_PARAM_SPEEDLEVEL 	201
@@ -97,6 +106,7 @@
 #define XWACOM_PARAM_TVRESOLUTION1	208
 #define XWACOM_PARAM_COREEVENT		209
 #define XWACOM_PARAM_THRESHOLD	 	210
+#define XWACOM_PARAM_NO_PRESSURE_RECAL  211
 
 #define XWACOM_PARAM_GETONLYPARAM	320
 #define XWACOM_PARAM_TID		321
@@ -136,6 +146,7 @@
 #define XWACOM_PARAM_SBOTTOMY7		382
 #define XWACOM_PARAM_XSCALING		383
 #define XWACOM_PARAM_TOOLSERIAL		384
+#define XWACOM_PARAM_ISDISPLAY		385
 
 #define TV_NONE 		0
 #define TV_XINERAMA		1

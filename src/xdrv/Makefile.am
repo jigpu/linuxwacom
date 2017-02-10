@@ -12,7 +12,10 @@ EXTRA_DIST = xf86Wacom.c wcmXCommand.c xf86Wacom.h \
 		wcmSerial.c wcmISDV4.c wcmUSB.c \
 		wcmCommon.c wcmCompat.c wcmConfig.c \
 		wcmFilter.c wcmFilter.h wcmSerial.h \
-		../include/Xwacom.h wcmTilt2Rotation.c
+		../include/Xwacom.h wcmTilt2Rotation.c \
+		wcmTouchFilter.c wcmValidateDevice.c \
+		wcmCustomDebug.c \
+		wcmMapping.c 
 
 if WCM_ENV_XORGSDK
 DRIVER_INCLUDES = -I../include -I$(WCM_XORGSDK_DIR) $(X_CFLAGS) @XORG_CFLAGS@
@@ -42,7 +45,9 @@ endif
 
 XF86OBJS = xf86Wacom.o wcmSerial.o wcmUSB.o wcmISDV4.o \
 	wcmXCommand.o wcmCommon.o wcmCompat.o wcmConfig.o \
-	wcmFilter.o wcmTilt2Rotation.o
+	wcmFilter.o wcmTilt2Rotation.o wcmTouchFilter.o \
+	wcmCustomDebug.o \
+	wcmValidateDevice.o wcmMapping.o
 
 $(XF86OBJS):
 	$(CC) $(CFLAGS) $(WCM_DEPFLAGS) $(DLLOADER) -pipe $(WCM_CLEVEL) \
@@ -53,7 +58,7 @@ $(XF86OBJS):
 
 if WCM_DLLOADER
 wacom_drv.so: .depend $(XF86OBJS)
-	$(CC) -shared -nostdlib -o wacom_drv.so $(XF86OBJS) -Bstatic -lgcc
+	$(CC) -shared -nostdlib -o wacom_drv.so $(XF86OBJS) -Bstatic -lgcc -lc
 else
 wacom_drv.o: .depend $(XF86OBJS)
 	$(LD) -r $(XF86OBJS) -o wacom_drv.o

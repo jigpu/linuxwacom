@@ -2,7 +2,7 @@
 ** wacusb.c
 **
 ** Copyright (C) 2002 - 2004 - John E. Joganic
-** Copyright (C) 2003 - 2009 - Ping Cheng
+** Copyright (C) 2003 - 2014 - Ping Cheng
 ** Copyright (C) 2010 Sun Microsystems, Inc.  All rights reserved.
 ** Use is subject to license terms.
 **
@@ -14,7 +14,7 @@
 ** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
 ** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU Lesser General Public License for more details.
+** GNU General Public License for more details.
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
@@ -225,18 +225,21 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 
 	static USBSUBTYPE xCintiq[] =
 	{
-		{ "MODEL_PL400",   "Wacom PL400",    1, 0x30 },
-		{ "MODEL_PL500",   "Wacom PL500",    2, 0x31 },
-		{ "MODEL_PL600",   "Wacom PL600",    3, 0x32 },
-		{ "MODEL_PL600SX", "Wacom PL600SX",  4, 0x33 },
-		{ "MODEL_PL550",   "Wacom PL550",    5, 0x34 },
-		{ "MODEL_PL800",   "Wacom PL800",    6, 0x35 },
-		{ "MODEL_PL700",   "Wacom PL700",    7, 0x37 },
-		{ "MODEL_PL510",   "Wacom PL510",    8, 0x38 },
-		{ "MODEL_DTU710",  "Wacom PL710",    9, 0x39 },
-		{ "MODEL_DTF720",  "Wacom DTF720",  10, 0xC0 },
-		{ "MODEL_DTF521",  "Wacom DTF521",  11, 0xC4 },
-		{ "MODEL_DTU1931", "Wacom DTU1931", 12, 0xC7 },
+		{ "PL400",   "Wacom PL400",    1, 0x30 },
+		{ "PL500",   "Wacom PL500",    2, 0x31 },
+		{ "PL600",   "Wacom PL600",    3, 0x32 },
+		{ "PL600SX", "Wacom PL600SX",  4, 0x33 },
+		{ "PL550",   "Wacom PL550",    5, 0x34 },
+		{ "PL800",   "Wacom PL800",    6, 0x35 },
+		{ "PL700",   "Wacom PL700",    7, 0x37 },
+		{ "PL510",   "Wacom PL510",    8, 0x38 },
+		{ "DTU710",  "Wacom PL710",    9, 0x39 },
+		{ "DTF720",  "Wacom DTF720",  10, 0xC0 },
+		{ "DTF521",  "Wacom DTF521",  11, 0xC4 },
+		{ "DTU1931", "Wacom DTU1931", 12, 0xC7 },
+		{ "DTU2231", "Wacom DTU2231", 13, 0xCE },
+		{ "DTU1631", "Wacom DTU1631", 14, 0xF0 },
+		{ "DTU1031", "Wacom DTU1031", 15, 0xFB },
 		{ NULL }
 	};
 
@@ -298,6 +301,10 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "DTZ-21ux",  "Wacom Cintiq 21UX",  1, 0x3F },
 		{ "DTZ-20wsx", "Wacom Cintiq 20WSX", 2, 0xC5 },
 		{ "DTZ-12wx",  "Wacom Cintiq 12WX",  3, 0xC6 },
+		{ "DTZ-21ux2", "Wacom Cintiq 21UX2", 4, 0xCC },
+		{ "DTK-22hd",  "Wacom Cintiq 22HD",  5, 0xFA },
+		{ "DTK-2241",  "Wacom DTK 2241",     6, 0x57 },
+		{ "DTK-13HD",  "Wacom Cintiq 13HD",  7, 0x304 },
 		{ NULL }
 	};
 
@@ -315,10 +322,25 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 
 	static USBSUBTYPE xIntuos4[] =
 	{
-		{ "PTK-440",  "Wacom Intuos4 4x6",   1, 0xB8 },
-		{ "PTK-640",  "Wacom Intuos4 6x9",   2, 0xB9 },
-		{ "PTK-840",  "Wacom Intuos4 8x13",  3, 0xBA },
-		{ "PTZ-1240", "Wacom Intuos4 12x19", 4, 0xBB },
+		{ "PTK-440",   "Wacom Intuos4 4x6",   1, 0xB8 },
+		{ "PTK-640",   "Wacom Intuos4 6x9",   2, 0xB9 },
+		{ "PTK-840",   "Wacom Intuos4 8x13",  3, 0xBA },
+		{ "PTK-1240",  "Wacom Intuos4 12x19", 4, 0xBB },
+		{ "PTK-540WL", "Wacom Intuos4 WLUSB", 5, 0xBC },
+		{ "PTK-540WL", "Wacom Intuos4 WLBT",  6, 0xBD },
+		{ NULL }
+	};
+
+	static USBSUBTYPE xIntuos5[] =
+	{
+		{ "PTH-450",   "Wacom Intuos5 touch S",   1, 0x26 },
+		{ "PTH-650",   "Wacom Intuos5 touch M",   2, 0x27 },
+		{ "PTH-850",   "Wacom Intuos5 touch L",   3, 0x28 },
+		{ "PTK-450",   "Wacom Intuos5 S",         4, 0x29 },
+		{ "PTK-650",   "Wacom Intuos5 M",         5, 0x2A },
+		{ "PTH-451",   "Wacom Intuos Pro S",      6, 0x314 },
+		{ "PTH-651",   "Wacom Intuos Pro M",      7, 0x315 },
+		{ "PTH-851",   "Wacom Intuos Pro L",      8, 0x317 },
 		{ NULL }
 	};
 
@@ -339,6 +361,7 @@ static int USBIdentifyModel(USBTABLET* pUSB);
 		{ "int2", "Intuos2", WACOMDEVICE_INTUOS2, xIntuos2, 2 },
 		{ "int3", "Intuos3", WACOMDEVICE_INTUOS3, xIntuos3, 2 },
 		{ "int4", "Intuos4", WACOMDEVICE_INTUOS3, xIntuos4, 2 },
+		{ "int5", "Intuos5", WACOMDEVICE_INTUOS3, xIntuos5, 2 },
 		{ "ctq", "Cintiq (V5)", WACOMDEVICE_CINTIQV5, xCintiqV5, 2 },
 		{ "pl", "Cintiq (PL)", WACOMDEVICE_CINTIQ, xCintiq, 1 },
 		{ "ptu", "Cintiq Partner (PTU)", WACOMDEVICE_PTU, xCintiqPartner, 1 },

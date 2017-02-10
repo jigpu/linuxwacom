@@ -1,7 +1,6 @@
-.\" $XFree86: xc/programs/Xserver/hw/xfree86/input/wacom/wacom.man,v 1.1 2001/01/24 00:06:39 dawes Exp $ 
 .\" shorthand for double quote that works everywhere.
 .ds q \N'34'
-.TH WACOM 4x "linuxwacom 0.8.3" "X Version 11"
+.TH WACOM 4x "linuxwacom 0.9.1" "X Version 11"
 .SH NAME
 wacom \- Wacom input driver
 .SH SYNOPSIS
@@ -45,7 +44,7 @@ ExpressKeys/menu strips, and Graphire 4 or Bamboo tablet buttons, wheel,
 and/or ring.  It is required  for Intuos3,  CintiqV5, Graphire 4, and 
 Bamboo if you want to use keystroke features.  "pad" is reported as a 
 second tool in the driver. "touch" is for the tablet with touch support. 
-Right now only a few Tablet PCs have this feature. 
+Right now only a few Tablet PCs and Bamboo touch have this feature. 
 .TP 4
 .B Option \fI"Device"\fP \fI"path"\fP
 sets the path to the special file which represents serial line where
@@ -99,7 +98,8 @@ sets the mode of the device.  The default value for stylus and
 eraser is Absolute; cursor is Relative; pad mode is decided 
 according to its core option due to its nature of not moving 
 system cursor: Relative if it is a core device; Absolute, otherwise;
-touch is always in absolute mode.
+touch defaults to Relative for tablets with touch pads and Absolute for
+touch screens.
 .TP 4
 .B Option \fI"TopX"\fP \fI"number"\fP
 X coordinate of the top corner of the active zone.  Default to 0. 
@@ -129,14 +129,34 @@ button event only when its tip is pressed.  Default to "on" for Tablet PCs;
 "off" for all other models.
 .TP 4
 .B Option \fI"Touch"\fP \fI"on"|"off"\fP
-enables the touch event for Tablet PC that supports touch feature,  i.e., 
+enables the touch event for tablets that support touch feature,  i.e., 
 system cursor moves when user touches the tablet.  Default to "on" for 
-Tablet PCs with touch feature; "off" for all other models.
+tablets with touch feature; "off" for all other models.
 .TP 4
-.B Option \fI"Capacity"\fP \fI"number"\fP
-sets touch sensitivity level for capacitive touch device, where number 
-can be an integer from -1 to 5.  Default is 3 for capacitive tools and 
--1 for none capacitive tools.
+.B Option \fI"Gesture"\fP \fI"on"|"off"\fP
+enables the touch gestures for tablets that support two finger touch. Three
+gesture modes are supported: Add-a-Finger, Scroll, and Zoom. Once the driver
+is in gesture mode, it stays in the same mode until both fingers leave the tablet. 
+When second finger taps on the tablet, Add-a-Finger mode is in and a right-click
+event will be issued upon the leaving of the second finger;
+When two fingers moving in the same direction and parallel horizontally or vertically,
+Scroll mode is in and a horizontal or vertical scroll event will be issued;
+When both fingers stay on the tablet and at least one finger moves away from its 
+initial position or both fingers move in different directions, Zoom mode is in.
+Default to "on" for Tablet PCs that support two finger touch; "off" for all other
+models. However, this option can be turned on for those tablets that support two
+finger touch.
+.TP 4
+.B Option \fI"ZoomDistance"\fP \fI"number"\fP
+sets the minimum distance required before starting a zoom gesture (default is 50).
+.TP 4
+.B Option \fI"ScrollDistance"\fP \fI"number"\fP
+sets the minimum finger motion distance required for starting ascroll gesture 
+(default is 20).
+.TP 4
+.B Option \fI"TapTime"\fP \fI"number"\fP
+sets the minimum time between taps required for a right mouse click 
+(default is 250 ms).
 .TP 4
 .B Option \fI"Speed"\fP \fI"Rspeed"\fP
 sets the cursor's relative movement speed to Rspeed.  The default value is 1.0.  
@@ -160,19 +180,27 @@ the option will be set to:
             Option "TVResolution" "1024x768,1280x1024" 
 
 This option is used only when TwinView option is not none.  It is unnecessary to add 
-this option if your screens are displaying in the same resolutions.
+this option if both screens are in the same resolutions.
 .TP 4
 .B Option \fI"ScreenNo"\fP \fI"n"\fP
 In a multi-monitor environment, specifies the screen number in which the cursor can move.
+Here n starts from  0, which indicates the first screen.
 .TP 4
 .B Option \fI"MMonitor"\fP \fI"n"\fP
-turns on/off across monitor movement on a non-TwinView multi-monitor desktop. 
-The default is "on". Here n starts from  0, which indicates the first screen.
+turns on/off across monitor movement on a non-TwinView multi-monitor desktop. A system 
+mouse or utility program is needed to change screens when MMonitor is set to off. 
+The default is "on". 
 .TP 4
 .B Option \fI"Rotate"\fP \fI"CW"|"CCW"|"HALF"|"NONE"\fP
 rotates the tablet orientation counterclockwise (CCW) or clockwise (CW) or 180 degrees (HALF). 
 If you have specific tablet mappings, i.e. TopX/Y or BottomX/Y were set, the mapping will be 
 applied before rotation. The default is "NONE".
+.TP 4
+.B Option \fI"SysNode"\fP \fI"path"\fP
+sets the path to the sysfs node that wacom_led files are based. It can be defined in any 
+one of the subsection of the same tablet. Connecting and disconnecting the tablet while 
+checking the path /sys/bus/usb/devices shows which <busnum>-<devnum>:<cfg>.<intf> the 
+wacom_led is in. A typical path would look something like this: /sys/bus/usb/devices/2-2:1.0. 
 .TP 4
 .B Option \fI"PressCurve"\fP \fI"x1,y1,x2,y2"\fP
 sets pressure curve by control points x1, y1, x2, and y2.  Their values are in range 
@@ -199,6 +227,33 @@ same tablet. There are 12 levels in use, specified by the
 integers between 1 and 12. Once it is defined, all the debug 
 messages with a level less than or equal to the "number" will 
 be logged into /etc/X11/Xorg.0.log.
+.TP 4
+.B Option \fI"DeviceLogMask" \fI"number"\fP
+bitmask that enables logging of a group of events.
+.RS
+.PD 0
+.TP
+Bit
+Event
+.TP
+0
+proximity
+.TP
+1
+button
+.TP
+2
+motion
+.TP
+3
+pressure
+.PD
+.RE
+.TP 4
+.B Option \fI"DisablePressureRecalibration"\fP
+Option to disable the pressure recalibration to compensate for non-zero pressure before
+even touching the tablet seen on worn out devices. This pressure recalibration may lead
+to 'lost button events' in some abnormal use cases.
 .TP 4
 .B Option \fI"CursorProx"\fP \fI"number"\fP
 sets the max distance from tablet to stop reporting movement for cursor in relative mode. 

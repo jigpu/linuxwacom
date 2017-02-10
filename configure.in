@@ -1,5 +1,5 @@
 AC_PREREQ(2.58)
-AC_INIT(linuxwacom, 0.8.3)
+AC_INIT(linuxwacom, 0.11.0)
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
@@ -27,18 +27,18 @@ WCM_TCLPKGS=""
 WCM_XSERVER64=""
 
 dnl Configuration
-WCM_MODVER=
 WCM_ENV_XFREE86=no
 WCM_ENV_XORGSDK=no
 WCM_XDRIVER_QUIRKS=
 
 #dnl Check for HAL
 have_hal=no
-PKG_CHECK_MODULES(HAL, hal >= 0.5.0, have_hal=yes, have_hal=no)
+PKG_CHECK_MODULES(HAL, hal >= 0.5.10, have_hal=yes, have_hal=no)
 if test "x$have_hal" = "xyes"; then
 	AC_SUBST([HAL_CFLAGS])
 	AC_SUBST([HAL_LIBS])
 	WCM_XDRIVER_QUIRKS="$WCM_XDRIVER_QUIRKS hal"
+	CFLAGS="$CFLAGS $HAL_CFLAGS"
 fi
 AM_CONDITIONAL(WCM_HAVE_HAL, test "x$have_hal" = "xyes")
 
@@ -102,7 +102,6 @@ dnl Enable linux specific features if linux kernel is detected.
 dnl  kernel source, module versioning, etc
 WCM_OPTION_WACOM=no
 WCM_OPTION_HID=no
-WCM_OPTION_MODVER=no
 WCM_PATCH_HID=
 WCM_ENV_KERNEL=no
 WCM_KERNEL_DIR=
@@ -125,16 +124,29 @@ else
 	if test "$WCM_KERNEL_DIR" = "yes" -o -z "$WCM_KERNEL_DIR"; then
 		WCM_KERNEL_DIR=
 		dnl Kernel source not specified, guess where it is
-		for i in /lib/modules/`uname -r`/source /lib/modules/`uname -r`/build \
-			/usr/src/linux /usr/src/linux-`uname -r` \
-			/usr/src/linux-2.6; do
-			if test -f "$i/include/linux/input.h"; then
+		for i in /lib/modules/`uname -r`/build /usr/src/linux \
+			/usr/src/linux-`uname -r` /usr/src/linux-2.6; do
+			if test -f "$i/.config"; then
 				WCM_KERNEL_DIR=$i
 				WCM_ENV_KERNEL=yes
 				AC_MSG_RESULT($WCM_KERNEL_DIR)
 				break
 			fi
 		done
+
+		if test "$WCM_ENV_KERNEL" != "yes"; then
+			for i in /lib/modules/`uname -r`/source /lib/modules/`uname -r`/build \
+				/usr/src/linux /usr/src/linux-`uname -r` \
+				/usr/src/linux-2.6; do
+				if test -f "$i/include/linux/input.h"; then
+					WCM_KERNEL_DIR=$i
+					WCM_ENV_KERNEL=yes
+					AC_MSG_RESULT($WCM_KERNEL_DIR)
+					break
+				fi
+			done
+		fi
+
 		if test -z "$WCM_KERNEL_DIR"; then
 			AC_MSG_RESULT(not found)
 			echo "***"
@@ -163,8 +175,11 @@ else
 		AC_MSG_CHECKING(kernel version)
 		MODUTS=
 		for a in "$WCM_KERNEL_DIR/include/linux/version.h" \
+			"$WCM_KERNEL_DIR/include/generated/utsrelease.h" \
 			"$WCM_KERNEL_DIR/include/linux/utsrelease.h"; do
-			MODUTS=`grep UTS_RELEASE $a | sed -e 's/^[[^"]]*"\([[^"]]*\).*$/\1/g'`
+			if test -f $a; then
+				MODUTS=`grep UTS_RELEASE $a | sed -e 's/^[[^"]]*"\([[^"]]*\).*$/\1/g'`
+			fi
 			test -n "$MODUTS" && break
 		done
 		if test -z "$MODUTS"; then
@@ -175,25 +190,13 @@ else
 			if echo $MODUTS | grep "^2.4" >/dev/null; then
 				AC_MSG_WARN([support for kernel 2.4.x has been dropped after 0.8.2])
 			elif echo $MODUTS | grep "^2.6" >/dev/null; then
-				if test $MINOR -ge 9; then
+				if test $MINOR -ge 16; then
 					case $MINOR in
-						9) WCM_KERNEL_VER="2.6.9";;
-						10) WCM_KERNEL_VER="2.6.10";;
-						11|12) WCM_KERNEL_VER="2.6.11";;
-						13) WCM_KERNEL_VER="2.6.13";;
-						14) WCM_KERNEL_VER="2.6.14";;
-						15) WCM_KERNEL_VER="2.6.15";;
-						16|17) WCM_KERNEL_VER="2.6.16";;
-						18) WCM_KERNEL_VER="2.6.18";;
-						19|20|21) WCM_KERNEL_VER="2.6.19";;
-						22|23) WCM_KERNEL_VER="2.6.22";;
-						24|25) WCM_KERNEL_VER="2.6.24";;
-						26) WCM_KERNEL_VER="2.6.26";;
-						27) WCM_KERNEL_VER="2.6.27";;
-						*) WCM_KERNEL_VER="2.6.28";;
+						16|17|18|19|20|21|22|23) WCM_KERNEL_VER="2.6.16";;
+						*) WCM_KERNEL_VER="2.6.30";;
 					esac
 				else
-					AC_MSG_WARN([support for kernels older than 2.6.9 has been dropped after 0.8.2])
+					AC_MSG_WARN([support for kernels older than 2.6.9 dropped by 0.8.2; older than 2.6.16 dropped by 0.8.8])
 				fi
 			else
 				AC_MSG_WARN(kernel version $MODUTS not supported)
@@ -206,6 +209,8 @@ else
 	if test -n "$WCM_KERNEL_DIR"; then
 		AC_MSG_CHECKING(for kernel module support)
 		if grep CONFIG_MODULES $WCM_KERNEL_DIR/include/linux/autoconf.h >/dev/null 2>&1; then
+			AC_MSG_RESULT(yes)
+		elif grep CONFIG_MODULES $WCM_KERNEL_DIR/include/generated/autoconf.h >/dev/null 2>&1; then
 			AC_MSG_RESULT(yes)
 		else
 			AC_MSG_RESULT(no)
@@ -439,40 +444,62 @@ if test "$WCM_ENV_XFREE86" != yes; then
 			AC_DEFINE(WCM_XORG_TABLET_SCALING,1,
 				[Some X.org versions require that the events are scaled to screen size])
 		fi
-		WCM_UNINIT_CALLED=
-		AC_ARG_ENABLE(quirk-Uninit-called,
-			AC_HELP_STRING([--enable-quirk-Uninit-called],
-				[Enable Uninit called [[default=when_needed]]]),
-			WCM_UNINIT_CALLED=$enableval)
-		if test -z "$WCM_UNINIT_CALLED"; then
-			AC_MSG_CHECKING([if Uninit is called])
+		AC_MSG_CHECKING([if Xorg server is version 1.4 or later])
+		save_CFLAGS="$CFLAGS"
+		CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
+		AC_TRY_COMPILE([
+#include <xorg-server.h>
+#include <xorgVersion.h>
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 4, 0, 0, 0)
+# error "X.org < 1.4"
+#endif
+], , [WCM_XORG_XSERVER_1_4=yes], [WCM_XORG_XSERVER_1_4=no])
+	CFLAGS="$save_CFLAGS"
+	AC_MSG_RESULT($WCM_XORG_XSERVER_1_4)
+		if test "$WCM_XORG_XSERVER_1_4" = "yes"; then
+		    AC_DEFINE(WCM_XORG_XSERVER_1_4, 1,
+			[Using version 1.4 or later of X.org])
+		fi
+		AC_MSG_CHECKING([if Xorg is 7.3 or earlier])
 			save_CFLAGS="$CFLAGS"
 			CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
 			AC_TRY_COMPILE([
 #include <xorg-server.h>
 #include <xorgVersion.h>
-#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 4, 0, 0, 0)
-# error "Xserver < 1.4 doesn't call Uninit"
-#elif XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(6, 0, 0, 0, 0)
-# error "X.org < 7.3 doesn't call Uninit"
+#if XORG_VERSION_CURRENT <= XORG_VERSION_NUMERIC(6, 0, 0, 0, 0)
+# error "X.org < 6 don't need PKG_CHECK_MODULES"
+#elif XORG_VERSION_CURRENT > XORG_VERSION_NUMERIC(7, 3, 0, 0, 0)
+# error "X.org > 7.3 "
 #endif
-], , [WCM_UNINIT_CALLED=yes], [WCM_UNINIT_CALLED=no])
-			CFLAGS="$save_CFLAGS"
-			AC_MSG_RESULT($WCM_UNINIT_CALLED)
+], , [WCM_XORG_XORG=yes], [WCM_XORG_XORG=no])
+	CFLAGS="$save_CFLAGS"
+	AC_MSG_RESULT($WCM_XORG_XORG)
+		AC_MSG_CHECKING([if Xorg server is version 1.5.2 or later])
+		save_CFLAGS="$CFLAGS"
+		CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
+		AC_TRY_COMPILE([
+#include <xorg-server.h>
+#include <xorgVersion.h>
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 5, 2, 0, 0)
+# error "X.org < 1.5.2 "
+#endif
+], , [WCM_XORG_XSERVER_1_5_2=yes], [WCM_XORG_XSERVER_1_5_2=no])
+		CFLAGS="$save_CFLAGS"
+		AC_MSG_RESULT($WCM_XORG_XSERVER_1_5_2)
+		if test "$WCM_XORG_XSERVER_1_5_2" = "yes"; then
+			AC_DEFINE(WCM_XORG_XSERVER_1_5_2, 1,
+				[Using version 1.5.2 or later of X.org])
 		fi
-		if test "$WCM_UNINIT_CALLED" = "yes"; then
-			WCM_XDRIVER_QUIRKS="$WCM_XDRIVER_QUIRKS Uninit-called"
-			AC_DEFINE(WCM_XORG_XSERVER_1_4,1,
-				[Xserver versions 1.4 and later call Uninit before closing a device])
-		fi
-		AC_MSG_CHECKING([if Xorg is version 1.6 or later])
+		AC_MSG_CHECKING([if Xorg server is version 1.6 or later])
 		save_CFLAGS="$CFLAGS"
 		CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
 		AC_TRY_COMPILE([
 #include <xorg-server.h>
 #include <xorgVersion.h>
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 6, 0, 0, 0)
-# error "X.org < 1.6 doesn't need new routines"
+# error "X.org server < 1.6 doesn't need new routines"
+#elif XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(6, 0, 0, 0, 0)
+# error "X.org server >= 6.0 doesn't need new routines"
 #endif
 ], , [WCM_XORG_XSERVER_1_6=yes], [WCM_XORG_XSERVER_1_6=no])
 		CFLAGS="$save_CFLAGS"
@@ -481,6 +508,21 @@ if test "$WCM_ENV_XFREE86" != yes; then
 			AC_DEFINE(WCM_XORG_XSERVER_1_6, 1,
 				[Using version 1.6 or later of X.org])
 		fi
+		AC_MSG_CHECKING([if Xorg server is version 1.7 or later])
+		save_CFLAGS="$CFLAGS"
+		CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
+		AC_TRY_COMPILE([
+#include <xorg-server.h>
+#include <xorgVersion.h>
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 7, 0, 0, 0)
+# error "X.org server < 1.7 uses this package"
+#elif XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(6, 0, 0, 0, 0)
+# error "X.org server >= 6.0 uses this package"
+#endif
+], , [WCM_XORG_XSERVER_1_7=yes], [WCM_XORG_XSERVER_1_7=no])
+		CFLAGS="$save_CFLAGS"
+		AC_MSG_RESULT($WCM_XORG_XSERVER_1_7)
+		AC_MSG_CHECKING([if Xorg SDK defined IsXExtensionPointer])
 		save_CFLAGS="$CFLAGS"
 		CFLAGS="-I$WCM_XORGSDK_DIR $CFLAGS"
 		AC_TRY_COMPILE([
@@ -574,23 +616,29 @@ if test "$WCM_ENV_XFREE86" != yes; then
 fi
 AM_CONDITIONAL(WCM_ENV_XORGSDK, [test "$WCM_ENV_XORGSDK" = yes])
 
-AC_MSG_CHECKING(for lib xf86config)
-if test -f $WCM_XLIB_DIR/libxf86config.a -o -f $WCM_XLIB_DIR/libxf86config.so; then
-	if test -f $WCM_XFREE86_DIR/$XFREE86SUBDIR/xf86Parser.h; then
-		AC_MSG_RESULT([found, $WCM_XFREE86_DIR/$XFREE86SUBDIR])
-		WCM_ENV_XF86CONFIG=yes
-		CFLAGS="$CFLAGS -I$WCM_XFREE86_DIR/$XFREE86SUBDIR"
-	elif test -f $WCM_XORGSDK_DIR/xf86Parser.h; then
-		AC_MSG_RESULT([found, $WCM_XORGSDK_DIR])
-		WCM_ENV_XF86CONFIG=yes
-	elif test -f $WCM_XLIB_DIR/../include/xf86Parser.h; then
-		AC_MSG_RESULT([found, $WCM_XLIB_DIR/../include])
-		WCM_ENV_XF86CONFIG=yes
-		CFLAGS="$CFLAGS -I$WCM_XLIB_DIR/../include"	
+if test "$WCM_XORG_XSERVER_1_6" == yes; then
+	AC_MSG_CHECKING(for lib xf86config)
+	if test -f $WCM_XLIB_DIR/libxf86config.a -o -f $WCM_XLIB_DIR/libxf86config.so; then
+		if test -f $WCM_XFREE86_DIR/$XFREE86SUBDIR/xf86Parser.h; then
+			AC_MSG_RESULT([found, $WCM_XFREE86_DIR/$XFREE86SUBDIR])
+			WCM_ENV_XF86CONFIG=yes
+			CFLAGS="$CFLAGS -I$WCM_XFREE86_DIR/$XFREE86SUBDIR"
+		elif test -f $WCM_XORGSDK_DIR/xf86Parser.h; then
+			AC_MSG_RESULT([found, $WCM_XORGSDK_DIR])
+			WCM_ENV_XF86CONFIG=yes
+		elif test -f $WCM_XLIB_DIR/../include/xf86Parser.h; then
+			AC_MSG_RESULT([found, $WCM_XLIB_DIR/../include])
+			WCM_ENV_XF86CONFIG=yes
+			CFLAGS="$CFLAGS -I$WCM_XLIB_DIR/../include"	
+		fi
 	fi
 fi
 
-if test "$WCM_ENV_XFREE86" != yes -o "$WCM_XORG_XSERVER_1_4" != yes; then
+if test "$WCM_XORG_XSERVER_1_4" == yes -a "$WCM_XORG_XSERVER_1_5_2" != yes; then
+	WCM_XDRIVER_QUIRKS="$WCM_XDRIVER_QUIRKS Uninit-called"
+fi
+
+if test "$WCM_ENV_XFREE86" != yes -a "$WCM_XORG_XORG" == yes -a "$WCM_XORG_XSERVER_1_4" != yes; then
 	PKG_CHECK_MODULES(XORG, [xorg-server])
 	AC_SUBST([XORG_CFLAGS])
 fi
@@ -844,6 +892,28 @@ if test "$enable_xsetwacom" != "no"; then
 		WCM_PROGS="$WCM_PROGS xsetwacom"
 	fi
 fi
+dnl =======================================================
+dnl Check for wacomxrrd build
+AC_MSG_CHECKING([if wacomxrrd should be built])
+WCM_OPTION_WACOMXRRD=no
+AC_ARG_ENABLE(wacomxrrd,
+	AC_HELP_STRING([--enable-wacomxrrd], [Enable building wacomxrrd [[default=yes]]]),
+	, enable_wacomxrrd=yes)
+if test "$enable_wacomxrrd" != "no"; then
+	if test "$WCM_OPTION_LIBWACOMCFG" != yes; then
+		AC_MSG_WARN([requires libwacomcfg, xsetwacom not built])
+	elif test "$WCM_XORG_XSERVER_1_4" = "yes" -a "$WCM_XORG_XORG" != yes; then
+		AC_CHECK_HEADER(X11/extensions/Xrandr.h, [WCM_OPTION_WACOMXRRD=yes])
+	fi
+	if test "$WCM_OPTION_WACOMXRRD" = yes; then
+		WCM_WACOMXRRD_LIBS="-L$WCM_XLIB_DIR -lXrandr -lX11 -lXi"
+		WCM_PROGS="$WCM_PROGS wacomxrrd"
+		AC_MSG_RESULT(yes)
+	else
+		AC_MSG_RESULT(no)
+	fi
+fi
+AM_CONDITIONAL(WCM_HAVE_RNR, test "$WCM_OPTION_WACOMXRRD" = "yes")
 
 dnl =======================================================
 dnl Check for xmoduledir
@@ -934,6 +1004,20 @@ if test "$GCC" = yes; then
 fi
 
 dnl =======================================================
+dnl Check if we need to build the driver with wcmCustomDebug.c
+WCM_CUSTOM_DEBUG=no
+AC_ARG_ENABLE(customdebug,
+	AC_HELP_STRING([--enable-customdebug], [Enable building with custom debug info [[default=no]]]),
+	WCM_CUSTOM_DEBUG=$enable_customdebug)
+if test "$WCM_CUSTOM_DEBUG" != yes; then
+	AM_CONDITIONAL(WCM_CUSTOM_DEBUG, false)
+else
+	AC_MSG_WARN([Extra debug information will be reported])
+	AM_CONDITIONAL(WCM_CUSTOM_DEBUG, true)
+	AC_DEFINE(WCM_CUSTOM_DEBUG, 1, [Enabled building with custom debug])
+fi
+
+dnl =======================================================
 dnl Set default defines in src/include/xdrv-config.h (moved from cmd-line)
 AC_DEFINE(IN_MODULE,,[cmdline substitute])
 AC_DEFINE(XFree86LOADER,,[cmdline substitute])
@@ -943,6 +1027,18 @@ AC_DEFINE(XKB,,[cmdline substitute])
 dnl Separate test output from file-generation output
 echo 
 
+WCM_SRC_SUBDIRS=". wacomxi util xdrv $WCM_KERNEL_VER"
+if test "$WCM_XORG_XSERVER_1_7" = "yes"; then
+	WCM_SRC_SUBDIRS="$WCM_KERNEL_VER"
+	WCM_OPTION_WACDUMP=no
+	WCM_OPTION_XIDUMP=no
+	WCM_OPTION_LIBWACOMCFG=no
+	WCM_OPTION_LIBWACOMXI=no
+	WCM_OPTION_WACOMXRRD=no
+	WCM_OPTION_XSETWACOM=no
+	WCM_OPTION_WACOMDRV=no
+fi
+
 AC_SUBST(WCM_PROGS)
 AC_SUBST(WCM_LIBS)
 AC_SUBST(WCM_TCLLIBS)
@@ -951,7 +1047,6 @@ AC_SUBST(WCM_MODULES)
 AC_SUBST(WCM_XF86MODULES)
 AC_SUBST(WCM_ARCH)
 AC_SUBST(WCM_KSTACK)
-AC_SUBST(WCM_MODVER)
 AC_SUBST(WCM_KERNEL_DIR)
 AC_SUBST(WCM_KERNEL_VER)
 AC_SUBST(WCM_XFREE86_DIR)
@@ -966,29 +1061,19 @@ AC_SUBST(WCM_LIBWACOMCFG_LIBS)
 AC_SUBST(WCM_WACOMXI_LIBS)
 AC_SUBST(WCM_PREFIX)
 AC_SUBST(WCM_XSETWACOM_LIBS)
+AC_SUBST(WCM_WACOMXRRD_LIBS)
 AC_SUBST(WCM_DEPFLAGS)
 AC_SUBST(WCM_OPTION_WACOM)
 AC_SUBST(WCM_OPTION_HID)
+AC_SUBST(WCM_SRC_SUBDIRS)
 
 AC_OUTPUT(Makefile
 	mkxincludes
 	src/Makefile
 	src/util/Makefile
 	src/xdrv/Makefile
-	src/2.6.9/Makefile
-	src/2.6.10/Makefile
-	src/2.6.11/Makefile
-	src/2.6.13/Makefile
-	src/2.6.14/Makefile
-	src/2.6.15/Makefile
 	src/2.6.16/Makefile
-	src/2.6.18/Makefile
-	src/2.6.19/Makefile
-	src/2.6.22/Makefile
-	src/2.6.24/Makefile
-	src/2.6.26/Makefile
-	src/2.6.27/Makefile
-	src/2.6.28/Makefile
+	src/2.6.30/Makefile
 	src/wacomxi/Makefile
 	src/wacomxi/wacomcpl)
 
@@ -997,7 +1082,6 @@ echo "----------------------------------------"
 echo "  BUILD ENVIRONMENT:"
 echo "       architecture - $WCM_ARCHITECTURE"
 echo "       linux kernel - $WCM_ISLINUX $WCM_KERNEL_VER"
-echo "  module versioning - $WCM_OPTION_MODVER $WCM_MODVER"
 echo "      kernel source - $WCM_ENV_KERNEL $WCM_KERNEL_DIR"
 echo "     XFree86 source - $WCM_ENV_XFREE86 $WCM_XFREE86_DIR"
 echo "           Xorg SDK - $WCM_ENV_XORGSDK $WCM_XORGSDK_DIR"
@@ -1016,6 +1100,7 @@ echo "             xidump - $WCM_OPTION_XIDUMP $WCM_PATCH_XIDUMP"
 echo "        libwacomcfg - $WCM_OPTION_LIBWACOMCFG"
 echo "         libwacomxi - $WCM_OPTION_LIBWACOMXI"
 echo "          xsetwacom - $WCM_OPTION_XSETWACOM"
+echo "          wacomxrrd - $WCM_OPTION_WACOMXRRD"
 echo "              hid.o - $WCM_OPTION_HID $WCM_PATCH_HID"
 if test "$WCM_OPTION_DLLOADER" = "yes" ; then
 echo "       wacom_drv.so - $WCM_OPTION_WACOMDRV $WCM_MODDIR $WCM_PATCH_WACOMDRV"
@@ -1026,3 +1111,32 @@ echo "        wacom_drv.o - $WCM_OPTION_WACOMDRV $WCM_MODDIR $WCM_PATCH_WACOMDRV
 fi
 echo "  wacom*_drv quirks -$WCM_XDRIVER_QUIRKS"
 echo "----------------------------------------"
+
+if test "$WCM_XORG_XSERVER_1_7" = "yes"; then
+	if test "$WCM_OPTION_WACOM" = "yes"; then
+		cd src/$WCM_KERNEL_VER;make
+		echo ""
+		echo ""
+		echo "Your wacom.ko is available under "
+		echo "    `pwd`"
+	else
+		echo "You can build the kernel driver from this package by"
+		echo "./configure --enable-wacom"
+	fi
+	echo ""
+	echo ""
+	echo "NOTE: the X driver in this package only supports Xorg servers older than 1.7."
+	echo "          You are running a newer version. "
+	echo "Please build the X driver from xf86-input-wacom."
+	echo "The kernel driver provided in this package is independent of "
+	echo "the X server version"
+else
+	if test "$WCM_OPTION_WACOM" = "yes"; then
+		echo ""
+		echo ""
+		echo "Your wacom.ko will be available under "
+		echo "    `pwd`/src/$WCM_KERNEL_VER"
+	fi
+fi
+echo ""
+

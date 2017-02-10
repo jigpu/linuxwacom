@@ -90,11 +90,7 @@ static int wacom_set_report(struct usb_interface *intf, u8 type, u8 id,
 	return retval;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-static void wacom_sys_irq(struct urb *urb, struct pt_regs *regs)
-#else
 static void wacom_sys_irq(struct urb *urb)
-#endif
 {
 	struct wacom *wacom = urb->context;
 	int retval;
@@ -113,12 +109,11 @@ static void wacom_sys_irq(struct urb *urb)
 		dbg("%s - nonzero urb status received: %d", __func__, urb->status);
 		goto exit;
 	}
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
-	wacom->wacom_wac.regs = regs;
-#endif
+
 	wacom_wac_irq(&wacom->wacom_wac, urb->actual_length);
 
  exit:
+	usb_mark_last_busy(wacom->usbdev);
 	retval = usb_submit_urb(urb, GFP_ATOMIC);
 	if (retval)
 		err ("%s - usb_submit_urb failed with result %d",
@@ -127,18 +122,25 @@ static void wacom_sys_irq(struct urb *urb)
 
 static int wacom_open(struct input_dev *dev)
 {
-	struct wacom *wacom = dev->private;
+	struct wacom *wacom = input_get_drvdata(dev);
 
 	mutex_lock(&wacom->lock);
 
 	wacom->irq->dev = wacom->usbdev;
 
-	if (usb_submit_urb(wacom->irq, GFP_KERNEL)) {
+	if (usb_autopm_get_interface(wacom->intf) < 0) {
 		mutex_unlock(&wacom->lock);
 		return -EIO;
 	}
 
-	wacom->open = 1;
+	if (usb_submit_urb(wacom->irq, GFP_KERNEL)) {
+		usb_autopm_put_interface(wacom->intf);
+		mutex_unlock(&wacom->lock);
+		return -EIO;
+	}
+
+	wacom->open = true;
+	wacom->intf->needs_remote_wakeup = 1;
 
 	mutex_unlock(&wacom->lock);
 	return 0;
@@ -146,11 +148,12 @@ static int wacom_open(struct input_dev *dev)
 
 static void wacom_close(struct input_dev *dev)
 {
-	struct wacom *wacom = dev->private;
+	struct wacom *wacom = input_get_drvdata(dev);
 
 	mutex_lock(&wacom->lock);
 	usb_kill_urb(wacom->irq);
-	wacom->open = 0;
+	wacom->open = false;
+	wacom->intf->needs_remote_wakeup = 0;
 	mutex_unlock(&wacom->lock);
 }
 
@@ -406,6 +409,86 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
 	return error;
 }
 
+struct wacom_usbdev_data {
+	struct list_head list;
+	struct kref kref;
+	struct usb_device *dev;
+	struct wacom_shared shared;
+};
+
+static LIST_HEAD(wacom_udev_list);
+static DEFINE_MUTEX(wacom_udev_list_lock);
+
+static struct wacom_usbdev_data *wacom_get_usbdev_data(struct usb_device *dev)
+{
+	struct wacom_usbdev_data *data;
+
+	list_for_each_entry(data, &wacom_udev_list, list) {
+		if (data->dev == dev) {
+			kref_get(&data->kref);
+			return data;
+		}
+	}
+
+	return NULL;
+}
+
+static int wacom_add_shared_data(struct wacom_wac *wacom,
+				 struct usb_device *dev)
+{
+	struct wacom_usbdev_data *data;
+	int retval = 0;
+
+	mutex_lock(&wacom_udev_list_lock);
+
+	data = wacom_get_usbdev_data(dev);
+	if (!data) {
+		data = kzalloc(sizeof(struct wacom_usbdev_data), GFP_KERNEL);
+		if (!data) {
+			retval = -ENOMEM;
+			goto out;
+		}
+
+		kref_init(&data->kref);
+		data->dev = dev;
+		list_add_tail(&data->list, &wacom_udev_list);
+
+	} else if (wacom->features.type >= INTUOSPS && wacom->features.type <= INTUOSPL) {
+		/* ignore extra interfaces */
+		retval = -ENODEV;
+		goto out;
+	}
+
+	wacom->shared = &data->shared;
+
+out:
+	mutex_unlock(&wacom_udev_list_lock);
+	return retval;
+}
+
+static void wacom_release_shared_data(struct kref *kref)
+{
+	struct wacom_usbdev_data *data =
+		container_of(kref, struct wacom_usbdev_data, kref);
+
+	mutex_lock(&wacom_udev_list_lock);
+	list_del(&data->list);
+	mutex_unlock(&wacom_udev_list_lock);
+
+	kfree(data);
+}
+
+static void wacom_remove_shared_data(struct wacom_wac *wacom)
+{
+	struct wacom_usbdev_data *data;
+
+	if (wacom->shared) {
+		data = container_of(wacom->shared, struct wacom_usbdev_data, shared);
+		kref_put(&data->kref, wacom_release_shared_data);
+		wacom->shared = NULL;
+	}
+}
+
 static int wacom_led_control(struct wacom *wacom)
 {
 	unsigned char *buf;
@@ -527,8 +610,8 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.select[0] = 0;
  		wacom->led.select[1] = 0;
 		wacom->led.llv = 10;
- 		wacom->led.hlv = 20;
- 		error = sysfs_create_group(&wacom->intf->dev.kobj,
+		wacom->led.hlv = 20;
+		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &intuos4_led_attr_group);
 		break;
 
@@ -537,7 +620,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
 		wacom->led.select[0] = 0;
 		wacom->led.select[1] = 0;
 		wacom->led.llv = 0;
- 		wacom->led.hlv = 0;
+		wacom->led.hlv = 0;
 		error = sysfs_create_group(&wacom->intf->dev.kobj,
 				   &cintiq_led_attr_group);
 		break;
@@ -602,7 +685,6 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 {
 	struct usb_device *dev = interface_to_usbdev(intf);
 	struct usb_endpoint_descriptor *endpoint;
-	struct usb_interface_descriptor *interface;
 	struct wacom *wacom;
 	struct wacom_wac *wacom_wac;
 	struct wacom_features *features;
@@ -627,8 +709,13 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 		goto fail1;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	wacom_wac->data = usb_buffer_alloc(dev, WACOM_PKGLEN_MAX,
 					   GFP_KERNEL, &wacom->data_dma);
+#else
+	wacom_wac->data = usb_alloc_coherent(dev, WACOM_PKGLEN_MAX,
+					     GFP_KERNEL, &wacom->data_dma);
+#endif
 	if (!wacom_wac->data) {
 		error = -ENOMEM;
 		goto fail1;
@@ -648,7 +735,6 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 
 	wacom_wac->input = input_dev;
 
-	interface = &intf->cur_altsetting->desc;
 	endpoint = &intf->cur_altsetting->endpoint[0].desc;
 
 	/* Retrieve the physical and logical size for OEM devices */
@@ -656,15 +742,9 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	if (error)
 		goto fail3;
 
+	/* Ignore Intuos5 touch interface until BPT3 touch support backported */
 	if (features->type >= INTUOS5S && features->type <= INTUOSPL) {
 		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
-			/* Ignore touch interface until BPT3 touch support backported */
-			error = -ENODEV;
-			goto fail2;
-		} else if (interface->bInterfaceClass == 3 && \
-		           interface->bInterfaceSubClass == 1 && \
-		           interface->bInterfaceProtocol == 2) {
-			/* ingore extra (Windows-workaround) boot mouse interface */
 			error = -ENODEV;
 			goto fail2;
 		} else {
@@ -681,14 +761,18 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 			features->device_type == BTN_TOOL_PEN ?
 				" Pen" : " Finger",
 			sizeof(wacom_wac->name));
+
+		error = wacom_add_shared_data(wacom_wac, dev);
+		if (error)
+			goto fail3;
 	}
 
 	input_dev->name = wacom_wac->name;
-	input_dev->private = wacom;
-	input_dev->cdev.dev = &intf->dev;
+	input_dev->dev.parent = &intf->dev;
 	input_dev->open = wacom_open;
 	input_dev->close = wacom_close;
 	usb_to_input_id(dev, &input_dev->id);
+	input_set_drvdata(input_dev, wacom);
 
 	wacom_setup_input_capabilities(input_dev, wacom_wac);
 
@@ -701,11 +785,11 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 
 	error = wacom_initialize_leds(wacom);
 	if (error)
-		goto fail3;
+		goto fail4;
 
 	error = input_register_device(input_dev);
 	if (error)
-		goto fail4;
+		goto fail5;
 
 	/* Note that if query fails it is not a hard failure */
 	wacom_query_tablet_data(intf, features);
@@ -713,9 +797,14 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
 	usb_set_intfdata(intf, wacom);
 	return 0;
 
- fail4:	wacom_destroy_leds(wacom);
+ fail5:	wacom_destroy_leds(wacom);
+ fail4:	wacom_remove_shared_data(wacom_wac);
  fail3:	usb_free_urb(wacom->irq);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
  fail2:	usb_buffer_free(dev, WACOM_PKGLEN_MAX, wacom_wac->data, wacom->data_dma);
+#else
+ fail2: usb_free_coherent(dev, WACOM_PKGLEN_MAX, wacom_wac->data, wacom->data_dma);
+#endif
  fail1:	input_free_device(input_dev);
 	kfree(wacom);
 	return error;
@@ -731,8 +820,14 @@ static void wacom_disconnect(struct usb_interface *intf)
 	input_unregister_device(wacom->wacom_wac.input);
 	wacom_destroy_leds(wacom);
 	usb_free_urb(wacom->irq);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 	usb_buffer_free(interface_to_usbdev(intf), WACOM_PKGLEN_MAX,
 			wacom->wacom_wac.data, wacom->data_dma);
+#else
+	usb_free_coherent(interface_to_usbdev(intf), WACOM_PKGLEN_MAX,
+			wacom->wacom_wac.data, wacom->data_dma);
+#endif
+	wacom_remove_shared_data(&wacom->wacom_wac);
 	kfree(wacom);
 }
 
@@ -768,6 +863,11 @@ static int wacom_resume(struct usb_interface *intf)
 	return rv;
 }
 
+static int wacom_reset_resume(struct usb_interface *intf)
+{
+	return wacom_resume(intf);
+}
+
 static struct usb_driver wacom_driver = {
 	.name =		"wacom",
 	.id_table =	wacom_ids,
@@ -775,6 +875,8 @@ static struct usb_driver wacom_driver = {
 	.disconnect =	wacom_disconnect,
 	.suspend =	wacom_suspend,
 	.resume =	wacom_resume,
+	.reset_resume =	wacom_reset_resume,
+	.supports_autosuspend = 1,
 };
 
 static int __init wacom_init(void)

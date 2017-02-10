@@ -1,6 +1,6 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
- * Copyright 2002-2008 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2002-2010 by Ping Cheng, Wacom. <pingc@wacom.com>		
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software 
@@ -25,7 +25,7 @@
 static Bool serialDetect(LocalDevicePtr pDev);
 static Bool serialInit(LocalDevicePtr pDev, char* id, float *version);
 
-static int serialInitTablet(LocalDevicePtr local, char* id, float *version);
+static int serialInitTablet(LocalDevicePtr pDev, char* id, float *version);
 static void serialInitIntuos(WacomCommonPtr common, const char* id, float version);
 static void serialInitIntuos2(WacomCommonPtr common, const char* id, float version);
 static void serialInitCintiq(WacomCommonPtr common, const char* id, float version);
@@ -700,7 +700,7 @@ static int serialParseProtocol5(LocalDevicePtr local, const unsigned char* data)
 	/* Protocol 5 devices support 2 data channels */
 	channel = data[0] & 0x01;
 
-	/* pick up where we left off, minus relative values */
+	 /* pick up where we left off, minus relative values */
 	ds = &common->wcmChannel[channel].work;
 	RESET_RELATIVE(*ds);
 
@@ -1269,9 +1269,7 @@ static void serialParseP4Common(LocalDevicePtr local,
 			(ds->device_type == ERASER_ID))
 		{
 			/* send a prox-out for old device */
-			WacomDeviceState out = { 0 };
-			out.device_type = ERASER_ID;
-			xf86WcmEvent(common, 0, &out);
+			xf86WcmSoftOut(common, 0);
 			ds->device_type = cur_type;
 		}
 	}
@@ -1309,7 +1307,7 @@ int xf86WcmSerialValidate(WacomCommonPtr common, const unsigned char* data)
 		{
 			bad = 1;
 			if (i!=0 && (data[i] & HEADER_BIT)) {
-				ErrorF("xf86WcmSerialValidate: bad magic at %d "
+				xf86Msg(X_WARNING, "xf86WcmSerialValidate: bad magic at %d "
 					"v=%x l=%d\n", i, data[i], common->wcmPktLength);
 				return i;
 			}

@@ -2,19 +2,19 @@
 ** xsetwacom.c
 **
 ** Copyright (C) 2003 - John E. Joganic
-** Copyright (C) 2004-2009 - Ping Cheng
+** Copyright (C) 2004-2012 - Ping Cheng
 **
 ** This program is free software; you can redistribute it and/or
-** modify it under the terms of the GNU Lesser General Public License
+** modify it under the terms of the GNU General Public License
 ** as published by the Free Software Foundation; either version 2
 ** of the License, or (at your option) any later version.
 **
 ** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
 ** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU Lesser General Public License for more details.
+** GNU General Public License for more details.
 **
-** You should have received a copy of the GNU Lesser General Public License
+** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
@@ -38,10 +38,14 @@
 **   2009-05-18 0.1.9 - PC - Support get/set serial command
 **   2009-07-14 0.2.0 - PC - Support Nvidia Xinerama setting
 **   2009-08-24 0.2.1 - PC - Add SCREENTOGGLE command
+**   2009-09-31 0.2.2 - PC - Add Dual Touch
+**   2009-10-31 0.2.3 - PC - Support spaced names from hot-plugged devices
+**   2010-02-09 0.2.4 - PC - Add options for gesture
+**   2010-07-12 0.2.5 - PC - Added is_display
 **
 ****************************************************************************/
 
-#define XSETWACOM_VERSION "0.1.9"
+#define XSETWACOM_VERSION "0.2.8"
 
 #include "../include/util-config.h"
 
@@ -107,11 +111,11 @@ struct _PARAMINFO
 static const char* tv_char[] = 
 {
 	"none",
-	"xinerama"
+	"xinerama",
 	"vertical",
 	"horizontal",
-	"aboveof"
-	"leftof"
+	"aboveof",
+	"leftof",
 	"NULL"
 };
 
@@ -313,6 +317,12 @@ static PARAMINFO gParamInfo[] =
 		XWACOM_PARAM_COMMONDBG, VALUE_OPTIONAL, RANGE, 
 		0, 100, SINGLE_VALUE, 0 },
 
+	{ "DeviceLogMask",
+		"Bitmask enabling logging capabilities "
+		"associated with the same tablet. \n\t\t   default is 0 (off). ",
+		XWACOM_PARAM_DEVICELOGMASK, VALUE_OPTIONAL, RANGE, 
+		0, 0xf, SINGLE_VALUE, 0 },
+
 	{ "Suppress",
 		"Number of points trimmed, default is 2. ",
 		XWACOM_PARAM_SUPPRESS, VALUE_OPTIONAL, RANGE, 
@@ -336,9 +346,10 @@ static PARAMINFO gParamInfo[] =
 		0, 100, PACKED_CURVE, 0x00006464},
 
 	{ "TwinView",
-		"Sets the mapping to TwinView xinerama/horizontal/vertical/leftof/aboveof/none. \n"
-		"\t\t   Values = none, vertical, horizontal, leftof, aboveof, xinerama "
-		"(default is none).",
+		"Sets the mapping to TwinView xinerama/horizontal"
+		"/vertical/leftof/aboveof/none. "
+		"\n\t\t   Values = none, vertical, horizontal, leftof, "
+		"aboveof, xinerama (default is none).",
 		XWACOM_PARAM_TWINVIEW, VALUE_OPTIONAL, RANGE, 
 		TV_NONE, TV_MAX, SINGLE_VALUE, TV_NONE },
 
@@ -355,31 +366,62 @@ static PARAMINFO gParamInfo[] =
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "Touch",
-		"Turns on/off Touch events (default is enable/on). ",
+		"Turns on/off Touch events (default is "
+		"enable/on for tablets with touch). ",
 		XWACOM_PARAM_TOUCH, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
-	{ "Capacity",
-		"Touch sensitivity level (default is 3, "
-		"-1 for none capacitive tools). ",
-		XWACOM_PARAM_CAPACITY, VALUE_OPTIONAL, 
-		RANGE, -1, 5, SINGLE_VALUE, 3 },
+	{ "Gesture",
+		"Turns on/off Touch Gesture "
+		"\n\t\t   (default is enable/on for tablets"
+		" with two finger support). ",
+		XWACOM_PARAM_GESTURE, VALUE_OPTIONAL, 
+		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
+
+	{ "ZoomDistance",
+		"Minimum distance required before starting a zoom gesture "
+		"(default is 50). ",
+		XWACOM_PARAM_ZOOMDISTANCE, VALUE_OPTIONAL, 
+		RANGE, 0, 10000, SINGLE_VALUE, 50 },
+
+	{ "ScrollDistance",
+		"Minimum finger motion distance required"
+		" for starting a scroll gesture (default is 20). ",
+		XWACOM_PARAM_SCROLLDISTANCE, VALUE_OPTIONAL, 
+		RANGE, 0, 10000, SINGLE_VALUE, 20 },
+
+	{ "TapTime",
+		"Maximum time between taps required for a right"
+		" click gesture (default is 250 ms). ",
+		XWACOM_PARAM_TAPTIME, VALUE_OPTIONAL, 
+		RANGE, 0, 500, SINGLE_VALUE, 250 },
 
 	{ "CursorProx", 
 		"Sets cursor distance for proximity-out "
-		"in distance from the tablet.  \n"
-		"\t\t   (default is 10 for Intuos series, "
+		"in distance from the tablet. "
+		"\n\t\t   (default is 10 for Intuos series, "
 		"42 for Graphire series). ",
 		XWACOM_PARAM_CURSORPROX, VALUE_OPTIONAL, RANGE, 
 		0, 255, SINGLE_VALUE, 47 },
 		
 	{ "Rotate",
 		"Sets the rotation of the tablet. "
-		"Values = NONE, CW, CCW, HALF (default is NONE). \n"
-		"\t\t   Tablet mappings applied after this command will "
+		"Values = NONE, CW, CCW, HALF (default is NONE). "
+		"\n\t\t   Tablet mappings applied after this command will "
 		"be based on the new tablet orientation. ",
 		XWACOM_PARAM_ROTATE, VALUE_OPTIONAL, RANGE, 
 		ROTATE_NONE, ROTATE_HALF, SINGLE_VALUE, ROTATE_NONE },
+
+	{ "LED0",
+		"Sets/gets the LED status of Intuos 4 or Cintiq 21UX2/24HD "
+		"(on the right side). ",
+		XWACOM_PARAM_LED0, VALUE_OPTIONAL, RANGE, 
+		0, 3, SINGLE_VALUE, 0 },
+
+	{ "LED1",
+		"Sets/gets the LED status of Cintiq 21UX2/24HD (on the left side). ",
+		XWACOM_PARAM_LED1, VALUE_OPTIONAL, RANGE, 
+		0, 3, SINGLE_VALUE, 0 },
 
 	{ "RelWUp", 
 		"X11 event to which relative wheel up should be mapped. ",
@@ -399,6 +441,16 @@ static PARAMINFO gParamInfo[] =
 	{ "AbsWDn", 
 		"X11 event to which absolute wheel down should be mapped. ",
 		XWACOM_PARAM_ABSWDN, VALUE_OPTIONAL, 0, 0, 0, 
+		ACTION_VALUE, 5 },
+
+	{ "AbsW2Up", 
+		"X11 event to which absolute wheel2 up should be mapped. ",
+		XWACOM_PARAM_ABSW2UP, VALUE_OPTIONAL, 0, 0, 0, 
+		ACTION_VALUE, 4 },
+
+	{ "AbsW2Dn", 
+		"X11 event to which absolute wheel2 down should be mapped. ",
+		XWACOM_PARAM_ABSW2DN, VALUE_OPTIONAL, 0, 0, 0, 
 		ACTION_VALUE, 5 },
 
 	{ "StripLUp", 
@@ -433,7 +485,7 @@ static PARAMINFO gParamInfo[] =
 
 	{ "RawFilter",
 		"Enables and disables filtering of raw data, "
-		"default is true/on.",
+		"default is true/on. ",
 		XWACOM_PARAM_RAWFILTER, VALUE_OPTIONAL, RANGE, 
 		0, 1, BOOLEAN_VALUE, 1 },	
 
@@ -443,19 +495,20 @@ static PARAMINFO gParamInfo[] =
 		1, 11, SINGLE_VALUE, 6 },	
 
 	{ "ClickForce",
-		"Sets tip/eraser pressure threshold = ClickForce*MaxZ/100 "
-		"(default is 6)",
+		"Sets tip/eraser pressure threshold = "
+		"ClickForce*FILTER_PRESSURE_RES/100 "
+		"\n\t\t   (default is 6). ",
 		XWACOM_PARAM_CLICKFORCE, VALUE_OPTIONAL, RANGE, 
 		1, 21, SINGLE_VALUE, 6 },	
 
 	{ "Threshold",
 		"Sets tip/eraser pressure threshold directly to the pressure "
-		"(default is 6*MaxZ/100)",
+		"\n\t\t   (default is FILTER_PRESSURE_RES / 75). ",
 		XWACOM_PARAM_THRESHOLD, VALUE_REQUIRED },	
 
 	{ "Accel",
 		"Sets relative cursor movement acceleration "
-		"(default is 1)",
+		"(default is 1). ",
 		XWACOM_PARAM_ACCEL, VALUE_OPTIONAL, RANGE, 
 		1, 7, SINGLE_VALUE, 1 },
 	
@@ -465,13 +518,13 @@ static PARAMINFO gParamInfo[] =
 
 	{ "mmonitor",
 		"Turns on/off across monitor movement in "
-		"multi-monitor desktop, default is on ",
+		"multi-monitor desktop, default is on. ",
 		XWACOM_PARAM_MMT, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE, 1 },
 
 	{ "CoreEvent",
 		"Turns on/off device to send core event. "
-		"default is decided by X driver and xorg.conf ",
+		"Default is decided by X driver and xorg.conf. ",
 		XWACOM_PARAM_COREEVENT, VALUE_OPTIONAL, 
 		RANGE, 0, 1, BOOLEAN_VALUE },
 
@@ -631,6 +684,16 @@ static PARAMINFO gParamInfo[] =
 		"Returns the status of XSCALING is set or not. ",
 		XWACOM_PARAM_XSCALING, VALUE_REQUIRED },
 
+	{ "IsDisplay",
+		"Returns true if the tablet is a display tablet. Otherwise, false. ",
+		XWACOM_PARAM_ISDISPLAY, VALUE_OPTIONAL, RANGE, 
+		0, 1, BOOLEAN_VALUE, 1 },	
+	{ "DisablePressureRecalibration",
+		"Disables pressure recalibration for worn out pens. \n\t\t"
+		"default is 0 (off). ",
+		XWACOM_PARAM_NO_PRESSURE_RECAL, VALUE_REQUIRED, RANGE,
+		0, 1, BOOLEAN_VALUE, 0 },
+
 	{ NULL }
 };
 
@@ -685,6 +748,7 @@ static int ListDev(WACOMCONFIG *hConfig, char** argv)
 	const char* pszType;
 	WACOMDEVICEINFO* pInfo;
 	unsigned int i, j, uCount;
+	char nameOut[60] = "";
 
 	static TYPEXLAT xTypes[] =
 	{
@@ -704,11 +768,21 @@ static int ListDev(WACOMCONFIG *hConfig, char** argv)
 	for (i=0; i<uCount; ++i)
 	{
 		pszType = "unknown";
+		nameOut[0] = 0; /* end of string */
 		for (j=0; j<sizeof(xTypes)/sizeof(*xTypes); ++j)
 			if (xTypes[j].type == pInfo[i].type)
 				pszType = xTypes[j].pszText;
-
-		fprintf(stdout,"%-16s %-10s\n",pInfo[i].pszName,pszType);
+		/* tcl/tk (wacomcpl) has problem to process spaced names 
+		 * so we make them into the one string */
+		for (j=0; j<strlen(pInfo[i].pszName); j++)
+		{
+			if(pInfo[i].pszName[j] == ' ') 
+				nameOut[j] = '_';
+			else
+				nameOut[j] = pInfo[i].pszName[j];
+		}
+		nameOut[strlen(pInfo[i].pszName)] = '\0';
+		fprintf(stdout,"%s     %s\n", nameOut, pszType);
 	}
 
 	WacomConfigFree(pInfo);
@@ -879,11 +953,14 @@ static int ParseValues(int nCount, const char* pszValues, int* nValues,
 			if (p->nParamID == XWACOM_PARAM_TWINVIEW)
 				option_char = tv_char;
 			for (j = p->nMin; j <= p->nMax; j++)
+			{
 				if (!strcasecmp(pszValues, option_char[j]))
 				{
 					check = 1;
 					*nValue = j;
+					break;
 				}
+			}
  			if (!check)
 			{
 				fprintf(stderr,"ParseValues: Value '%s' is "
