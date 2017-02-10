@@ -402,22 +402,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel);
 		usbDetectConfig,      /* detect hardware buttons etc */
 	};
 
-	static WacomModel usbDTU =
-	{
-		"USB DTU",
-		usbInitProtocol4,
-		NULL,                 /* resolution not queried */
-		usbWcmGetRanges,
-		NULL,                 /* reset not supported */
-		NULL,                 /* tilt automatically enabled */
-		NULL,                 /* suppress implemented in software */
-		NULL,                 /* link speed unsupported */
-		NULL,                 /* start not supported */
-		usbParse,
-		xf86WcmFilterCoord,   /* input filtering */
-		usbDetectConfig,      /* detect hardware buttons etc */
-	};
-
 /*****************************************************************************
  * usbDetect --
  *   Test if the attached device is USB.
