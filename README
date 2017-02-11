@@ -1,107 +1,107 @@
-linuxwacom OpenSolaris X11 input driver
+README
+February 10, 2017
 
-DESCRIPTION
-==============
-This input driver provides X11 with the ability to interface with Wacom
-tablets and touchscreens under OpenSolaris. Note that for tablets to
-work properly under X11, a kernel driver (such as usbwcm) must also be
-installed.
+==============================================================================
+Most end users would probably only need to update the /etc/X11/xorg.conf file 
+and sometime probably the Wacom X driver as well to use the rich features that 
+Wacom tablets offer.  The steps could be as simple as:
 
+    $ su
+    # cp /etc/X11/xorg.conf /etc/X11/xorg.conf.bak
+    # gedit /etc/X11/xorg.conf
 
-REQUIREMENTS
-===============
-This driver has been tested to compile and run on Solaris 10 05/09, but
-should work with other versions as well. To build the driver, the following
-packages will need to be installed from the Blastwave software archive:
+then follow the step listed at http://linuxwacom.sourceforge.net/index_old.php/howto/x11
+or "man wacom" if you don't have network access to add sections for Wacom device.
 
- * gcc4
- * gmake
- * gsed
- * libtool
- * autoconf
- * automake
- * pkgconfig
- * tcl
- * tk
+However, if you have a USB tablet which is newer than your running kernel, i.e., 
+the tablet is not supported by your running kernel, or you are a developer who is 
+willing to build the driver from the source, there are extra work waiting for you.
 
-In addition to these packages, you will also require a copy of the 'usbwcm'
-kernel headers, the X11 development headers, and a copy of the pkgconfig
-files for x11 and xorg-server. All of these should have been distributed
-alongside this driver.
+==============================================================================
 
+PREREQUISITES:
 
-ENVIRONMENT SETUP
-====================
-Before building the driver, the build environment must be set up so that
-all programs and source files can be located. The kernel sources, X11
-headers, and pkgconfig files should reside alongside the 'linuxwacom'
-directory this README file is in. The directory structure should look
-like the following:
+In order to build the linuxwacom X and kernel drivers, several GNU utilities will
+need to be present on your system. Distributions like Fedora provide a handy
+"Development Tools" group that will bring in all the necessary software. In other
+distributions, you may need to install the necessary packages individually. For
+users of Solaris it is important to use the GNU versions of these utilities, e.g.
+as installed from OpenCSW; the SUNW versions of these utilities are incompatible.
 
- ./
- ./linuxwacom
- ./linuxwacom/AUTHORS
- ./linuxwacom/bootstrap
- ./linuxwacom/ChangeLog
-     ....
- ./usbwcm
- ./usbwcm/headers
- ./usbwcm/headers/sys
- ./usbwcm/headers/sys/usb
-     ....
- ./X11R7.2
- ./X11R7.2/include
- ./X11R7.2/include/GL
-     ....
- ./x11.pc
- ./xorg-server.pc
+  * GCC4
+  * GNU make
+  * GNU sed
+  * pkgconfig
+  * GNU libtool  (Only required for builds from git)
+  * GNU autoconf (Only required for builds from git)
+  * GNU automake (Only required for builds from git)
 
-From the parent directory, run the following commands:
+Additionally, a number of development headers will need to be made available for
+the drivers to compile. Some distributions (e.g. RHEL 5) provide these headers as
+installable packages, while others (e.g. Solaris) may require you to locate
+appropriate headers elsewhere.
 
-	$ export PATH="$PATH:/opt/csw/bin:/opt/csw/gcc4/bin:/usr/ccs/bin"
-	$ export PKG_CONFIG_PATH=$(pwd)
-	$ export PKG_CONFIG_TOP_BUILD_DIR=$(pwd)
-	$ export CFLAGS="-I$(pwd)/usbwcm/headers -I$(pwd)/X11R7.2/include -I$(pwd)/X11R7.2/include/xorg -I."
-	$ export LDFLAGS="-L/opt/csw/lib -R/opt/csw/lib"
+  * RHEL 5:
+      * xorg-x11-server-sdk
+          * libXau-devel
+          * xorg-x11-util-macros
+          * xorg-x11-proto-devel
+          * libXdmcp-devel
+          * mesa-libGL-devel
+          * libX11-devel
+      * libXi-devel
+      * kernel-devel
 
+  * Other:
+      * xorg-server [e.g. https://www.x.org/releases/X11R7.2/src/xserver/xorg-server-X11R7.2-1.2.0.tar.bz2]
+      * xproto      [e.g. https://www.x.org/releases/X11R7.2/src/proto/xproto-X11R7.2-7.0.10.tar.bz2]
+      * libX11      [e.g. https://www.x.org/releases/X11R7.2/src/lib/libX11-X11R7.2-1.1.1.tar.bz2]
+      * libXi       [e.g. https://www.x.org/releases/X11R7.2/src/lib/libXi-X11R7.2-1.0.2.tar.bz2]
 
-BUILDING
-===========
-Once the build environment has been set up, cd into the 'linuxwacom' directory
-and begin the build as follows:
+Other optional dependencies may also need to be installed in order to build some
+pieces of software.
 
-	$ ./bootstrap
-	$ ./configure --with-linux --with-tcl=/opt/csw/include --with-tk=/opt/csw/include --prefix=/usr --libdir=/usr/lib MAKE=gmake
-	$ gmake
+  * tcl  (Required for ????)
+  * tk   (Required for ????)
 
 
-INSTALLING
-=============
-To install the driver, you will first need to assume root and set the PATH to
-match that used durring the build phase.
+BUILDING FROM SOURCE:
 
-	# PATH="$PATH:/opt/csw/bin:/opt/csw/gcc4/bin:/usr/ccs/bin"
-	# export PATH
-	# gmake install
+As you would expect, run configure and make. If building from git, it is necessary
+to first run `./bootstrap` to generate the configure script. Configure options are
+explained below.
 
-
-CONFIGURATION
-================
-Once installed, you will need to configure /etc/X11/xorg.conf to make X aware
-of any attached tablets. The linuxwacom wiki has setup instructions available at
-http://sourceforge.net/apps/mediawiki/linuxwacom/index.php?title=Configuring_X#Static_xorg.conf_Setup
-
-Under Solaris, USB tablets will appear as HID devices accessible under from
-'/dev/usb'. You should be able to determine which HID device is associated
-with the tablet by either comparing an 'ls' of the directory before and 
-after plugging in the tablet, or by consulting `dmesg | tail`.
+    $ ./configure && make
 
 
-UNINSTALLING
-===============
-To uninstall the driver, you will first need to set the PATH so that any
-necessary tools may be found.
+CONFIGURE OPTIONS:
 
-	# PATH="$PATH:/opt/csw/bin:/opt/csw/gcc4/bin:/usr/ccs/bin"
-	# export PATH
-	# gmake uninstall
+This file contains hints for building the sources.  There are a number of build
+ targets, some of which are not built automatically.  Here is the
+breakdown:
+
+      wacom.o: not built by default (--enable-wacom, --disable-wacom)
+      wacdump: built by default (--enable-wacdump, --disable-wacdump)
+       xidump: built by default (--enable-xidump, --disable-xidump)
+    xsetwacom: built by default (--enable-xsetwacom, --disable-xsetwacom)
+        hid.o: not built by default (--enable-hid, --disable-hid;  Only kernels 2.6.18 or older need it.)
+  wacom_drv.o: built by default (--enable-wacomdrv, --disable-wacomdrv)
+
+There are many options, and configure will attempt to guess the correct
+values for most of them.  By default, only wacomcpl, xsetwacom,  wacom_drv.o, 
+xidump, and wacdump program are built.
+
+Please surf the HOWTO page at http://linuxwacom.sourceforge.net/index_old.php/howto/main
+(or the miniHOWTO at http://linuxwacom.sourceforge.net/index_old.php/minihowto if 
+you run a Fedora system) to find the proper options if the default building 
+environment doesn't work for you.
+
+==============================================================================
+Users who intend to build the driver for Solaris should be aware that this is a
+minimally-tested configuration. The ability to build under Solaris may break
+without warning. Additionally, it is highly recommended to use prerequisite
+packages from the OpenCSW archive as these are also used by the developers.
+
+==============================================================================
+
+WEBSITE: http://linuxwacom.sf.net
