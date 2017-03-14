@@ -256,7 +256,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, i
 
 		if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
 		{
-			sleep(1000);
+			sleep(1);
 			if (ioctl(fd, EVIOCGID, &wacom_id) < 0)
 			{
 				xf86Msg(X_ERROR, "%s: wcmDeviceTypeKeys unable to "
