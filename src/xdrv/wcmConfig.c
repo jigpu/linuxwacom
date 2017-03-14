@@ -21,7 +21,7 @@
 #include "wcmFilter.h"
 #include <fcntl.h>
 
-extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
+extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, int* tablet_id);
 extern void wcmIsDisplay(WacomCommonPtr common);
 #ifdef WCM_XORG_XSERVER_1_4
     extern Bool wcmIsAValidType(LocalDevicePtr local, const char *type, unsigned long* keys);
@@ -658,7 +658,7 @@ static LocalDevicePtr xf86WcmInit(InputDriverPtr drv, IDevPtr dev, int flags)
        if(device)
         {
 		/* initialize supported keys for Xorg server 1.4 or later */
-		wcmDeviceTypeKeys(fakeLocal, keys, &tablet_id);
+		wcmDeviceTypeKeys(fakeLocal, keys, sizeof(keys), &tablet_id);
 
         	/* check if the type is valid for the device
  		 * that is not defined in xorg.conf	

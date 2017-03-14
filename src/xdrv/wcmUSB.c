@@ -37,7 +37,7 @@
 static int lastToolSerial = 0;
 #endif
 
-extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, int* tablet_id);
+extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, int* tablet_id);
 extern void wcmIsDisplay(WacomCommonPtr common);
 static Bool usbDetect(LocalDevicePtr);
 Bool usbWcmInit(LocalDevicePtr pDev, char* id, float *version);
@@ -595,7 +595,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 
 #ifndef WCM_XORG_XSERVER_1_4
 	/* older servers/kernels normally fail the first time */
-	wcmDeviceTypeKeys(local, common->wcmKeys, &common->tablet_id);	
+	wcmDeviceTypeKeys(local, common->wcmKeys, sizeof(common->wcmKeys), &common->tablet_id);
 	wcmIsDisplay(common);
 #endif   /* WCM_XORG_XSERVER_1_4 */
 
