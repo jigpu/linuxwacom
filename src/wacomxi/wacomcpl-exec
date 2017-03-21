@@ -2018,8 +2018,9 @@ proc updateModelInfo { } {
 	set isLCD($i) 1 
     }
 
-    #DTK2241
+    #DTK2241 / DTH2242
     set isLCD(87) 1
+    set isLCD(89) 1
 
     #TabletPC
     for { set i 144 } { $i <= 159 } { incr i 1 } {
@@ -2055,8 +2056,9 @@ proc updateModelInfo { } {
     #Cintiq 21UX
     set numPadButtons(63) 8
     set numPadStrips(63) 2
-    #DTK2241
+    #DTK2241 / DTH2242
     set numPadButtons(87) 6
+    set numPadButtons(89) 6
     #Cintiq 22HDT
     set numPadButtons(91) 18
     set numPadStrips(91) 2

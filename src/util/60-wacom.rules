@@ -97,6 +97,7 @@ ATTRS{idVendor}=="056a", ATTRS{idProduct}=="0317", ENV{WACOM_TYPE}!="touch", SYM
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="00c0", SYMLINK+="input/tablet-dtf521"
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="00c4", SYMLINK+="input/tablet-dtf720"
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="0057", SYMLINK+="input/tablet-dtk2241"
+ATTRS{idVendor}=="056a", ATTRS{idProduct}=="0059", SYMLINK+="input/tablet-dth2242"
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="005b", ENV{WACOM_TYPE}!="touch", SYMLINK+="input/tablet-cintiq22hdt"
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="00c5", SYMLINK+="input/tablet-cintiq20wsx"
 ATTRS{idVendor}=="056a", ATTRS{idProduct}=="00c6", SYMLINK+="input/tablet-cintiq12wx"
