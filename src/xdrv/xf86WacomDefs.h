@@ -1,6 +1,8 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
  * Copyright 2002-2011 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,8 +26,14 @@
  * General Defines
  ****************************************************************************/
 #ifdef WCM_ENABLE_LINUXINPUT
+    #ifdef sun
+     #include <sys/usb/clients/usbinput/usbwcm/usbwcm.h>
+     #include "../include/usbwcm_build.h"
+    #else
      #include <asm/types.h>
      #include <linux/input.h>
+    #endif
+
      #define MAX_USB_EVENTS 32
 
     /* for access TOOL, BTN, and key codes of USB tablets */

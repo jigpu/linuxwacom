@@ -1,6 +1,8 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
  * Copyright 2002-2013 by Ping Cheng, Wacom Technology. <pingc@wacom.com>		
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,6 +25,10 @@
 #ifdef WCM_ENABLE_LINUXINPUT
 
 #include <sys/utsname.h>
+
+#ifdef sun
+#include <sys/stropts.h>
+#endif /* sun */
 
 /* Defines on newer kernels */
 #ifndef BTN_TASK
@@ -409,6 +415,19 @@ static Bool usbDetect(LocalDevicePtr local)
 
 	DBG(1, priv->debugLevel, ErrorF("usbDetect\n"));
 
+#ifdef sun
+	int retval;
+
+	retval = ioctl(local->fd, I_FIND, "usbwcm");
+	if (retval == 0)
+		retval = ioctl(local->fd, I_PUSH, "usbwcm");
+	if (retval < 0)
+	{
+		ErrorF("usbDetect: can not find/push STREAMS module\n");
+		return 0;
+	}
+#endif /* sun */
+
 	SYSCALL(err = ioctl(local->fd, EVIOCGVERSION, &version));
 
 	if (err < 0)
@@ -566,6 +585,9 @@ static void usbRetrieveKeys(WacomCommonPtr common)
 		if (ISBITSET (common->wcmKeys, padkey_codes [i]))
 			common->padkey_code [common->npadkeys++] = padkey_codes [i];
 	/* set default nbuttons */
+#ifdef sun
+	if (ISBITSET (common->wcmKeys, BTN_EXTRA))
+#else /* !sun */
 	if (ISBITSET (common->wcmKeys, BTN_TASK))
 		common->nbuttons = 10;
 	else if (ISBITSET (common->wcmKeys, BTN_BACK))
@@ -573,6 +595,7 @@ static void usbRetrieveKeys(WacomCommonPtr common)
 	else if (ISBITSET (common->wcmKeys, BTN_FORWARD))
 		common->nbuttons = 8;
 	else if (ISBITSET (common->wcmKeys, BTN_EXTRA))
+#endif /* sun */
 		common->nbuttons = 7;
 	else if (ISBITSET (common->wcmKeys, BTN_SIDE))
 		common->nbuttons = 6;
@@ -589,8 +612,10 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, size_t id_len, float *version)
 	DBG(1, priv->debugLevel, ErrorF("initializing USB tablet\n"));
 	*version = 0.0;
 
+#ifndef sun /* !sun */
 	/* fetch model name */
 	ioctl(local->fd, EVIOCGNAME(id_len), id);
+#endif
 
 
 #ifndef WCM_XORG_XSERVER_1_4
@@ -1213,6 +1238,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->abswheel = event->value - MIN_ROTATION;
 				ds->abswheel *= FILTER_PRESSURE_RES;
 				ds->abswheel /= (MAX_ROTATION - MIN_ROTATION);
+#ifndef sun /* !sun */
 			} else if (event->code == ABS_THROTTLE) {
 				if (common->tablet_id == 0xF4)
 				{
@@ -1226,6 +1252,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 					ds->throttle *= FILTER_PRESSURE_RES;
 					ds->throttle /= (2 * MAX_ABS_WHEEL);
 				}
+#endif /* !sun */
 			} else if (event->code == ABS_MISC) {
 				ds->proximity = (event->value != 0);
 				if (event->value) {
@@ -1301,6 +1328,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->device_id = PAD_DEVICE_ID;
 				ds->proximity = (event->value != 0);
 			}
+#ifndef sun /* !sun */
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
 				DBG(6, common->debugLevel, ErrorF(
@@ -1335,6 +1363,7 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				/* Second finger events will be considered in 
 				 * combination with the first finger data */
 			}
+#endif /* !sun */
 			else if ((event->code == BTN_STYLUS) ||
 				(event->code == BTN_MIDDLE))
 			{

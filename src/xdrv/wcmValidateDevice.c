@@ -1,5 +1,6 @@
 /*
  * Copyright 2009- 2010 by Ping Cheng, Wacom. <pingc@wacom.com>
+ * Copyright 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
  *                                                                            
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,7 +19,10 @@
 
 #include "xf86Wacom.h"
 #include "wcmFilter.h"
+
+#ifndef sun
 #include <linux/serial.h>
+#endif
 
 #ifdef WCM_XORG_XSERVER_1_4
     #ifndef _XF86_ANSIC_H
@@ -120,7 +124,7 @@ ret:
 static struct
 {
 	const char* type;
-	__u16 tool;
+	int tool;
 } wcmType [] =
 {
 	{ "stylus", BTN_TOOL_PEN       },
@@ -161,7 +165,9 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, i
 	int ret = 1, fd = -1;
 	unsigned int id = 0;
 	char* device, *stopstring;
+#ifndef sun
 	struct serial_struct tmp;
+#endif
 
 	device = xf86SetStrOption(local->options, "Device", NULL);
 	SYSCALL(fd = open(device, O_RDONLY));
@@ -175,6 +181,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, i
 	memset(keys, 0, nkeys);
 	*tablet_id = 0;
 
+#ifndef sun
 	/* serial ISDV4 devices */
 	if (ioctl(fd, TIOCGSERIAL, &tmp) == 0)
 	{
@@ -243,6 +250,7 @@ int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, i
 		}
 	}
 	else /* USB devices */
+#endif
 	{
 		struct input_id wacom_id;
 

@@ -3,6 +3,8 @@
 **
 ** Copyright (C) 2002 - 2003 - John E. Joganic
 ** Copyright (C) 2004 - 2005 - Ping Cheng
+** Copyright (C) 2010 Sun Microsystems, Inc.  All rights reserved.
+** Copyright (C) 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -35,8 +37,20 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#ifdef sun
+#include <strings.h>
+#endif
+
 #ifdef WCM_ENABLE_LINUXINPUT
+
+#ifdef sun
+#include <sys/stropts.h>
+#include <sys/usb/clients/usbinput/usbwcm/usbwcm.h>
+#include "../include/usbwcm_build.h"
+#else /* !sun */
 #include <linux/input.h>
+#endif /* sun */
+
 #endif
 
 typedef void (*FREEFUNC)(void* pv);
@@ -274,7 +288,21 @@ static int WacomIsUSB(int fd)
 {
 #ifdef WCM_ENABLE_LINUXINPUT
 	short sID[4];
+#ifdef sun
+	int retval;
+
+	retval = ioctl(fd, I_FIND, "usbwcm");
+	if (retval == 0)
+		retval = ioctl(fd, I_PUSH, "usbwcm");
+	if (retval < 0)
+	{
+		perror("WacomIsUSB");
+		return 0;
+	}
+#endif /* sun */
+
 	if (ioctl(fd,EVIOCGID,sID) < 0) return 0;
+
 	return 1;
 #else
 	return 0;

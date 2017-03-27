@@ -1,6 +1,8 @@
 /*
  * Copyright 1995-2002 by Frederic Lepied, France. <Lepied@XFree86.org>
  * Copyright 2002-2009 by Ping Cheng, Wacom Technology. <pingc@wacom.com>
+ * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,8 +38,11 @@
  ****************************************************************************/
 
 #ifdef WCM_ENABLE_LINUXINPUT
+
+#ifndef sun /* !sun */
 #include <asm/types.h>
 #include <linux/input.h>
+#endif
 
 /* keithp - a hack to avoid redefinitions of these in xf86str.h */
 #ifdef BUS_PCI

@@ -3,6 +3,8 @@
 **
 ** Copyright (C) 2002 - 2004 - John E. Joganic
 ** Copyright (C) 2003 - 2014 - Ping Cheng
+** Copyright (C) 2010 Sun Microsystems, Inc.  All rights reserved.
+** Copyright (C) 2017 Jason Gerecke, Wacom. <jason.gerecke@wacom.com>
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -38,6 +40,12 @@
 *****************************************************************************/
 
 #ifdef WCM_ENABLE_LINUXINPUT
+
+#ifdef sun
+#include <sys/usb/clients/usbinput/usbwcm/usbwcm.h>
+#include "../include/usbwcm_build.h"
+
+#else /* !sun */
 #include <linux/input.h>
 
 #ifndef EV_MSC
@@ -51,6 +59,8 @@
 #ifndef BTN_TOOL_DOUBLETAP
 #define BTN_TOOL_DOUBLETAP 0x14d
 #endif
+
+#endif /* sun */
 
 /*****************************************************************************
 ** Defines
@@ -621,8 +631,12 @@ static int USBIdentifyModel(USBTABLET* pUSB)
 			USBGetRange(pUSB,absbits,ABS_PRESSURE,WACOMFIELD_PRESSURE) ||
 			USBGetRange(pUSB,absbits,ABS_TILT_X,WACOMFIELD_TILT_X) ||
 			USBGetRange(pUSB,absbits,ABS_TILT_Y,WACOMFIELD_TILT_Y) ||
+#ifdef sun
+			USBGetRange(pUSB,absbits,ABS_WHEEL,WACOMFIELD_ABSWHEEL))
+#else
 			USBGetRange(pUSB,absbits,ABS_WHEEL,WACOMFIELD_ABSWHEEL) ||
 			USBGetRange(pUSB,absbits,ABS_THROTTLE,WACOMFIELD_THROTTLE))
+#endif
 			return 1;
 
 	}
@@ -676,8 +690,12 @@ static int USBIdentifyModel(USBTABLET* pUSB)
 				ISBITSET(keybits,BTN_TOOL_AIRBRUSH) ||
 				ISBITSET(keybits,BTN_TOOL_FINGER) ||
 				ISBITSET(keybits,BTN_TOOL_MOUSE) ||
+#ifdef sun
+				ISBITSET(keybits,BTN_TOOL_LENS))
+#else /* !sun */
 				ISBITSET(keybits,BTN_TOOL_LENS) ||
 				ISBITSET(keybits,BTN_TOOL_DOUBLETAP))
+#endif
 			pUSB->state[0].uValid |= BIT(WACOMFIELD_PROXIMITY) |
 					BIT(WACOMFIELD_TOOLTYPE);
 
@@ -820,14 +838,16 @@ static int USBParseKEY(USBTABLET* pUSB, struct input_event* pEv)
 		case BTN_STYLUS: button = WACOMBUTTON_STYLUS; break;
 		case BTN_STYLUS2: button = WACOMBUTTON_STYLUS2; break;
 		case BTN_TOOL_PEN: tool = WACOMTOOLTYPE_PEN; break;
-		case BTN_TOOL_PENCIL: tool = WACOMTOOLTYPE_PENCIL; break;
-		case BTN_TOOL_BRUSH: tool = WACOMTOOLTYPE_BRUSH; break;
 		case BTN_TOOL_RUBBER: tool = WACOMTOOLTYPE_ERASER; break;
-		case BTN_TOOL_AIRBRUSH: tool = WACOMTOOLTYPE_AIRBRUSH; break;
 		case BTN_TOOL_MOUSE: tool = WACOMTOOLTYPE_MOUSE; break;
 		case BTN_TOOL_FINGER: tool = WACOMTOOLTYPE_PAD; break;
+#ifndef sun /* !sun */
+		case BTN_TOOL_PENCIL: tool = WACOMTOOLTYPE_PENCIL; break;
+		case BTN_TOOL_BRUSH: tool = WACOMTOOLTYPE_BRUSH; break;
+		case BTN_TOOL_AIRBRUSH: tool = WACOMTOOLTYPE_AIRBRUSH; break;
 		case BTN_TOOL_LENS: tool = WACOMTOOLTYPE_LENS; break;
 		case BTN_TOOL_DOUBLETAP: tool = WACOMTOOLTYPE_TOUCH; break;
+#endif
 		default:
 			for (i = 0; i < gNumPadKeys; i++)
 				if (pEv->code == gPadKeys [i])
@@ -914,7 +934,9 @@ static int USBParseABS(USBTABLET* pUSB, struct input_event* pEv)
 		case ABS_TILT_X: field = WACOMFIELD_TILT_X; break;
 		case ABS_TILT_Y: field = WACOMFIELD_TILT_Y; break;
 		case ABS_WHEEL: field = WACOMFIELD_ABSWHEEL; break;
+#ifndef sun /* !sun */
 		case ABS_THROTTLE: field = WACOMFIELD_THROTTLE; break;
+#endif
 	}
 
 	if (field)
