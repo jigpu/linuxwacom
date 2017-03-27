@@ -23,15 +23,15 @@
 
 /* Serial Support */
 static Bool serialDetect(LocalDevicePtr pDev);
-static Bool serialInit(LocalDevicePtr pDev, char* id, float *version);
+static Bool serialInit(LocalDevicePtr pDev, char* id, size_t id_len, float *version);
 
-static int serialInitTablet(LocalDevicePtr pDev, char* id, float *version);
-static void serialInitIntuos(WacomCommonPtr common, const char* id, float version);
-static void serialInitIntuos2(WacomCommonPtr common, const char* id, float version);
-static void serialInitCintiq(WacomCommonPtr common, const char* id, float version);
-static void serialInitPenPartner(WacomCommonPtr common, const char* id, float version);
-static void serialInitGraphire(WacomCommonPtr common, const char* id, float version);
-static void serialInitProtocol4(WacomCommonPtr common, const char* id, float version);
+static int serialInitTablet(LocalDevicePtr pDev, char* id, size_t id_len, float *version);
+static void serialInitIntuos(WacomCommonPtr common, const char* id, size_t id_len, float version);
+static void serialInitIntuos2(WacomCommonPtr common, const char* id, size_t id_len, float version);
+static void serialInitCintiq(WacomCommonPtr common, const char* id, size_t id_len, float version);
+static void serialInitPenPartner(WacomCommonPtr common, const char* id, size_t id_len, float version);
+static void serialInitGraphire(WacomCommonPtr common, const char* id, size_t id_len, float version);
+static void serialInitProtocol4(WacomCommonPtr common, const char* id, size_t id_len, float version);
 static void serialGetResolution(LocalDevicePtr local);
 static int serialGetRanges(LocalDevicePtr local);
 static int serialResetIntuos(LocalDevicePtr local);
@@ -397,7 +397,7 @@ static Bool serialDetect(LocalDevicePtr pDev)
 	return 1;
 }
 
-static Bool serialInit(LocalDevicePtr local, char* id, float *version)
+static Bool serialInit(LocalDevicePtr local, char* id, size_t id_len, float *version)
 {
 	int err;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
@@ -493,7 +493,7 @@ static Bool serialInit(LocalDevicePtr local, char* id, float *version)
 
 	xf86WcmFlushTablet(local->fd);
 
-	return serialInitTablet(local, id, version);
+	return serialInitTablet(local, id, id_len, version);
 }
 
 /*****************************************************************************
@@ -501,7 +501,7 @@ static Bool serialInit(LocalDevicePtr local, char* id, float *version)
  *   Initialize the tablet
  ****************************************************************************/
 
-static int serialInitTablet(LocalDevicePtr local, char* id, float *version)
+static int serialInitTablet(LocalDevicePtr local, char* id, size_t id_len, float *version)
 {
 	int loop, idx;
 	char getID[BUFFER_SIZE];
@@ -857,7 +857,7 @@ static int serialParseProtocol5(LocalDevicePtr local, const unsigned char* data)
  * Model-specific functions
  ****************************************************************************/
 
-static void serialInitIntuos(WacomCommonPtr common, const char* id, float version)
+static void serialInitIntuos(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 5;
 	common->wcmVersion = version;
@@ -869,7 +869,7 @@ static void serialInitIntuos(WacomCommonPtr common, const char* id, float versio
 	common->wcmFlags |= TILT_ENABLED_FLAG;
 }
 
-static void serialInitIntuos2(WacomCommonPtr common, const char* id, float version)
+static void serialInitIntuos2(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 5;
 	common->wcmVersion = version;
@@ -881,7 +881,7 @@ static void serialInitIntuos2(WacomCommonPtr common, const char* id, float versi
 	common->wcmFlags |= TILT_ENABLED_FLAG;
 }
 
-static void serialInitCintiq(WacomCommonPtr common, const char* id, float version)
+static void serialInitCintiq(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 4;
 	common->wcmPktLength = 7;
@@ -955,7 +955,7 @@ static void serialInitCintiq(WacomCommonPtr common, const char* id, float versio
 	common->wcmFlags &= ~TILT_ENABLED_FLAG;
 }
 
-static void serialInitPenPartner(WacomCommonPtr common, const char* id, float version)
+static void serialInitPenPartner(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 4;
 	common->wcmPktLength = 7;
@@ -969,7 +969,7 @@ static void serialInitPenPartner(WacomCommonPtr common, const char* id, float ve
 	common->wcmFlags &= ~TILT_ENABLED_FLAG;
 }
 
-static void serialInitGraphire(WacomCommonPtr common, const char* id, float version)
+static void serialInitGraphire(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 4;
 	common->wcmPktLength = 7;
@@ -986,7 +986,7 @@ static void serialInitGraphire(WacomCommonPtr common, const char* id, float vers
 	common->wcmFlags &= ~TILT_ENABLED_FLAG;
 }
 
-static void serialInitProtocol4(WacomCommonPtr common, const char* id, float version)
+static void serialInitProtocol4(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 4;
 	common->wcmPktLength = 7;

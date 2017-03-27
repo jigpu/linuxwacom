@@ -247,7 +247,7 @@ int xf86WcmWriteWait(int fd, const char* request);
 int xf86WcmWaitForTablet(int fd, char * data, int size);
 
 /* common tablet initialization regime */
-int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version);
+int xf86WcmInitTablet(LocalDevicePtr local, const char* id, size_t id_len, float version);
 
 /* standard packet handler */
 void xf86WcmReadPacket(LocalDevicePtr local);

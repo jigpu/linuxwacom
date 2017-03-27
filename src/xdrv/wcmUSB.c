@@ -40,12 +40,12 @@ static int lastToolSerial = 0;
 extern int wcmDeviceTypeKeys(LocalDevicePtr local, unsigned long* keys, size_t nkeys, int* tablet_id);
 extern void wcmIsDisplay(WacomCommonPtr common);
 static Bool usbDetect(LocalDevicePtr);
-Bool usbWcmInit(LocalDevicePtr pDev, char* id, float *version);
+Bool usbWcmInit(LocalDevicePtr pDev, char* id, size_t id_len, float *version);
 
 static void usbInitProtocol5(WacomCommonPtr common, const char* id,
-	float version);
+	size_t id_len, float version);
 static void usbInitProtocol4(WacomCommonPtr common, const char* id,
-	float version);
+	size_t id_len, float version);
 int usbWcmGetRanges(LocalDevicePtr local);
 static int usbParse(LocalDevicePtr local, const unsigned char* data);
 static int usbDetectConfig(LocalDevicePtr local);
@@ -580,7 +580,7 @@ static void usbRetrieveKeys(WacomCommonPtr common)
 		common->nbuttons = 5;
 }
 
-Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
+Bool usbWcmInit(LocalDevicePtr local, char* id, size_t id_len, float *version)
 {
 	int i;
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
@@ -590,7 +590,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 	*version = 0.0;
 
 	/* fetch model name */
-	ioctl(local->fd, EVIOCGNAME(sizeof(id)), id);
+	ioctl(local->fd, EVIOCGNAME(id_len), id);
 
 
 #ifndef WCM_XORG_XSERVER_1_4
@@ -640,7 +640,7 @@ Bool usbWcmInit(LocalDevicePtr local, char* id, float *version)
 }
 
 static void usbInitProtocol5(WacomCommonPtr common, const char* id,
-	float version)
+	size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 5;
 	common->wcmPktLength = sizeof(struct input_event);
@@ -656,7 +656,7 @@ static void usbInitProtocol5(WacomCommonPtr common, const char* id,
 }
 
 static void usbInitProtocol4(WacomCommonPtr common, const char* id,
-	float version)
+	size_t id_len, float version)
 {
 	common->wcmProtocolLevel = 4;
 	common->wcmPktLength = sizeof(struct input_event);

@@ -89,7 +89,7 @@ struct _WacomModel
 {
 	const char* name;
 
-	void (*Initialize)(WacomCommonPtr common, const char* id, float version);
+	void (*Initialize)(WacomCommonPtr common, const char* id, size_t id_len, float version);
 	void (*GetResolution)(LocalDevicePtr local);
 	int (*GetRanges)(LocalDevicePtr local);
 	int (*Reset)(LocalDevicePtr local);
@@ -338,7 +338,7 @@ struct _WacomChannel
 struct _WacomDeviceClass
 {
 	Bool (*Detect)(LocalDevicePtr local); /* detect device */
-	Bool (*Init)(LocalDevicePtr local, char* id, float *version);   /* initialize device */
+	Bool (*Init)(LocalDevicePtr local, char* id, size_t id_len, float *version);   /* initialize device */
 	void (*Read)(LocalDevicePtr local);   /* reads device */
 };
 

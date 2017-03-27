@@ -687,8 +687,8 @@ Bool xf86WcmOpen(LocalDevicePtr local)
 	}
 
 	/* Initialize the tablet */
-	if(common->wcmDevCls->Init(local, id, &version) != Success ||
-		xf86WcmInitTablet(local, id, version) != Success)
+	if(common->wcmDevCls->Init(local, id, sizeof(id), &version) != Success ||
+		xf86WcmInitTablet(local, id, sizeof(id), version) != Success)
 	{
 		xf86CloseSerial(local->fd);
 		local->fd = -1;

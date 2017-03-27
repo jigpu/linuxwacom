@@ -22,8 +22,8 @@
 #include "wcmFilter.h"
 
 static Bool isdv4Detect(LocalDevicePtr);
-static Bool isdv4Init(LocalDevicePtr, char* id, float *version);
-static void isdv4InitISDV4(WacomCommonPtr common, const char* id, float version);
+static Bool isdv4Init(LocalDevicePtr, char* id, size_t id_len, float *version);
+static void isdv4InitISDV4(WacomCommonPtr common, const char* id, size_t id_len, float version);
 static int isdv4GetRanges(LocalDevicePtr);
 static int isdv4StartTablet(LocalDevicePtr);
 static int isdv4Parse(LocalDevicePtr, const unsigned char* data);
@@ -64,7 +64,7 @@ static Bool isdv4Detect(LocalDevicePtr local)
  * isdv4Init --
  ****************************************************************************/
 
-static Bool isdv4Init(LocalDevicePtr local, char* id, float *version)
+static Bool isdv4Init(LocalDevicePtr local, char* id, size_t id_len, float *version)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
@@ -169,7 +169,7 @@ static int isdv4Query(LocalDevicePtr local, const char* query, char* data)
  * isdv4InitISDV4 -- Setup the device
  ****************************************************************************/
 
-static void isdv4InitISDV4(WacomCommonPtr common, const char* id, float version)
+static void isdv4InitISDV4(WacomCommonPtr common, const char* id, size_t id_len, float version)
 {
 	/* set parameters */
 	common->wcmProtocolLevel = 4;

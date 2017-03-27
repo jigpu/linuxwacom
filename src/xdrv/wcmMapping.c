@@ -464,14 +464,14 @@ void xf86WcmSetScreen(LocalDevicePtr local, int v0, int v1)
  * xf86WcmInitTablet -- common initialization for all tablets
  ****************************************************************************/
 
-int xf86WcmInitTablet(LocalDevicePtr local, const char* id, float version)
+int xf86WcmInitTablet(LocalDevicePtr local, const char* id, size_t id_len, float version)
 {
 	WacomDevicePtr priv = (WacomDevicePtr)local->private;
 	WacomCommonPtr common = priv->common;
 	WacomModelPtr model = common->wcmModel;
 
 	/* Initialize the tablet */
-	model->Initialize(common,id,version);
+	model->Initialize(common,id,id_len,version);
 
 	/* Get tablet resolution */
 	if (model->GetResolution)
