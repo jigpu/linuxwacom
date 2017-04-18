@@ -1328,7 +1328,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				ds->device_id = PAD_DEVICE_ID;
 				ds->proximity = (event->value != 0);
 			}
-#ifndef sun /* !sun */
 			else if (event->code == BTN_TOOL_DOUBLETAP)
 			{
 				DBG(6, common->debugLevel, ErrorF(
@@ -1363,7 +1362,6 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 				/* Second finger events will be considered in 
 				 * combination with the first finger data */
 			}
-#endif /* !sun */
 			else if ((event->code == BTN_STYLUS) ||
 				(event->code == BTN_MIDDLE))
 			{
