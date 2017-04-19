@@ -561,7 +561,8 @@ static struct
 	{ 0x5B, 5080, 5080, &usbCintiqV5   }, /* Cintiq 22HDT */
 	{ 0xFA, 5080, 5080, &usbCintiqV5   }, /* Cintiq 22HD */
 	{ 0x57, 5080, 5080, &usbCintiqV5   }, /* DTK 2241 */ 
-	{ 0x59, 5080, 5080, &usbCintiqV5   }, /* DTH 2242 */ 
+	{ 0x59, 5080, 5080, &usbCintiqV5   }, /* DTH 2242 pen & pad */
+	{ 0x5D,  254,  254, &usbTabletPC   }, /* DTH 2242 touch */
 	{ 0x304,5080, 5080, &usbCintiqV5   }, /* Cintiq 13HD */ 
 
 	{ 0x90, 2540, 2540, &usbTabletPC   }, /* TabletPC 0x90 */ 
