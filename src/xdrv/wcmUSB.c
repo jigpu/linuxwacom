@@ -1404,12 +1404,16 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 		/* detect prox out events */
 	} /* next event */
 
+	DBG(6, common->debugLevel, ErrorF(
+            "Finished reading events\n"));
+
 	/* device type unknown? Retrive it from the kernel again */
 	if (!ds->device_type)
 	{
 		unsigned long keys[NBITS(KEY_MAX)] = { 0 };
 		struct input_absinfo absinfo;
 		
+		DBG(6, common->debugLevel, ErrorF("Unknown device type, retrieving again...\n"));
 		ioctl(common->fd, EVIOCGKEY(sizeof(keys)), keys);
 
 		for (i=0; i<sizeof(wcmTypeToKey) / sizeof(wcmTypeToKey[0]); i++)
@@ -1444,6 +1448,8 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	{
 		struct input_absinfo absinfo;
 
+		DBG(6, common->debugLevel, ErrorF("retrieving first in-prox position\n"));
+
 		if (ioctl(common->fd, EVIOCGABS(ABS_X), &absinfo) < 0)
 		{
 			ErrorF("WACOM: unable to ioctl x value.\n");
@@ -1459,9 +1465,13 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 		ds->y = absinfo.value;
 	}
 
+	DBG(6, common->debugLevel, ErrorF("preparing to send event (1/2) (%d, %d)...\n", ds->device_type, common->wcmTouch));
+
 	/* don't send touch event when touch isn't enabled */
 	if ((ds->device_type == TOUCH_ID) && !common->wcmTouch)
 		return;
+
+	DBG(6, common->debugLevel, ErrorF("preparing to send event (2/2)...\n"));
 
 	/* don't send touch event when pen is in prox */
 	if (syslast && ((ds->device_type == TOUCH_ID) &&
@@ -1483,6 +1493,8 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 
 	if (!ds->proximity)
 		common->wcmLastToolSerial = 0;
+
+	DBG(6, common->debugLevel, ErrorF("sending event...\n"));
 
 	/* dispatch event */
 	xf86WcmEvent(common, channel, ds);
