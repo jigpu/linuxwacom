@@ -1468,8 +1468,10 @@ static void usbParseChannel(LocalDevicePtr local, int channel)
 	DBG(6, common->debugLevel, ErrorF("preparing to send event (1/2) (%d, %d)...\n", ds->device_type, common->wcmTouch));
 
 	/* don't send touch event when touch isn't enabled */
-	if ((ds->device_type == TOUCH_ID) && !common->wcmTouch)
+	if ((ds->device_type == TOUCH_ID) && !common->wcmTouch) {
+		common->wcmTouch = 1; /* HACK: This shouldn't be necessary! */
 		return;
+	}
 
 	DBG(6, common->debugLevel, ErrorF("preparing to send event (2/2)...\n"));
 
