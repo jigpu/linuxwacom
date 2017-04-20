@@ -763,17 +763,25 @@ fi
 dnl =======================================================
 dnl Check for ncurses development environment
 WCM_ENV_NCURSES=no
-AC_CHECK_HEADER(ncurses.h, [WCM_ENV_NCURSES=yes])
-if test "$WCM_ENV_NCURSES" != yes; then
-	AC_CHECK_HEADER(ncurses/ncurses.h, [WCM_ENV_NCURSES=yes])
-fi
-if test "$WCM_ENV_NCURSES" != yes; then
+WCM_ENV_NCURSES1=no
+WCM_ENV_NCURSES2=no
+AC_CHECK_HEADER(ncurses.h, [WCM_ENV_NCURSES1=yes])
+AC_CHECK_HEADER(ncurses/ncurses.h, [WCM_ENV_NCURSES2=yes])
+if test "$WCM_ENV_NCURSES1" = yes; then
+	WCM_ENV_NCURSES=yes
+	AC_DEFINE(WCM_ENABLE_NCURSES,1,[ncurses header files available])
+	AC_DEFINE(WCM_DOUBLE_NCURSES,0,[ncurses headers under ncurses subdir])
+	AM_CONDITIONAL(WCM_ENV_NCURSES, true)
+elif test "$WCM_ENV_NCURSES2" = yes; then
+	WCM_ENV_NCURSES=yes
+	AC_DEFINE(WCM_ENABLE_NCURSES,1,[ncurses header files available])
+	AC_DEFINE(WCM_DOUBLE_NCURSES,1,[ncurses headers under ncurses subdir])
+	AM_CONDITIONAL(WCM_ENV_NCURSES, true)
+else
 	AC_MSG_WARN([ncurses not available, ncurses UI disabled])
 	AC_DEFINE(WCM_ENABLE_NCURSES,0,[ncurses header files available])
+	AC_DEFINE(WCM_DOUBLE_NCURSES,0,[ncurses headers under ncurses subdir])
 	AM_CONDITIONAL(WCM_ENV_NCURSES, false)
-else
-	AC_DEFINE(WCM_ENABLE_NCURSES,1,[ncurses header files available])
-	AM_CONDITIONAL(WCM_ENV_NCURSES, true)
 fi
 
 dnl =======================================================

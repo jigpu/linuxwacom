@@ -12,6 +12,9 @@
 /* ncurses header files available */
 #undef WCM_ENABLE_NCURSES
 
+/* ncurses headers under ncurses subdir */
+#undef WCM_DOUBLE_NCURSES
+
 /* Enable the Linux Input subsystem */
 #undef WCM_ENABLE_LINUXINPUT
 

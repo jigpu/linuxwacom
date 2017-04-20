@@ -25,7 +25,11 @@
 #include <stdlib.h>
 
 #if WCM_ENABLE_NCURSES
+#if WCM_DOUBLE_NCURSES
+#include <ncurses/ncurses.h>
+#else
 #include <ncurses.h>
+#endif
 
 /****************************************************************************/
 
